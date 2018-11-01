@@ -5,9 +5,9 @@ layout: layouts/base.njk
   <header>
     <h1 itemprop="headline">{{ title | markdown | safe }}</h1>
     <p class="meta">
-      Published <time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
+      发布时间：<time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
       {% if tags %}
-        · tagged with {% for tag in tags %}
+        · 标签：{% for tag in tags %}
           <a href="/blog/tags/{{ tag | slug }}" class="tag">{{ tag }}</a>
         {% endfor %}
       {% endif %}
