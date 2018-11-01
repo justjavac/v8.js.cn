@@ -37,7 +37,7 @@ html, body, fieldset, nav ul, nav ul li, h1, h2, h3 {
   padding: 0;
 }
 html {
-  font: 16px/1.6 sans-serif;
+  font: 16px/1.6 -apple-system,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Helvetica Neue,Arial,sans-serif;
   color: #000;
   background: var(--darkgray);
 }
