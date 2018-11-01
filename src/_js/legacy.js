@@ -43,20 +43,4 @@
     // set the location to `location.pathname` directly.
     history.replaceState({}, '', location.pathname);
   }
-
-  // Google Analytics.
-  var UA_ID = 'UA-65961526-1';
-  self.dataLayer = [];
-  self.gtag = function() {
-    self.dataLayer.push(arguments);
-  };
-  gtag('js', new Date());
-  gtag('config', UA_ID, {
-    'referrer': document.referrer.split('?')[0],
-  });
-  var firstScript = document.scripts[0];
-  var scriptElement = document.createElement('script');
-  scriptElement.src = 'https://www.googletagmanager.com/gtag/js?id=' + UA_ID;
-  firstScript.parentNode.insertBefore(scriptElement, firstScript);
-
 }());
