@@ -1,7 +1,17 @@
 language: node_js
+
 script:
   - npm run ci
-  - |
-    if [ "${TRAVIS_BRANCH}" = 'master' -a "${TRAVIS_PULL_REQUEST}" = 'false' ]; then
-      firebase deploy --token "${FIREBASE_TOKEN}" --message "Deploy @ ${TRAVIS_COMMIT}";
-    fi
+
+deploy:
+  provider: pages
+  local-dir: dist
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep-history: true
+  on:
+    branch: master
+
+branches:
+  except:
+  - gh-pages
