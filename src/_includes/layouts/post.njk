@@ -23,10 +23,25 @@ layout: layouts/base.njk
           <img src="/_img/avatars/{{ avatar }}.jpg" srcset="/_img/avatars/{{ avatar }}@2x.jpg 2x" alt="" width="96" height="96" lazyload="on">
         {% endfor %}
       {% endif %}
-      <p>Posted by {{ author | markdown | safe }}.</p>
+      <p>作者：{{ author | markdown | safe }}.</p>
     </div>
     {% if tweet %}
       <a href="https://twitter.com/v8js/status/{{ tweet }}" class="retweet">Retweet this article!</a>
     {% endif %}
   </footer>
+  {% if cn %}
+  <footer>
+    <div>
+      {% if cn.avatars %}
+        {% for avatar in cn.avatars %}
+          <img src="/_img/avatars/{{ avatar }}.jpg" srcset="/_img/avatars/{{ avatar }}@2x.jpg 2x" alt="" width="96" height="96" lazyload="on">
+        {% endfor %}
+      {% endif %}
+      <p>译者：{{ cn.author | markdown | safe }}.</p>
+    </div>
+    {% if cn.tweet %}
+      <a href="https://twitter.com/v8js/status/{{ cn.tweet }}" class="retweet">Retweet this article!</a>
+    {% endif %}
+  </footer>
+  {% endif %}
 </article>
