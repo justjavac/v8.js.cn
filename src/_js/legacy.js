@@ -43,21 +43,4 @@
     // set the location to `location.pathname` directly.
     history.replaceState({}, '', location.pathname);
   }
-
-  // Google Analytics.
-  var UA_ID = 'UA-65961526-1';
-  self.GoogleAnalyticsObject = 'ga';
-  self.ga = function() {
-    ga.q.push(arguments);
-  };
-  ga.l = +new Date();
-  ga.q = [];
-  ga('create', UA_ID, 'auto');
-  ga('set', 'referrer', document.referrer.split('?')[0]);
-  ga('send', 'pageview');
-  var firstScript = document.scripts[0];
-  var scriptElement = document.createElement('script');
-  scriptElement.src = 'https://www.google-analytics.com/analytics.js';
-  firstScript.parentNode.insertBefore(scriptElement, firstScript);
-
 }());
