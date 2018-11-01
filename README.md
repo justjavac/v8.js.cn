@@ -33,5 +33,5 @@ cn:
 
 如果你想展示头像，那么你需要在 `src/_img/avatars/` 放 2 张 `.jpg` 格式的图片。尺寸为：
 
-- file-name.jpg 96 * 96
-- file-name@2x.jpg 192 * 192
+- `file-name.jpg` 96 * 96
+- `file-name@2x.jpg` 192 * 192
