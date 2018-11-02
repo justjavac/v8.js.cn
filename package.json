@@ -11,7 +11,7 @@
     "build": "npm run clean && npm run css && npm run js && npm run eleventy && npm run sw && npm run html",
     "watch": "npm run build && npx eleventy --watch",
     "debug": "DEBUG=* npx eleventy",
-    "start": "superstatic --port=9001",
+    "start": "superstatic dist --port=9001",
     "ci": "npm run lint && npm run build"
   },
   "devDependencies": {
