@@ -1,5 +1,5 @@
 ---
-title: 'V8 release v7.1'
+title: 'V8 v7.1 发布'
 author: 'Stephan Herhut ([@herhut](https://twitter.com/herhut)), cloned cloner of clones'
 avatars:
   - stephan-herhut
@@ -12,15 +12,15 @@ cn:
   avatars:
     - justjavac
 ---
-Every six weeks, we create a new branch of V8 as part of our [release process](/docs/release-process). Each version is branched from V8’s Git master immediately before a Chrome Beta milestone. Today we’re pleased to announce our newest branch, [V8 version 7.1](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/7.1), which is in beta until its release in coordination with Chrome 71 Stable in several weeks. V8 v7.1 is filled with all sorts of developer-facing goodies. This post provides a preview of some of the highlights in anticipation of the release.
+每六周，我们会按照 [V8 的发布流程](/docs/release-process)创建一个新的 V8 分支。在进入 Chrome Beta 里程碑之前，此版本从 V8 的 master 分支创建出来。今天我们很高兴地宣布当前最新的分支异常创建出来了，[V8 version 7.1](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/7.1)，它将在几个星期内与 Chrome 71 Stable 同时发布。V8 v7.1 包含了各种面向开发者的新特性。这篇文章提供了预期发布的一些功能亮点。
 
-## Memory
+## 内存 {#memory}
 
-Following the work in v6.9/v7.0 to [embed builtins directly into the binary](/blog/embedded-builtins), bytecode handlers for the interpreter are now also [embedded into the binary](https://bugs.chromium.org/p/v8/issues/detail?id=8068). This saves around 200 KB on average per Isolate.
+在 v6.9/v7.0 中[将内置函数直接以二进制方式嵌入](/blog/embedded-builtins)后，解释器的字节码处理程序现在也[嵌入到二进制文件中](https://bugs.chromium.org/p/v8/issues/detail?id=8068)。每个 Isolate 平均节省大约 200 KB。
 
-## Performance
+## 性能 {#performance}
 
-The escape analysis in TurboFan, which performs scalar replacement for objects that are local to an optimization unit, was improved to also [handle local function contexts for higher-order functions](https://bit.ly/v8-turbofan-context-sensitive-js-operators) when variables from the surrounding context escape to a local closure. Consider the following example:
+TurboFan 中的逃逸分析（对局部作用域的对象执行标量替换）得到了改进，当来自周围上下文的变量转移到本地闭包时，它还能够[处理高阶函数的局部函数上下文](https://bit.ly/v8-turbofan-context-sensitive-js-operators)。请考虑以下示例：
 
 ```js
 function mapAdd(a, x) {
@@ -28,14 +28,14 @@ function mapAdd(a, x) {
 }
 ```
 
-Note that `x` is a free variable of the local closure `y => y + x`. V8 v7.1 can now fully elide the context allocation of `x`, yielding an improvement of up to **40%** in some cases.
+注意，这里的 `x` 是局部作用域闭包 `y => y + x` 的自由变量。V8 v7.1 现在可以完全忽略上下文中分配的 `x`，在某些情况下可以提高 40%。
 
 <figure>
   <img src="/_img/v8-release-71/improved-escape-analysis.svg" alt="">
-  <figcaption>Performance improvement with new escape analysis (lower is better)</figcaption>
+  <figcaption>通过新的逃逸分析提升性能（越低越好）</figcaption>
 </figure>
 
-The escape analysis is now also able to eliminate some cases of variable index access to local arrays. Here’s an example:
+逃逸分析现在还能够消除使用变量作为索引访问局部数据的行为。下面是一个例子：
 
 ```js
 function sum(...args) {
@@ -50,46 +50,45 @@ function sum2(x, y) {
 }
 ```
 
-Note that the `args` are local to `sum2` (assuming that `sum` is inlined into `sum2`). in V8 v7.1, TurboFan can now eliminate the allocation of `args` completely and replace the variable index access `args[i]` with a ternary operation of the form `i === 0 ? x : y`. This yields a ~2% improvement on the JetStream/EarleyBoyer benchmark. We might extend this optimization for arrays with more than two elements in the future.
+请注意，`args` 是 `sum2` 的局部变量（假设 `sum` 被内联进了 `sum2`）。在 V8 v7.1 中，TurboFan 现在可以把 `args` 完全消除，并使用三元操作 `i === 0 ? x : y` 替换变量索引访问操作 `args[i]`。在使用 JetStream/EarleyBoyer 进行基准测试时，性能提高了约 2%。我们将来会继续扩展此优化，使具有两个以上元素的数组也可以进行类似优化。
 
-## Structured cloning of Wasm modules
+## Wasm modules 的结构化克隆 {#structured-cloning-of-wasm-modules}
 
-Finally, [`postMessage` is supported for Wasm modules](https://github.com/WebAssembly/design/pull/1074). `WebAssembly.Module` objects can now be `postMessage`'d to web workers. To clarify, this is scoped to just web workers (same process, different thread), and not extended to cross-process scenarios (such as cross-origin `postMessage` or shared web workers).
+最后，[`postMessage` is supported for Wasm modules](https://github.com/WebAssembly/design/pull/1074)。`WebAssembly.Module` 对象现在可以被 `postMessage` 发送到 web workers。为了更加清晰，这仅限于 web workers（相同的进程，不同的线程），而不能扩展到跨进程场景（例如跨域(cross-origin) `postMessage` 或 shared web workers）。
 
-## JavaScript language features
+## JavaScript 语言新特性 {#javascript-language-features}
 
-[The `Intl.RelativeTimeFormat` API](https://developers.google.com/web/updates/2018/10/intl-relativetimeformat) enables localized formatting of relative times (e.g. “yesterday”, “42 seconds ago”, or “in 3 months”) without sacrificing performance. Here's an example:
+[`Intl.RelativeTimeFormat` API](https://zhuanlan.zhihu.com/p/47417391) 可以让我们处理相对时间的本地化格式（例如，“昨天”，“42秒前”或“3个月”），而不牺牲性能。下面是一个例子：
 
 ```js
-// Create a relative time formatter for the English language that does
-// not always have to use numeric value in the output.
-const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+// 创建一个本地化相对时间，中文
+const rtf = new Intl.RelativeTimeFormat('zh', { numeric: 'auto' });
 
 rtf.format(-1, 'day');
-// → 'yesterday'
+// → '昨天'
 
 rtf.format(0, 'day');
-// → 'today'
+// → '今天'
 
 rtf.format(1, 'day');
-// → 'tomorrow'
+// → '明天'
 
 rtf.format(-1, 'week');
-// → 'last week'
+// → '上周'
 
 rtf.format(0, 'week');
-// → 'this week'
+// → '本周'
 
 rtf.format(1, 'week');
-// → 'next week'
+// → '下周'
 ```
 
-Read [the Web Fundamentals article on `Intl.RelativeTimeFormat`](https://developers.google.com/web/updates/2018/10/intl-relativetimeformat) for more information.
+有关 `Intl.RelativeTimeFormat` 的更多信息，请阅读 Google Web Fundamentals 的 [The Intl.RelativeTimeFormat API](https://developers.google.com/web/updates/2018/10/intl-relativetimeformat) 文章，中文翻译版[国际化相对时间格式化API：Intl.RelativeTimeFormat](https://zhuanlan.zhihu.com/p/47417391)。
 
-V8 v7.1 also adds support for [the `globalThis` proposal](https://github.com/tc39/proposal-global), enabling a universal mechanism to access the global object even in strict functions or modules regardless of the platform.
+V8 v7.1 还增加了对 [`globalThis` 提案](https://github.com/tc39/proposal-global)的支持，此提案提供了访问全局对象的通用机制，即使在严格模式的函数或模块中，而不管平台如何。
 
-## V8 API
+## V8 API {#v8-api}
 
-Please use `git log branch-heads/7.0..branch-heads/7.1 include/v8.h` to get a list of the API changes.
+请使用 `git log branch-heads/7.0..branch-heads/7.1 include/v8.h` 获取 API 的变更列表。
 
-Developers with an [active V8 checkout](/docs/source-code#using-git) can use `git checkout -b 7.1 -t branch-heads/7.1` to experiment with the new features in V8 v7.1. Alternatively you can [subscribe to Chrome’s Beta channel](https://www.google.com/chrome/browser/beta.html) and try the new features out yourself soon.
+开发者可以使用 `git checkout -b 7.1 -t branch-heads/7.1` 来使用 V8 v7.1 中的实验性新功能，具体请参阅[使用 Git 获取 V8 源码](/docs/source-code#using-git)。或者，您可以订阅 [Chrome 的 Beta 频道](https://www.google.com/chrome/browser/beta.html) 来尽快尝试新功能。
