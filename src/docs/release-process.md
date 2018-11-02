@@ -1,64 +1,69 @@
 ---
-title: 'Release process'
+title: '发布流程'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
+  avatars:
+    - justjavac
 ---
-The V8 release process is tightly connected to [Chrome’s](https://www.chromium.org/getting-involved/dev-channel). The V8 team is using all four Chrome release channels to push new versions to the users.
 
-If you want to look up what V8 version is in a Chrome release you can check [OmahaProxy](https://omahaproxy.appspot.com/). For each Chrome release a separate branch is created in the V8 repository to make the trace-back easier e.g. for [Chrome 45.0.2413.0](https://chromium.googlesource.com/v8/v8.git/+/chromium/2413).
+V8 发布流程与 [Chrome 的发布流程](https://www.chromium.org/getting-involved/dev-channel)紧密关联。V8 团队也使用全部 4 种 Chrome 发布渠道向用户推送新版本。
 
-## Canary releases
+如果您想查看 Chrome 版本中的 V8 版本，可以在 [OmahaProxy](https://omahaproxy.appspot.com/) 中查看。对于每个 Chrome 版本，都会在 V8 代码库中创建单独的分支，以便使跟踪更容易，例如 [Chrome 45.0.2413.0](https://chromium.googlesource.com/v8/v8.git/+/chromium/2413)。
 
-Every day a new Canary build is pushed to the users via [Chrome’s Canary channel](https://www.google.com/chrome/browser/canary.html?platform=win64). Normally the deliverable is the latest, stable enough version from [master](https://chromium.googlesource.com/v8/v8.git/+/roll).
+## Canary releases 金丝雀版 {#canary-releases}
 
-Branches for a Canary normally look like this:
+通过 [Chrome's Canary channel](https://www.google.com/chrome/browser/canary.html?platform=win64)，每天都有新的 Canary 版本被推送给用户。正常情况下，这个版本来自 [master](https://chromium.googlesource.com/v8/v8.git/+/roll) 分支的最新，足够稳定的版本。
 
-```
-remotes/origin/4.5.35
-```
-
-## Dev releases
-
-Every week a new Dev build is pushed to the users via [Chrome’s Dev channel](https://www.google.com/chrome/browser/desktop/index.html?extra=devchannel&platform=win64). Normally the deliverable includes the latest stable enough V8 version on the Canary channel.
-
-Branches for a Dev normally look like this:
+Canary 分支通常是这样的：
 
 ```
 remotes/origin/4.5.35
 ```
 
-## Beta releases
+## Dev releases 开发版 {#dev-releases}
 
-Roughly every 6 weeks a new major branch is created e.g. [for Chrome 44](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/4.4). This is happening in sync with the creation of [Chrome’s Beta channel](https://www.google.com/chrome/browser/beta.html?platform=win64). The Chrome Beta is pinned to the head of V8’s branch. After approx. 6 weeks the branch is promoted to Stable.
+通过 [Chrome's Dev channel](https://www.google.com/chrome/browser/desktop/index.html?extra=devchannel&platform=win64)，每周都会有一个新的开发版本推送给用户。正常情况下，这个版本包括 Canary 频道上最新稳定的 V8 版本。
 
-Changes are only cherry-picked onto the branch in order to stabilize the version.
+Dev 的分支通常看起来像这样：
 
-Branches for a Beta normally look like this
+```
+remotes/origin/4.5.35
+```
+
+## Beta releases 测试版 {#beta-releases}
+
+大约每 6 周就会创建一个新的主要分支，例如 [Chrome 44](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/4.4)。这与 [Chrome's Beta channel](https://www.google.com/chrome/browser/beta.html?platform=win64) 的创建同步发生。Chrome Beta 被固定在 V8 的 branch-heads。约 6 周时间分支被提升到 Stable。
+
+所有的更改仅 cherry-picked 到稳定版。
+
+Beta 的分支通常看起来像这样：
 
 ```
 remotes/branch-heads/4.5
 ```
 
-They are based on a Canary branch.
+它们基于 Canary 分支创建。
 
-## Stable releases
+## Stable releases 稳定版 {#stable-releases}
 
-Roughly every 6 weeks a new major Stable release is done. No special branch is created as the latest Beta branch is simply promoted to Stable. This version is pushed to the users via [Chrome’s Stable channel](https://www.google.com/chrome/browser/desktop/index.html?platform=win64).
+大约每 6 周就会有一个新的主要稳定版本完成。由于最新的 Beta 分支只是简单地升级为 Stable，因此不会创建特殊的分支。该版本通过 [Chrome's Stable channel](https://www.google.com/chrome/browser/desktop/index.html?platform=win64) 推送给用户。
 
-Branches for a Stable release normally look like this:
+Stable 的分支通常是这样的
 
 ```
 remotes/branch-heads/4.5
 ```
 
-They are promoted (reused) Beta branches.
+他们由 Beta 分支提升（或重用）而来。
 
-## Which version should I embed in my application?
+## 我应该将哪个版本嵌入到我的应用程序中？ {#which-version-should-i-embed-in-my-application%3F}
 
-The tip of the same branch that Chrome’s Stable channel uses.
+你应该使用：Chrome's Stable channel 的最新分支。
 
-We often backmerge important bug fixes to a stable branch, so if you care about stability and security and correctness, you should include those updates too — that’s why we recommend “the tip of the branch”, as opposed to an exact version.
+我们经常会将重要的 bug fixes 重新合并到稳定的分支，所以如果您关心稳定性和安全性以及正确性，则应该包括这些更新 - 这就是为什么我们推荐“分支的尖端”，而不是确切版本。
 
-As soon as a new branch is promoted to Stable, we stop maintaining the previous stable branch. This happens every six weeks, so you should be prepared to update at least this often.
+只要一个新分支被提升为 Stable，我们就会停止维护之前的稳定分支。这种情况每六周发生一次，所以你应该准备经常更新。
 
-Example: The current stable Chrome release is [44.0.2403.125](https://omahaproxy.appspot.com), with V8 v4.4.63.25. So you should embed [branch-heads/4.4](https://chromium.googlesource.com/v8/v8.git/+/branch-heads/4.4). And you should update to branch-heads/4.5 when Chrome 45 is released on the Stable channel.
+例如：目前稳定的 Chrome 版本是 [44.0.2403.125](https://omahaproxy.appspot.com)，对应的 V8 版本是 4.4.63.25。所以你应该嵌入 [branch-heads/4.4](https://chromium.googlesource.com/v8/v8.git/+/branch-heads/4.4)。而当 Chrome 45 进入 stable 频道时，您应该更新到分支 branch-heads/4.5。
 
-**Related:** [Which V8 version should I use?](/docs/version-numbers#which-v8-version-should-i-use%3F)
+**相关阅读:** [我应该使用哪个版本的 V8?](/docs/version-numbers#which-v8-version-should-i-use%3F)
