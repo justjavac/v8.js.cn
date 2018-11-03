@@ -1,6 +1,7 @@
 ---
-title: 'Building V8 from source'
+title: "由源码构建V8"
 ---
+
 In order to be able to build V8 from scratch on Windows/Linux/macOS for x64, please follow the following steps.
 
 ## Getting the V8 source code
@@ -15,40 +16,40 @@ Follow the instructions in our guide on [checking out the V8 source code](/docs/
 
 1. Download all the build dependencies:
 
-    ```bash
-    gclient sync
-    ```
+   ```bash
+   gclient sync
+   ```
 
 1. This step is only needed on Linux. Install additional build dependencies:
 
-    ```bash
-    ./build/install-build-deps.sh
-    ```
+   ```bash
+   ./build/install-build-deps.sh
+   ```
 
 ## Building V8
 
 1. Make sure that you are in the V8 source directory on the `master` branch.
 
-    ```bash
-    cd /path/to/v8
-    ```
+   ```bash
+   cd /path/to/v8
+   ```
 
 1. Pull in the latest changes and install any new build dependencies:
 
-    ```bash
-    git pull && gclient sync
-    ```
+   ```bash
+   git pull && gclient sync
+   ```
 
 1. Compile the source:
 
-    ```bash
-    tools/dev/gm.py x64.release
-    ```
+   ```bash
+   tools/dev/gm.py x64.release
+   ```
 
-    Or, to compile the source and immediately run the tests:
+   Or, to compile the source and immediately run the tests:
 
-    ```bash
-    tools/dev/gm.py x64.release.check
-    ```
+   ```bash
+   tools/dev/gm.py x64.release.check
+   ```
 
-    For more information on the `gm.py` helper script and the commands it triggers, see [Building with GN](/docs/build-gn).
+   For more information on the `gm.py` helper script and the commands it triggers, see [Building with GN](/docs/build-gn).
