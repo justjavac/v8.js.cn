@@ -1,5 +1,9 @@
 ---
 title: "由源码构建V8"
+cn:
+  author: "Suyan ([@suyanhanx](https://github.com/suyanhanx))"
+  avatars:
+    - suyanhanx
 ---
 
 为了能在 64 位 Windows/Linux/macOS 系统上从源码编译 V8，请遵循以下步骤。
