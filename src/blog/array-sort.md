@@ -1,5 +1,5 @@
 ---
-title: 'Getting things sorted in V8'
+title: '一起聊聊V8中的sort'
 author: 'Simon Zünd ([@nimODota](https://twitter.com/nimODota)), consistent comparator'
 avatars:
   - simon-zuend
