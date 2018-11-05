@@ -37,3 +37,9 @@ cn:
 - `file-name@2x.jpg` 192 * 192
 
 推荐：当你决定翻译某篇文章时，你应该 fork 本仓库，然后新建一个语义明确的分支，然后向本仓库马上发起一个 [Pull Request](https://github.com/justjavac/v8.js.cn/pulls)，在标题中使用 `WIP` 开头，以标识这是一个 Work In Progress 工作。之所以马上提交一个 pr 也是为了防止不同的开发者翻译了同一个文件。
+
+## 注意事项
+
+1. 请注意中英文标点的使用
+2. 英文单词和中文直接保留一个空格
+3. 由于 markdown 格式对中文的解析不够友好，因此需要手动在标题后面标注上锚点链接（参考：[src/blog/v8-release-71.md](src/blog/v8-release-71.md)）
