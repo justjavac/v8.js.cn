@@ -10,7 +10,7 @@ cn:
 
 ## 获取 V8 源码
 
-依照我们的指南的步骤[获取 V8 源码](/src/docs/source-code)。
+依照我们的指南的步骤[获取 V8 源码](/docs/source-code)。
 
 ## 安装构建依赖
 
@@ -32,7 +32,7 @@ cn:
 
 ## 构建 V8
 
-1. 确保你现在在 V8 的源码目录下且位于`master`分支。
+1. 确保你现在在 V8 的源码目录下且位于 `master` 分支。
 
    ```bash
    cd /path/to/v8
@@ -56,4 +56,4 @@ cn:
    tools/dev/gm.py x64.release.check
    ```
 
-   关于`gm.py`帮助类脚本的更多信息和它触发的命令，参见[使用 GN 构建](/src/docs/build-gn).
+   关于 `gm.py` 帮助类脚本的更多信息和它触发的命令，参见[使用 GN 构建](/docs/build-gn).
