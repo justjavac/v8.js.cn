@@ -1,5 +1,5 @@
 ---
-title: 'Improving `DataView` performance in V8'
+title: '在 V8 中 提升 `DataView` 的性能'
 author: 'Théotime Grohens, <i lang="fr">le savant de Data-Vue</i>, and Benedikt Meurer ([@bmeurer](https://twitter.com/bmeurer)), professional performance pal'
 avatars:
   - 'benedikt-meurer'
@@ -9,6 +9,10 @@ tags:
   - benchmarks
 description: 'V8 v6.9 bridges the performance gap between DataView and equivalent TypedArray code, effectively making DataView usable for performance-critical real-world applications.'
 tweet: '1041981091727466496'
+cn:
+  author: '嘤嘤 ([@monkingxue](https://www.zhihu.com/people/turbe-xue))，不会写小程序'
+  avatars:
+    - monkingxue
 ---
 [`DataView`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) are one of the two possible ways to do low-level memory accesses in JavaScript, the other one being [`TypedArray`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray). Up until now, `DataView`s were much less optimized than `TypedArray`s in V8, resulting in lower performance on tasks such as graphics-intensive workloads or when decoding/encoding binary data. The reasons for this have been mostly historical choices, like the fact that [asm.js](http://asmjs.org/) chose `TypedArray`s instead of `DataView`s, and so engines were incentivized to focus on performance of `TypedArray`s.
 
