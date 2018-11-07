@@ -7,22 +7,22 @@ date: 2018-09-18 11:20:37
 tags:
   - ECMAScript
   - benchmarks
-description: 'V8 v6.9 bridges the performance gap between DataView and equivalent TypedArray code, effectively making DataView usable for performance-critical real-world applications.'
+description: 'V8 v6.9 弥补了 DataView 和等效的 TypedArray 代码之间的性能差距，使 DataView 可用于性能敏感的应用程序。'
 tweet: '1041981091727466496'
 cn:
   author: '嘤嘤 ([@monkingxue](https://www.zhihu.com/people/turbe-xue))，不会写小程序'
   avatars:
     - monkingxue
 ---
-[`DataView`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) are one of the two possible ways to do low-level memory accesses in JavaScript, the other one being [`TypedArray`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray). Up until now, `DataView`s were much less optimized than `TypedArray`s in V8, resulting in lower performance on tasks such as graphics-intensive workloads or when decoding/encoding binary data. The reasons for this have been mostly historical choices, like the fact that [asm.js](http://asmjs.org/) chose `TypedArray`s instead of `DataView`s, and so engines were incentivized to focus on performance of `TypedArray`s.
+[`DataView`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) 是在 JavaScript 中访问底层内存的两种方式之一，另一种方式是使用 [`TypedArray`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray)。 在这之前，V8 对 `DataView` 所做的优化远逊于 `TypedArray`，导致在图像处理密集型或解码/编码二进制数据等任务中，使用 `DataView` 的程序性能相对较差。造成这种现象主要是历史原因, 例如 [asm.js](http://asmjs.org/) 在底层实现中选择了 `TypedArray`s 而不是 `DataView`s, 因此 V8 更专注于优化 `TypedArray`s 的性能.
 
-Because of the performance penalty, JavaScript developers such as the Google Maps team decided to avoid `DataView`s and rely on `TypedArray`s instead, at the cost of increased code complexity. This article explains how we brought `DataView` performance to match — and even surpass — equivalent `TypedArray` code in [V8 v6.9](/blog/v8-release-69), effectively making `DataView` usable for performance-critical real-world applications.
+由于会导致性能下降，Google Maps 等团队中的 JavaScript 开发者决定避免使用 `DataView`s，转而使用 `TypedArray`s，但是这样做的会使代码复杂性增加。 在本篇文章中，我们将着重阐述 [V8 v6.9](/blog/v8-release-69) 如何优化 `DataView` 的性能，来让它拥有可以与 `TypedArray` 匹敌的性能，并能够被应用于真实的生产环境中。
 
-## Background
+## 背景 {#background}
 
-Since the introduction of ES2015, JavaScript has supported reading and writing data in raw binary buffers called [`ArrayBuffer`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer). `ArrayBuffer`s cannot be directly accessed; rather, programs must use a so-called *array buffer view* object that can be either a `DataView` or a `TypedArray`.
+ES2015 推出之后，JavaScript 开始支持在原始二进制缓冲区中读取和写入数据，这个缓冲区被称为 [`ArrayBuffer`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) 。`ArrayBuffer`s 无法通过程序直接访问, 我们需要使用*数组缓冲区视图*对象来间接访问，而 `DataView` 和 `TypedArray` 就是两种数组缓冲区视图对象。
 
-`TypedArray`s allow programs to access the buffer as an array of uniformly typed values, such as an `Int16Array` or a `Float32Array`.
+`TypedArray` 允许程序以统一的类型数组的形式访问缓冲区，例如 `Int16Array` 或 `Float32Array` 。
 
 ```js
 const buffer = new ArrayBuffer(32);
@@ -36,7 +36,7 @@ console.log(array);
 // → [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225]
 ```
 
-On the other hand, `DataView`s allow for more fine-grained data access. They let the programmer choose the type of values read from and written to the buffer by providing specialized getters and setters for each number type, making them useful for serializing data structures.
+另一方面，`DataView` 则允许更细粒度的数据访问。 我们可以通过为每种值类型提供专门的 getter 和 setter 来选择从缓冲区读取和写入的值的类型，这使得 `DateView` 可用于序列化数据结构。
 
 ```js
 const buffer = new ArrayBuffer(32);
@@ -47,31 +47,31 @@ const person = { age: 42, height: 1.76 };
 view.setUint8(0, person.age);
 view.setFloat64(1, person.height);
 
-console.log(view.getUint8(0)); // Expected output: 42
-console.log(view.getFloat64(1)); // Expected output: 1.76
+console.log(view.getUint8(0)); // 期望输出: 42
+console.log(view.getFloat64(1)); // 期望输出: 1.76
 ```
 
-Moreover, `DataView`s also allow the choice of the endianness of the data storage, which can be useful when receiving data from external sources such as the network, a file, or a GPU.
+此外，`DataView` 还允许开发者选择数据存储的字节顺序，这点在从外部源（如网络，文件或 GPU 中）接收数据时非常有用。
 
 ```js
 const buffer = new ArrayBuffer(32);
 const view = new DataView(buffer);
 
-view.setInt32(0, 0x8BADF00D, true); // Little-endian write.
-console.log(view.getInt32(0, false)); // Big-endian read.
-// Expected output: 0x0DF0AD8B (233876875)
+view.setInt32(0, 0x8BADF00D, true); // 小端序写入.
+console.log(view.getInt32(0, false)); // 大端序读出.
+// 期望输出: 0x0DF0AD8B (233876875)
 ```
 
-An efficient `DataView` implementation has been a feature request for a long time (see [this bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=225811) from over 5 years ago), and we are happy to announce that DataView performance is now on par!
+很长时间以来，实现一个高效的 `DataView` 的呼声一直很高（参见5年前的 [bug 报告](https://bugs.chromium.org/p/chromium/issues/detail?id=225811))，今天，我们很高兴地宣布： DataView 的性能现已经得到大幅提升！
 
-## Legacy runtime implementation
+## 传统的运行时实现 {#implemention}
 
-Until recently, the `DataView` methods used to be implemented as built-in C++ runtime functions in V8. This is very costly, because each call would require an expensive transition from JavaScript to C++ (and back).
+在此之前，`DataView` 方法在 V8 中是内置的 C++ 运行时函数。这种函数的调用成本非常高昂，因为每一次跨语言调用，我们都需要在 C++ 和 JavaScript 之间进行信息的转换。
 
-In order to investigate the actual performance cost incurred by this implementation, we set up a performance benchmark that compares the native `DataView` getter implementation with a JavaScript wrapper simulating `DataView` behavior. This wrapper uses an `Uint8Array` to read data byte by byte from the underlying buffer, and then computes the return value from those bytes. Here is, for example, the function for reading little-endian 32-bit unsigned integer values:
+为了研究这个实现实际的性能损耗，我们构建了一个性能基准测试，将原生的 `DataView` getter 实现与模拟 `DataView` 行为的 JavaScript 包装函数进行比较。这个包装函数使用 `Uint8Array` 从底层缓冲区逐字节读取数据，然后利用这些字节计算出返回值。下面是读取小端序32位无符号整数值的函数：
 
 ```js
-function LittleEndian(buffer) { // Simulate little-endian DataView reads.
+function LittleEndian(buffer) { // 模拟小端序的 DataView 数据读取.
   this.uint8View_ = new Uint8Array(buffer);
 }
 
@@ -83,24 +83,24 @@ LittleEndian.prototype.getUint32 = function(byteOffset) {
 };
 ```
 
-`TypedArray`s are already heavily optimized in V8, so they represent the performance goal that we wanted to match.
+在 V8 中，我们已经对 `TypedArray` 进行了大量的优化，因此它们的性能就是了我们想要追赶的目标。
 
 <figure>
   <img src="/_img/dataview/dataview-original.svg" alt="">
-  <figcaption>Original <code>DataView</code> performance</figcaption>
+  <figcaption>原始 <code>DataView</code> 性能</figcaption>
 </figure>
 
-Our benchmark shows that native `DataView` getter performance was as much as **4 times** slower than the `Uint8Array`-based wrapper, for both big-endian and little-endian reads.
+我们的基准测试显示，在大端序和小端序的数据存取测试中，原生 `DataView` getter 的性能均比基于 `Uint8Array` 的包装函数低了**4倍**。
 
-## Improving baseline performance
+## 提升基准性能 {#improving}
 
-Our first step in improving the performance of `DataView` objects was to move the implementation from the C++ runtime to [`CodeStubAssembler` (also known as CSA)](/blog/csa). CSA is a portable assembly language that allows us to write code directly in TurboFan’s machine-level intermediate representation (IR), and we use it to implement optimized parts of V8’s JavaScript standard library. Rewriting code in CSA bypasses the call to C++ completely, and also generates efficient machine code by leveraging TurboFan’s backend.
+想要提高 `DataView` 对象的性能，我们所做的第一步就是将它的实现从 C++ 运行时转移到 [`CodeStubAssembler`（简称CSA）](/blog/csa) 中。CSA 是一种可移植的汇编语言，它允许我们直接在 TurboFan 的机器级中间表示（IR）中编写代码，我们一般使用 CSA 来实现 V8 中 JavaScript 标准库的优化部分。在 CSA 中重写代码可以完全绕过对 C++ 的调用，并利用 TurboFan 的后端来生成高效的机器代码。
 
-However, writing CSA code by hand is cumbersome. Control flow in CSA is expressed much like in assembly, using explicit labels and `goto`s, which makes the code harder to read and understand at a glance.
+然而，手动编写 CSA 代码非常的麻烦。 CSA 中的控制流与汇编一样，使用的是显式的标签和 `goto`s，这使得代码阅读起来诘屈聱牙，晦涩难懂。
 
-In order to make it easier for developers to contribute to the optimized JavaScript standard library in V8, and to improve readability and maintainability, we started designing a new language called V8 *Torque*, that compiles down to CSA. The goal for *Torque* is to abstract away the low-level details that make CSA code harder to write and maintain, while retaining the same performance profile.
+为了使开发人员能够更容易地为 V8 JavaScript 标准库的优化做出贡献，并提高代码的可读性和可维护性，我们开始设计一种名为 V8 *Torque* 的新语言，该语言可编译为 CSA 。*Torque* 的目标是抽象出 CSA 代码中难以编写和维护的低层次细节，同时保持相同的性能表现。
 
-Rewriting the `DataView` code was an excellent opportunity to start using Torque for new code, and helped provide the Torque developers with a lot of feedback about the language. This is what the `DataView`’s `getUint32()` method looks like, written in Torque:
+重写 `DataView` 的代码是个尝试使用 Torque 的绝佳机会，并且可以向 Torque 的开发者提供许多相关的反馈。下面这个就是用 Torque 编写的 `getUint32()` 函数：
 
 ```torque
 macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
@@ -124,7 +124,7 @@ macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
 }
 ```
 
-Moving the `DataView` methods to Torque already showed a **3× improvement** in performance, but did not quite match `Uint8Array`-based wrapper performance yet.
+将 `DataView` 的方法实现转移到 Torque 上已经在性能上有了**3倍**的改进，但是还是无法与基于 `Uint8Array` 的包装函数相媲美。
 
 <figure>
   <img src="/_img/dataview/dataview-torque.svg" alt="">
