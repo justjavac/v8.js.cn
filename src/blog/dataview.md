@@ -1,5 +1,5 @@
 ---
-title: 'Improving `DataView` performance in V8'
+title: '在 V8 中 提升 `DataView` 的性能'
 author: 'Théotime Grohens, <i lang="fr">le savant de Data-Vue</i>, and Benedikt Meurer ([@bmeurer](https://twitter.com/bmeurer)), professional performance pal'
 avatars:
   - 'benedikt-meurer'
@@ -7,18 +7,22 @@ date: 2018-09-18 11:20:37
 tags:
   - ECMAScript
   - benchmarks
-description: 'V8 v6.9 bridges the performance gap between DataView and equivalent TypedArray code, effectively making DataView usable for performance-critical real-world applications.'
+description: 'V8 v6.9 弥补了 DataView 和等效的 TypedArray 代码之间的性能差距，使 DataView 可用于性能敏感的应用程序。'
 tweet: '1041981091727466496'
+cn:
+  author: '嘤嘤 ([@monkingxue](https://www.zhihu.com/people/turbe-xue))，不会写小程序'
+  avatars:
+    - monkingxue
 ---
-[`DataView`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) are one of the two possible ways to do low-level memory accesses in JavaScript, the other one being [`TypedArray`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray). Up until now, `DataView`s were much less optimized than `TypedArray`s in V8, resulting in lower performance on tasks such as graphics-intensive workloads or when decoding/encoding binary data. The reasons for this have been mostly historical choices, like the fact that [asm.js](http://asmjs.org/) chose `TypedArray`s instead of `DataView`s, and so engines were incentivized to focus on performance of `TypedArray`s.
+[`DataView`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView) 是在 JavaScript 中访问底层内存的两种方式之一，另一种方式是使用 [`TypedArray`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray)。 在这之前，V8 对 `DataView` 所做的优化远逊于 `TypedArray`，导致在图像处理密集型或解码/编码二进制数据等任务中，使用 `DataView` 的程序性能相对较差。造成这种现象主要是历史原因, 例如 [asm.js](http://asmjs.org/) 在底层实现中选择了 `TypedArray` 而不是 `DataView`, 因此 V8 更专注于优化 `TypedArray` 的性能.
 
-Because of the performance penalty, JavaScript developers such as the Google Maps team decided to avoid `DataView`s and rely on `TypedArray`s instead, at the cost of increased code complexity. This article explains how we brought `DataView` performance to match — and even surpass — equivalent `TypedArray` code in [V8 v6.9](/blog/v8-release-69), effectively making `DataView` usable for performance-critical real-world applications.
+由于会导致性能下降，Google Maps 等团队中的 JavaScript 开发者决定避免使用 `DataView`，转而使用 `TypedArray`，但是这样做会使代码复杂性增加。 在本篇文章中，我们将着重阐述 [V8 v6.9](/blog/v8-release-69) 如何优化 `DataView` 的性能，来让它拥有可以与 `TypedArray` 匹敌的性能，并能够被应用于真实的生产环境中。
 
-## Background
+## 背景 {#background}
 
-Since the introduction of ES2015, JavaScript has supported reading and writing data in raw binary buffers called [`ArrayBuffer`s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer). `ArrayBuffer`s cannot be directly accessed; rather, programs must use a so-called *array buffer view* object that can be either a `DataView` or a `TypedArray`.
+ES2015 推出之后，JavaScript 开始支持在原始二进制缓冲区中读取和写入数据，这个缓冲区被称为 [`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) 。`ArrayBuffer` 无法通过程序直接访问, 我们需要使用*数组缓冲区视图*对象来间接访问，而 `DataView` 和 `TypedArray` 就是两种数组缓冲区视图对象。
 
-`TypedArray`s allow programs to access the buffer as an array of uniformly typed values, such as an `Int16Array` or a `Float32Array`.
+`TypedArray` 允许程序以统一的类型数组的形式访问缓冲区，例如 `Int16Array` 或 `Float32Array` 。
 
 ```js
 const buffer = new ArrayBuffer(32);
@@ -32,7 +36,7 @@ console.log(array);
 // → [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225]
 ```
 
-On the other hand, `DataView`s allow for more fine-grained data access. They let the programmer choose the type of values read from and written to the buffer by providing specialized getters and setters for each number type, making them useful for serializing data structures.
+另一方面，`DataView` 则允许更细粒度的数据访问。 我们可以通过为每种值类型提供专门的 getter 和 setter 来选择从缓冲区读取和写入的值的类型，这使得 `DateView` 可用于序列化数据结构。
 
 ```js
 const buffer = new ArrayBuffer(32);
@@ -43,31 +47,31 @@ const person = { age: 42, height: 1.76 };
 view.setUint8(0, person.age);
 view.setFloat64(1, person.height);
 
-console.log(view.getUint8(0)); // Expected output: 42
-console.log(view.getFloat64(1)); // Expected output: 1.76
+console.log(view.getUint8(0)); // 期望输出: 42
+console.log(view.getFloat64(1)); // 期望输出: 1.76
 ```
 
-Moreover, `DataView`s also allow the choice of the endianness of the data storage, which can be useful when receiving data from external sources such as the network, a file, or a GPU.
+此外，`DataView` 还允许开发者选择数据存储的字节顺序，这点在从外部源（如网络，文件或 GPU 中）接收数据时非常有用。
 
 ```js
 const buffer = new ArrayBuffer(32);
 const view = new DataView(buffer);
 
-view.setInt32(0, 0x8BADF00D, true); // Little-endian write.
-console.log(view.getInt32(0, false)); // Big-endian read.
-// Expected output: 0x0DF0AD8B (233876875)
+view.setInt32(0, 0x8BADF00D, true); // 小端序写入.
+console.log(view.getInt32(0, false)); // 大端序读出.
+// 期望输出: 0x0DF0AD8B (233876875)
 ```
 
-An efficient `DataView` implementation has been a feature request for a long time (see [this bug report](https://bugs.chromium.org/p/chromium/issues/detail?id=225811) from over 5 years ago), and we are happy to announce that DataView performance is now on par!
+很长时间以来，实现一个高效的 `DataView` 的呼声一直很高（参见5年前的 [bug 报告](https://bugs.chromium.org/p/chromium/issues/detail?id=225811))，今天，我们很高兴地宣布： DataView 的性能现已经得到大幅提升！
 
-## Legacy runtime implementation
+## 传统的运行时实现 {#legacy-runtime-implemention}
 
-Until recently, the `DataView` methods used to be implemented as built-in C++ runtime functions in V8. This is very costly, because each call would require an expensive transition from JavaScript to C++ (and back).
+在此之前，`DataView` 方法在 V8 中是内置的 C++ 运行时函数。这种函数的调用成本非常高昂，因为每一次跨语言调用，我们都需要在 C++ 和 JavaScript 之间进行信息的转换。
 
-In order to investigate the actual performance cost incurred by this implementation, we set up a performance benchmark that compares the native `DataView` getter implementation with a JavaScript wrapper simulating `DataView` behavior. This wrapper uses an `Uint8Array` to read data byte by byte from the underlying buffer, and then computes the return value from those bytes. Here is, for example, the function for reading little-endian 32-bit unsigned integer values:
+为了研究这个实现实际的性能损耗，我们构建了一个性能基准测试，将原生的 `DataView` getter 实现与模拟 `DataView` 行为的 JavaScript 包装函数进行比较。这个包装函数使用 `Uint8Array` 从底层缓冲区逐字节读取数据，然后利用这些字节计算出返回值。下面是读取小端序32位无符号整数值的函数：
 
 ```js
-function LittleEndian(buffer) { // Simulate little-endian DataView reads.
+function LittleEndian(buffer) { // 模拟小端序的 DataView 数据读取.
   this.uint8View_ = new Uint8Array(buffer);
 }
 
@@ -79,24 +83,24 @@ LittleEndian.prototype.getUint32 = function(byteOffset) {
 };
 ```
 
-`TypedArray`s are already heavily optimized in V8, so they represent the performance goal that we wanted to match.
+在 V8 中，我们已经对 `TypedArray` 进行了大量的优化，因此它们的性能就是了我们想要追赶的目标。
 
 <figure>
   <img src="/_img/dataview/dataview-original.svg" alt="">
-  <figcaption>Original <code>DataView</code> performance</figcaption>
+  <figcaption>原始 <code>DataView</code> 性能</figcaption>
 </figure>
 
-Our benchmark shows that native `DataView` getter performance was as much as **4 times** slower than the `Uint8Array`-based wrapper, for both big-endian and little-endian reads.
+我们的基准测试显示，在大端序和小端序的数据存取测试中，原生 `DataView` getter 的性能均比基于 `Uint8Array` 的包装函数低了**4倍**。
 
-## Improving baseline performance
+## 提升基准性能 {#improving-baseline-performance}
 
-Our first step in improving the performance of `DataView` objects was to move the implementation from the C++ runtime to [`CodeStubAssembler` (also known as CSA)](/blog/csa). CSA is a portable assembly language that allows us to write code directly in TurboFan’s machine-level intermediate representation (IR), and we use it to implement optimized parts of V8’s JavaScript standard library. Rewriting code in CSA bypasses the call to C++ completely, and also generates efficient machine code by leveraging TurboFan’s backend.
+想要提高 `DataView` 对象的性能，我们所做的第一步就是将它的实现从 C++ 运行时转移到 [`CodeStubAssembler`（简称 CSA）](/blog/csa) 中。CSA 是一种可移植的汇编语言，它允许我们直接在 TurboFan 的机器级中间表示（IR）中编写代码，我们一般使用 CSA 来实现 V8 中 JavaScript 标准库的优化部分。在 CSA 中重写代码可以完全绕过对 C++ 的调用，并利用 TurboFan 的后端来生成高效的机器代码。
 
-However, writing CSA code by hand is cumbersome. Control flow in CSA is expressed much like in assembly, using explicit labels and `goto`s, which makes the code harder to read and understand at a glance.
+然而，手动编写 CSA 代码非常的麻烦。 CSA 中的控制流与汇编一样，使用的是显式的标签和 `goto`，这使得代码阅读起来诘屈聱牙，晦涩难懂。
 
-In order to make it easier for developers to contribute to the optimized JavaScript standard library in V8, and to improve readability and maintainability, we started designing a new language called V8 *Torque*, that compiles down to CSA. The goal for *Torque* is to abstract away the low-level details that make CSA code harder to write and maintain, while retaining the same performance profile.
+为了使开发人员能够更容易地为 V8 JavaScript 标准库的优化做出贡献，并提高代码的可读性和可维护性，我们开始设计一种名为 V8 *Torque* 的新语言，该语言可编译为 CSA 。*Torque* 的目标是抽象出 CSA 代码中难以编写和维护的低层次细节，同时保持相同的性能表现。
 
-Rewriting the `DataView` code was an excellent opportunity to start using Torque for new code, and helped provide the Torque developers with a lot of feedback about the language. This is what the `DataView`’s `getUint32()` method looks like, written in Torque:
+重写 `DataView` 的代码是个尝试使用 Torque 的绝佳机会，并且可以向 Torque 的开发者提供许多相关的反馈。下面这个就是用 Torque 编写的 `getUint32()` 函数：
 
 ```torque
 macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
@@ -120,56 +124,56 @@ macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
 }
 ```
 
-Moving the `DataView` methods to Torque already showed a **3× improvement** in performance, but did not quite match `Uint8Array`-based wrapper performance yet.
+将 `DataView` 的方法实现转移到 Torque 上已经在性能上有了**3倍**的提升，但还是无法与基于 `Uint8Array` 的包装函数相媲美。
 
 <figure>
   <img src="/_img/dataview/dataview-torque.svg" alt="">
-  <figcaption>Torque <code>DataView</code> performance</figcaption>
+  <figcaption> Torque 编写的 <code>DataView</code> 性能 </figcaption>
 </figure>
 
-## Optimizing for TurboFan
+## 优化 TurboFan {#optimizing-for-turbofan}
 
-When JavaScript code gets hot, we compile it using our TurboFan optimizing compiler, in order to generate highly-optimized machine code that runs more efficiently than interpreted bytecode.
+当 JavaScript 代码被执行多次后，我们使用 TurboFan 优化编译器对其进行二次编译，以生成高度优化的机器代码，该机器码比解释运行的字节码运行效率更高。
 
-TurboFan works by translating the incoming JavaScript code into an internal graph representation (more precisely, [a “sea of nodes”](https://darksi.de/d.sea-of-nodes/)). It starts with high-level nodes that match the JavaScript operations and semantics, and gradually refines them into lower and lower level nodes, until it finally generates machine code.
+TurboFan 的工作原理是将传入的 JavaScript 代码转换为内部的图表示（更确切地说，这种内部表示叫 [“sea of nodes”](https://darksi.de/d.sea-of-nodes/) ）。它从 JavaScript 操作和语义的高级节点开始，逐渐将高级节点细化为更底层的低级节点，直到最终生成机器代码。
 
-In particular, a function call, such as calling one of the `DataView` methods, is internally represented as a `JSCall` node, which eventually boils down to an actual function call in the generated machine code.
+例如，函数调用（例如调用一个 `DataView` 的方法）在 TurboFan 内部表示为 `JSCall` 节点，并最终归约成机器代码中实际的函数调用。
 
-However, TurboFan allows us to check whether the `JSCall` node is actually a call to a known function, for example one of the builtin functions, and inline this node in the IR. This means that the complicated `JSCall` gets replaced at compile-time by a subgraph that represents the function. This allows TurboFan to optimize the inside of the function in subsequent passes as part of a broader context, instead of on its own, and most importantly to get rid of the costly function call.
+但是，TurboFan 允许我们检查 `JSCall` 节点是否是对已知函数的调用，例如调用内置函数就是其中一种情况。如果是的话，我们可以在 IR 中内联该函数调用。这意味着复杂的 `JSCall` 在编译时被可以被内联展开， 从而使 TurboFan 可以在之后的流程中在更广泛的上下文中直接优化这个函数内部的代码。最重要的是，我们可以借此避免昂贵的函数调用开销。
 
 <figure>
   <img src="/_img/dataview/dataview-turbofan-initial.svg" alt="">
-  <figcaption>Initial TurboFan <code>DataView</code> performance</figcaption>
+  <figcaption> 最初的 TurboFan <code>DataView</code> 性能 </figcaption>
 </figure>
 
-Implementing TurboFan inlining finally allowed us to match, and even exceed, the performance of our `Uint8Array` wrapper, and be **8 times** as fast as the former C++ implementation.
+实现了 TurboFan 的函数内联优化使 `DataView` 的性能可以与 `Uint8Array` 包装函数掰一掰手腕，并且比最初的 C++ 实现快 **8倍**。
 
-## Further TurboFan optimizations
+## 进一步的 TurboFan 优化 {#further-turbofan-optimizations}
 
-Looking at the machine code generated by TurboFan after inlining the `DataView` methods, there was still room for some improvement. The first implementation of those methods tried to follow the standard pretty closely, and threw errors when the spec indicates so (for example, when trying to read or write out of the bounds of the underlying `ArrayBuffer`).
+在内联 `DataView` 方法后，我们查看了 TurboFan 生成的机器代码，发现仍然有一些改进的余地。 `DataView` 方法的第一版实现正试图贴近标准规范，并在指定的位置抛出错误（例如，当开发者试图读取或写入超出底层 `ArrayBuffer` 的边界时）。
 
-However, the code that we write in TurboFan is meant to be optimized to be as fast as possible for the common, hot cases — it doesn’t need to support every possible edge case. By removing all the intricate handling of those errors, and just deoptimizing back to the baseline Torque implementation when we need to throw, we were able to reduce the size of the generated code by around 35%, generating a quite noticeable speedup, as well as considerably simpler TurboFan code.
+但是，我们在 TurboFan 中编写的代码主要是为了在面对常见的执行情况时，可以尽快进行代码优化 —— 它不需要支持所有可能的边缘情况。因此我们可以删除不必要的错误处理，取而代之的是，在需要抛出错误时只是简单地回退至非优化实现的 Torque 代码（去优化），这样能够将生成的代码的大小减少大约 35％，并显著提升代码执行速度，以及生成更简洁的 TurboFan 代码。
 
-Following up on this idea of being as specialized as possible in TurboFan, we also removed support for indices or offsets that are too large (outside of Smi range) inside the TurboFan-optimized code. This allowed us to get rid of handling of the float64 arithmetic that is needed for offsets that do not fit into a 32-bit value, and to avoid storing large integers on the heap.
+沿着这个在 TurboFan 中尽可能特化的想法，我们还移除了对优化代码中过大（Smi 之外）的索引或偏移的支持。这使得我们能够摆脱对 float64 算法中不合适的 32 位偏移的处理，并避免在堆上存储大整数。
 
-Compared to the initial TurboFan implementation, this more than doubled the `DataView` benchmark score. `DataView`s are now up to 3 times as fast as the `Uint8Array` wrapper, and around **16 times as fast** as our original `DataView` implementation!
+与最初的 TurboFan 实现相比，这项优化使得 `DataView` 基准测试分数翻了一倍还多。`DataView` 目前的性能是 `Uint8Array` 包装函数的 3 倍，更比原始 `DataView` 运行速度的快了 **16 倍**之多！
 
 <figure>
   <img src="/_img/dataview/dataview-turbofan-final.svg" alt="">
-  <figcaption>Final TurboFan <code>DataView</code> performance</figcaption>
+  <figcaption> 最终的 TurboFan <code>DataView</code> 性能 </figcaption>
 </figure>
 
-## Impact
+## 影响 {#impact}
 
-We’ve evaluated the performance impact of the new implementation on some real-world examples, on top of our own benchmark.
+基于上面的基准测试，我们已经评估了 `DataView` 的新实现在一些真实示例中的性能影响。
 
-`DataView`s are often used when decoding data encoded in binary formats from JavaScript. One such binary format is [FBX](https://en.wikipedia.org/wiki/FBX), a format that is used for exchanging 3D animations. We’ve instrumented the FBX loader of the popular [three.js](https://threejs.org/) JavaScript 3D library, and measured a 10% (around 80 ms) reduction in its execution time.
+`DataView` 经常被用来解码以二进制格式编码的数据。 例如，有一种二进制格式叫 [FBX](https://en.wikipedia.org/wiki/FBX)，常被用于交换 3D 动画。我们对一个很受欢迎的 3D JavaScript 库 [three.js](https://threejs.org/) 的 FBX 加载程序进行了检测，发现其代码执行时间缩短了10％（约80毫秒）。
 
-We compared the overall performance of `DataView`s against `TypedArray`s. We found that our new `DataView` implementation provides almost the same performance as `TypedArray`s when accessing data aligned in the native endianness (little-endian on Intel processors), bridging much of the performance gap and making `DataView`s a practical choice in V8.
+我们将 `DataView` 的整体性能与 `TypedArray` 进行了比较，结果发现新的 `DataView` 实现与 `TypedArray` 在性能方面不分伯仲。尤其在访问以原生字节顺序排列的数据（英特尔处理器上的小端）时，新实现弥补上了大多数的性能差距，并使`DataView`成为了 V8 上的实用之选。
 
 <figure>
   <img src="/_img/dataview/dataview-vs-typedarray.svg" alt="">
-  <figcaption><code>DataView</code> vs. <code>TypedArray</code> peak performance</figcaption>
+  <figcaption><code>DataView</code> vs. <code>TypedArray</code> 峰值性能</figcaption>
 </figure>
 
-We hope that you’re now able to start using `DataView`s where it makes sense, instead of relying on `TypedArray` shims. Please send us feedback on your `DataView` uses! You can reach us [via our bug tracker](https://crbug.com/v8/new), via mail to <v8-users@googlegroups.com>, or via [@v8js on Twitter](https://twitter.com/v8js).
+我们诚挚地希望开发者可以尝试使用新的 `DataView`，而不是依赖于用 `TypedArray` 实现的 shim。 请向我们发送有关您使用 `DataView` 的反馈！ 您可以使用我们的 [错误跟踪器](https://crbug.com/v8/new) ，或将邮件发送到<v8-users@googlegroups.com>，或在 Twitter 上 [@ v8js](https：//twitter.com/v8js)。
