@@ -15,3 +15,4 @@ deploy:
 branches:
   except:
   - gh-pages
+  - official
