@@ -3,6 +3,8 @@ title: '<i>Fast properties</i> in V8'
 author: 'Camillo Bruni ([@camillobruni](https://twitter.com/camillobruni)), also author of [“Fast `for`-`in`”](/blog/fast-for-in)'
 avatars:
   - 'camillo-bruni'
+cn:
+  author: 'CRIMX ([@crimx](https://github.com/crimx))'
 date: 2017-08-30 13:33:37
 tags:
   - internals
