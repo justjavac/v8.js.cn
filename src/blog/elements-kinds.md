@@ -27,7 +27,6 @@ JavaScript 对象可以具有与它们相关联的任意属性。对象属性的
 
 ## 常见的元素种类 {#common-elements-kinds}
 
-
 运行 JavaScript 代码时，V8 会跟踪每个数组所包含的元素。这些信息可以帮助 V8 优化数组元素的操作。例如，当您在数组上调用 `reduce`，`map` 或 `forEach` 时，V8 可以根据数组包含哪些元素来优化这些操作。
 
 拿这个数组举例：
@@ -179,6 +178,7 @@ for (let index = 0; index < items.length; index++) {
 ```
 
 当你循环的集合是可迭代的（数组和 `NodeList`），还有更好的选择：只需要使用 `for-of`。
+
 ```js
 for (const item of items) {
   doSomething(item);
