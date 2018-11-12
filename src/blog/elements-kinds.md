@@ -1,5 +1,5 @@
 ---
-title: 'V8 中的<i>元素种类</i>及性能优化'
+title: 'V8 中的元素种类及性能优化'
 author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
 avatars:
   - 'mathias-bynens'
