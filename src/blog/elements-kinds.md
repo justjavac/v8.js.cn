@@ -1,5 +1,5 @@
 ---
-title: 'V8 中的<i>元素种类</i>及性能优化'
+title: 'V8 中的元素种类及性能优化'
 author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
 avatars:
   - 'mathias-bynens'
@@ -26,7 +26,6 @@ JavaScript 对象可以具有与它们相关联的任意属性。对象属性的
 尽管这些内部结构从未直接暴露给 JavaScript 开发人员，但它们解释了为什么某些代码模式比其他代码模式更快。
 
 ## 常见的元素种类 {#common-elements-kinds}
-
 
 运行 JavaScript 代码时，V8 会跟踪每个数组所包含的元素。这些信息可以帮助 V8 优化数组元素的操作。例如，当您在数组上调用 `reduce`，`map` 或 `forEach` 时，V8 可以根据数组包含哪些元素来优化这些操作。
 
@@ -179,6 +178,7 @@ for (let index = 0; index < items.length; index++) {
 ```
 
 当你循环的集合是可迭代的（数组和 `NodeList`），还有更好的选择：只需要使用 `for-of`。
+
 ```js
 for (const item of items) {
   doSomething(item);
