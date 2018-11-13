@@ -1,5 +1,5 @@
 ---
-title: 'Faster async functions and promises'
+title: '更快的异步函数和 Promise'
 author: 'Maya Lekova ([@MayaLekova](https://twitter.com/MayaLekova)), always-awaiting anticipator, and Benedikt Meurer ([@bmeurer](https://twitter.com/bmeurer)), professional performance promiser'
 avatars:
   - 'maya-lekova'
@@ -9,22 +9,25 @@ tags:
   - ECMAScript
   - benchmarks
   - presentations
-description: 'Faster and easier-to-debug async functions and promises are coming to V8 v7.2 / Chrome 72.'
-tweet: '1062000102909169670'
+description: '更快的、更容易调试的 async 异步函数和 Promise 即将随 V8 v7.2 / Chrome 72 发布'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
+  avatars:
+    - justjavac
 ---
-Asynchronous processing in JavaScript traditionally had a reputation for not being particularly fast. To make matters worse, debugging live JavaScript applications — in particular Node.js servers — is no easy task, _especially_ when it comes to async programming. Luckily the times, they are a-changin’. This article explores how we optimized async functions and promises in V8 (and to some extent in other JavaScript engines as well), and describes how we improved the debugging experience for async code.
+JavaScript 中的异步处理历来因其不是特别快而闻名（:p）。更糟糕的是，调试实时 JavaScript 应用程序 - 例如 Node.js 服务器 - 并非易事，尤其是涉及到异步编程时更甚。幸运的是，现在有了一个重大的改变。本文探讨了我们如何在 V8（甚至其它 JavaScript 引擎中）中优化异步函数和 promise，并描述了我们如何改进异步代码的调试体验。
 
-**Note:** If you prefer watching a presentation over reading articles, then enjoy the video below! If not, skip the video and read on.
+**注：**如果您更喜欢观看演示文稿，请欣赏下面的视频！如果没有，请跳过视频并继续阅读。
 
 <figure>
   <iframe src="https://www.youtube.com/embed/DFP5DKDQfOc" width="640" height="360"></iframe>
 </figure>
 
-## A new approach to async programming
+## 一种新的异步编程方法 {#a-new-approach-to-async-programming}
 
-### From callbacks to promises to async functions
+### 从回调到 Promise 到异步函数 {#from-callbacks-to-promises-to-async-functions}
 
-Before promises were part of the JavaScript language, callback-based APIs were commonly used for asynchronous code, especially in Node.js. Here’s an example:
+在 promise 被加入到 JavaScript 语言之前，异步代码一般使用基于回调的 API，尤其是在 Node.js 中。这是一个例子：
 
 ```js
 function handler(done) {
@@ -41,9 +44,9 @@ function handler(done) {
 }
 ```
 
-The specific pattern of using deeply-nested callbacks in this manner is commonly referred to as _“callback hell”_, because it makes the code less readable and hard to maintain.
+当嵌套回调变的越来越深以后，我们称这种模式为“回调地狱”，因为它使代码不易读取且难以维护。
 
-Luckily, now that promises are part of the JavaScript language, the same code could be written in a more elegant and maintainable manner:
+幸运的是，现在 promise 成了 JavaScript 语言的一部分，相同的代码可以以更优雅和可维护的方式编写：
 
 ```js
 function handler() {
@@ -57,7 +60,7 @@ function handler() {
 }
 ```
 
-Even more recently, JavaScript gained support for [async functions](https://developers.google.com/web/fundamentals/primers/async-functions). The above asynchronous code can now be written in a way that looks very similar to synchronous code:
+最近，JavaScript 开始支持了 [异步函数](https://developers.google.com/web/fundamentals/primers/async-functions)。现在可以用与同步代码非常相似的方式编写上述异步代码：
 
 ```js
 async function handler() {
@@ -69,11 +72,11 @@ async function handler() {
 }
 ```
 
-With async functions, the code becomes more succinct, and the control and data flow are a lot easier to follow, despite the fact that the execution is still asynchronous. (Note that the JavaScript execution still happens in a single thread, meaning async functions don’t end up creating physical threads themselves.)
+使用异步函数，代码变得更加简洁，并且数据流更容易控制，尽管执行仍然是异步的。（请注意，JavaScript 执行仍然发生在一个线程中，这意味着异步函数本身不会创建真实的物理线程。）
 
-### From event listener callbacks to async iteration
+### 从事件监听回调到异步迭代器 {#from-event-listener-callbacks-to-async-iteration}
 
-Another asynchronous paradigm that’s especially common in Node.js is that of [`ReadableStream`s](https://nodejs.org/api/stream.html#stream_readable_streams). Here’s an example:
+另一个在 Node.js 中特别常见的异步范例是 [`ReadableStream`](https://nodejs.org/api/stream.html#stream_readable_streams)。这是一个例子：
 
 ```js
 const http = require('http');
@@ -91,9 +94,9 @@ http.createServer((req, res) => {
 }).listen(1337);
 ```
 
-This code can be a little hard to follow: the incoming data is processed in chunks that are only accessible within callbacks, and the end-of-stream signaling happens inside a callback too. It’s easy to introduce bugs here when you don’t realize that the function terminates immediately and that the actual processing has to happen in the callbacks.
+这段代码有点难以理解：传入的数据只能在回调函数中以 chunks 的方式处理，并且流的结束信号也在回调函数内发生。如果你没有意识到函数其实已经立即终止了，并且必须在回调函数中进行实际处理，那么很容易在这里引入错误。
 
-Fortunately, a cool new ES2018 feature called [async iteration](http://2ality.com/2016/10/asynchronous-iteration.html) can simplify this code:
+幸运的是，一个很酷的新的 ES2018 特性[异步迭代器 async iteration](http://2ality.com/2016/10/asynchronous-iteration.html) 可以简化此代码：
 
 ```js
 const http = require('http');
@@ -114,49 +117,49 @@ http.createServer(async (req, res) => {
 }).listen(1337);
 ```
 
-Instead of putting the logic that deals with the actual request processing into two different callbacks — the `'data'` and the `'end'` callback — we can now put everything into a single async function instead, and use the new `for await…of` loop to iterate over the chunks asynchronously. We also added a `try-catch` block to avoid the `unhandledRejection` problem[^1].
+现在我们不需要将实际处理的逻辑分别放在两个不同的回调函数中 - `'data'` 和 `'end'`。我们可以把这些都写成一个单一的异步函数来处理，并使用新的 `for await…of` 循环来异步的遍历数据块。我们还添加了 `try-catch` 块来防止出现 'unhandledRejection' 异常[^1]。
 
-[^1]: Thanks to [Matteo Collina](https://twitter.com/matteocollina) for pointing us to [this issue](https://github.com/mcollina/make-promises-safe/blob/master/README.md#the-unhandledrejection-problem).
+[^1]: 感谢 [Matteo Collina](https://twitter.com/matteocollina) 为此提交的 [issue](https://github.com/mcollina/make-promises-safe/blob/master/README.md#the-unhandledrejection-problem).
 
-You can already use these new features in production today! Async functions are **fully supported starting with Node.js 8 (V8 v6.2 / Chrome 62)**, and async iterators and generators are **fully supported starting with Node.js 10 (V8 v6.8 / Chrome 68)**!
+现在已经可以在生产环境中使用这些新函数了！从 **Node.js 8（V8 v6.2 / Chrome 62）开始已经完全支持**异步函数，并且从 **Node.js 10（V8 v6.8 / Chrome 68）开始已经完全支持**异步迭代器和生成器！
 
-## Async performance improvements
+## 异步性能改进 {#async-performance-improvements}
 
-We’ve managed to improve the performance of asynchronous code significantly between V8 v5.5 (Chrome 55 & Node.js 7) and V8 v6.8 (Chrome 68 & Node.js 10). We reached a level of performance where developers can safely use these new programming paradigms without having to worry about speed.
+我们已经成功地在 V8 v5.5（Chrome 55 和 Node.js 7）和 V8 v6.8（Chrome 68 和 Node.js 10）之间显着提高了异步代码的性能。我们已经使引擎达到了一定的性能水平，以便开发者可以安全地使用这些新的编程范例，而无需担心速度。
 
 <figure>
   <img src="/_img/fast-async/doxbee-benchmark.svg" alt="">
 </figure>
 
-The above chart shows the [doxbee benchmark](https://github.com/v8/promise-performance-tests/blob/master/lib/doxbee-async.js), which measures performance of promise-heavy code. Note that the charts visualize execution time, meaning lower is better.
+上图是 [doxbee benchmark](https://github.com/v8/promise-performance-tests/blob/master/lib/doxbee-async.js)，它评估了 Promise 的性能。请注意，图表中的执行时间越低意味着性能越好。
 
-The results on the [parallel benchmark](https://github.com/v8/promise-performance-tests/blob/master/lib/parallel-async.js), which specifically stresses the performance of [`Promise.all()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all), are even more exciting:
+[parallel benchmark](https://github.com/v8/promise-performance-tests/blob/master/lib/parallel-async.js) 的结果则更加强调了 [`Promise.all()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all) 的性能，更令人兴奋：
 
 <figure>
   <img src="/_img/fast-async/parallel-benchmark.svg" alt="">
 </figure>
 
-We’ve managed to improve `Promise.all` performance by a factor of **8×**.
+我们设法将 `Promise.all` 的性能提高了 **8** 倍。
 
-However, the above benchmarks are synthetic micro-benchmarks. The V8 team is more interested in how our optimizations affect [real-world performance of actual user code](/blog/real-world-performance).
+但是，上述基准测试是跑分测试（synthetic micro-benchmarks）。V8 团队对[真实世界的实际用户代码性能](/blog/real-world-performance)更感兴趣。
 
 <figure>
   <img src="/_img/fast-async/http-benchmarks.svg" alt="">
 </figure>
 
-The above chart visualizes the performance of some popular HTTP middleware frameworks that make heavy use of promises and `async` functions. Note that this graph shows the number of  requests/second, so unlike the previous charts, higher is better. The performance of these frameworks improved significantly between Node.js 7 (V8 v5.5) and Node.js 10 (V8 v6.8).
+上面的图表展示了一些流行的 HTTP 中间件及框架的性能，这些框架大量使用了 Promise 和 `async` 函数。请注意，此图表显示了每秒的请求数（requests/second），因此与之前的图表不同，这个图表中，柱状图越高表示越好。这些框架的性能在 Node.js 7（V8 v5.5）和 Node.js 10（V8 v6.8）之间得到了显着提升。
 
-These performance improvements are the result of three key achievements:
+这些性能改进主要得益于以下三项关键成果：
 
-- [TurboFan](/docs/turbofan), the new optimizing compiler 🎉
-- [Orinoco](/blog/orinoco), the new garbage collector 🚛
-- a Node.js 8 bug causing `await` to skip microticks 🐛
+- [TurboFan](/docs/turbofan)，新的优化编译器 🎉
+- [Orinoco](/blog/orinoco)，新的垃圾收集器 🚛
+- Node.js 8 的 bug，`await` 跳过 microticks 🐛
 
-When we [launched TurboFan](/blog/launching-ignition-and-turbofan) in [Node.js 8](https://medium.com/the-node-js-collection/node-js-8-3-0-is-now-available-shipping-with-the-ignition-turbofan-execution-pipeline-aa5875ad3367), that gave a huge performance boost across the board.
+当我们在 [Node.js 8](https://medium.com/the-node-js-collection/node-js-8-3-0-is-now-available-shipping-with-the-ignition-turbofan-execution-pipeline-aa5875ad3367) 中[推出TurboFan](/blog/launching-ignition-and-turbofan) 时，全面提升了性能。
 
-We’ve also been working on a new garbage collector, called Orinoco, which moves garbage collection work off the main thread, and thus improves request processing significantly as well.
+我们一直在研究一种新的垃圾收集器，我们称之为 Orinoco，它可以将垃圾收集工作从主线程中移除，从而显着改善了垃圾收集的请求处理。
 
-And last but not least, there was a handy bug in Node.js 8 that caused `await` to skip microticks in some cases, resulting in better performance. The bug started out as an unintended spec violation, but it later gave us the idea for an optimization. Let’s start by explaining the buggy behavior:
+最后，虽然放在后面但是并非不重要，Node.js 8 中有一个 bug 导致 `await` 在某些情况下跳过 microticks，从而产生更好的性能。这个 bug 的原因是我们违反了 es 的规范，但它后来给了我们关于优化的灵感。让我们从有缺陷的行为开始：
 
 ```js
 const p = Promise.resolve();
@@ -169,40 +172,40 @@ p.then(() => console.log('tick:a'))
  .then(() => console.log('tick:b'));
 ```
 
-The above program creates a fulfilled promise `p`, and `await`s its result, but also chains two handlers onto it. In which order would you expect the `console.log` calls to execute?
+上面的程序创建了一个状态为 fulfilled 的 Promise：`p`，然后 `await` 取得它的结果，与此同时也将后面的 2 个 `then` 函数处理程序链接到它上面。您希望以哪种顺序执行 `console.log` 调用呢？
 
-Since `p` is fulfilled, you might expect it to print `'after:await'` first and then the `'tick'`s. In fact, that’s the behavior you’d get in Node.js 8:
+既然 `p` 的状态已经是 fulfilled 了，你可能会认为首先打印 `'after:await'` 然后再打印 `'tick'`。实际上，这是 Node.js 8 中的行为：
 
 <figure>
   <img src="/_img/fast-async/await-bug-node-8.svg" alt="">
-  <figcaption>The <code>await</code> bug in Node.js 8</figcaption>
+  <figcaption>Node.js 8 的 <code>await</code> bug</figcaption>
 </figure>
 
-Although this behavior seems intuitive, it’s not correct according to the specification. Node.js 10 implements the correct behavior, which is to first execute the chained handlers, and only afterwards continue with the async function.
+虽然这种行为看起来很直观，但根据规范它并不正确。Node.js 10 实现了正确的行为，即首先执行链式处理程序，然后继续使用异步函数。
 
 <figure>
   <img src="/_img/fast-async/await-bug-node-10.svg" alt="">
-  <figcaption>Node.js 10 no longer has the <code>await</code> bug</figcaption>
+  <figcaption>Node.js 10 中不再有 <code>await</code> 的 bug</figcaption>
 </figure>
 
-This _“correct behavior”_ is arguably not immediately obvious, and was actually surprising to JavaScript developers, so it deserves some explanation. Before we dive into the magical world of promises and async functions, let’s start with some of the foundations.
+可以说，这种“正确的行为”其实并不直观，对 JavaScript 开发者来说实际上是令人惊讶的，所以值得做一些解释。在我们深入了解 Promise 和异步函数的神奇之处前，让我们从一些更加基础的情况开始。
 
 ### Tasks vs. microtasks
 
-On a high level there are _tasks_ and _microtasks_ in JavaScript. Tasks handle events like I/O and timers, and execute one at a time. Microtasks implement deferred execution for `async`/`await` and promises, and execute at the end of each task. The microtask queue is always emptied before execution returns to the event loop.
+在高层次上，JavaScript 中有 _task_ 和 _microtask_。task 用于处理 I/O 和计时器等事件，每次执行一个。microtask 为 `async`/`await` 和 Promise 实现延迟执行，并在每个 task 结束时执行。在每一个事件循环之前，microtask 队列总是被清空（执行）。
 
 <figure>
   <img src="/_img/fast-async/microtasks-vs-tasks.svg" alt="">
-  <figcaption>The difference between microtasks and tasks</figcaption>
+  <figcaption>微任务和任务之间的区别</figcaption>
 </figure>
 
-For more details, check out  Jake Archibald’s explanation of [tasks, microtasks, queues, and schedules in the browser](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/). The task model in Node.js is very similar.
+更多详细信息，请查看 Jake Archibald 对[浏览器中的 tasks、microtasks、queues 与 schedules](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/) （[中文翻译](https://hongfanqie.github.io/tasks-microtasks-queues-and-schedules/)）的解释。Node.js 中的任务模型与此非常相似。
 
-### Async functions
+### 异步函数 {#async-functions}
 
-According to MDN, an async function is a function which operates asynchronously using an implicit promise to return its result. Async functions are intended to make asynchronous code look like synchronous code, hiding some of the complexity of the asynchronous processing from the developer.
+根据 MDN，异步函数是一个使用隐式 Promise 异步操作以返回其结果的函数。异步函数旨在使异步代码看起来像同步代码，为开发者隐藏异步处理的一些复杂性。
 
-The simplest possible async function looks like this:
+最简单的异步函数如下所示：
 
 ```js
 async function computeAnswer() {
@@ -210,7 +213,7 @@ async function computeAnswer() {
 }
 ```
 
-When called it returns a promise, and you can get to its value like with any other promise.
+当这个异步函数被调用时，它返回一个 Promise，你可以像任何其他的 Promise 那样获得它的值。
 
 ```js
 const p = computeAnswer();
@@ -220,7 +223,7 @@ p.then(console.log);
 // prints 42 on the next turn
 ```
 
-You only get to the value of this promise `p` the next time microtasks are run. In other words, the above program is semantically equivalent to using `Promise.resolve` with the value:
+只有 `p` 在下次运行 microtask 时才能获得此 Promise 的值。换句话说，上面的程序在语义上等同于对值调用 `Promise.resolve`：
 
 ```js
 function computeAnswer() {
@@ -228,7 +231,7 @@ function computeAnswer() {
 }
 ```
 
-The real power of async functions comes from `await` expressions, which cause the function execution to pause until a promise is resolved, and resume after fulfillment. The value of `await` is that of the fulfilled promise. Here’s an example showing what that means:
+异步函数的真正威力来自 `await` 表达式，它会暂停函数的执行直到 Promise 状态变为 resolved，并在执行后恢复。`await` 的值是 Promise 被 fulfilled 的值。这意味着什么？下面是一个示例：
 
 ```js
 async function fetchStatus(url) {
@@ -237,7 +240,7 @@ async function fetchStatus(url) {
 }
 ```
 
-The execution of `fetchStatus` gets suspended on the `await`, and is later resumed when the `fetch` promise fulfills. This is more or less equivalent to chaining a handler onto the promise returned from `fetch`.
+`await` 暂停了函数 `fetchStatus` 的执行，稍后在 `fetch` 返回的 Promise 状态变为 fulfilled 时恢复了执行。这或多或少等同于将把处理过程写在 `fetch` 返回 Promise 的 `then` 链。
 
 ```js
 function fetchStatus(url) {
@@ -245,9 +248,9 @@ function fetchStatus(url) {
 }
 ```
 
-That handler contains the code following the `await` in the async function.
+该处理程序在异步函数种包含了 `await` 代码。
 
-Normally you’d pass a `Promise` to `await`, but you can actually wait on any arbitrary JavaScript value. If the value of the expression following the `await` is not a promise, it’s converted to a promise. That means you can `await 42` if you feel like doing that:
+通常你会传递 `Promise` 给 `await`，但你实际上可以等待（await）任意的 JavaScript 值。如果 `await` 后面的表达式的值不是 Promise，则将其转换为 Promise。这意味着你可以这样写 `await 42`：
 
 ```js
 async function foo() {
@@ -262,7 +265,7 @@ p.then(console.log);
 // prints `42` eventually
 ```
 
-More interestingly, `await` works with any [“thenable”](https://promisesaplus.com/), i.e. any object with a `then` method, even if it’s not a real promise. So you can implement funny things like an asynchronous sleep that measures the actual time spent sleeping:
+更有趣的是，`await` 可以使用任何 [“thenable”](https://promisesaplus.com)，即任何带有 `then` 方法的对象，即使它不是真正的 Promise。因此，您可以实现有趣的事情，例如测量实际 sleep 时间的异步 sleep 功能：
 
 ```js
 class Sleep {
@@ -282,7 +285,7 @@ class Sleep {
 })();
 ```
 
-Let’s see what V8 does for `await` under the hood, following the [specification](https://tc39.github.io/ecma262/#await). Here’s a simple async function `foo`:
+接下来，让我们看看 V8 引擎底层是如何实现 `await` [规范](https://tc39.github.io/ecma262/#await)的。这是一个简单的异步函数 `foo`：
 
 ```js
 async function foo(v) {
@@ -291,129 +294,129 @@ async function foo(v) {
 }
 ```
 
-When called, it wraps the parameter `v` into a promise and suspends execution of the async function until that promise is resolved. Once that happens, execution of the function resumes and `w` gets assigned the value of the fulfilled promise. This value is then returned from the async function.
+当函数调用时，它会将参数 `v` 包装为 Promise 并暂停执行异步函数，直到该 Promise 的状态变为 resolved。一旦发生这种情况，函数的执行将恢复并且这个 fulfilled 的 Promise 的值被赋值给 `w`。然后从异步函数中返回此值。
 
-### `await` under the hood
+### 引擎底层的 `await` {#await-under-the-hood}
 
-First of all, V8 marks this function as _resumable_, which means that execution can be suspended and later resumed (at `await` points). Then it creates the so-called `implicit_promise`, which is the promise that is returned when you invoke the async function, and that eventually resolves to the value produced by the async function.
+首先，V8 将此函数标记为可恢复（_resumable_），这意味着可以暂停执行并稍后恢复执行（在 `await` 处）。然后它创建所谓的 `implicit_promise`（隐式 Promise），这是在调用异步函数时返回的 Promise，并最终解析（resolve）为异步函数生成的值。
 
 <figure>
   <img src="/_img/fast-async/await-under-the-hood.svg" alt="">
-  <figcaption>Comparison between a simple async function and what the engine turns it into</figcaption>
+  <figcaption>简单的异步函数与引擎转换之后的代码之间的比较</figcaption>
 </figure>
 
-Then comes the interesting bit: the actual `await`. First the value passed to `await` is wrapped into a promise. Then, handlers are attached to this wrapped promise to resume the function once the promise is fulfilled, and execution of the async function is suspended, returning the `implicit_promise` to the caller. Once the `promise` is fulfilled, execution of the async function is resumed with the value `w` from the `promise`, and the `implicit_promise` is resolved with `w`.
+然后是有趣的一点：实际的 `await`。首先，传递给 `await` 的值被包裹在一个 Promise 中。然后，处理程序附加到这个包装的 Promise，以便在 Promise 变为 fulfilled 后恢复该函数，并且暂停执行异步函数，并将 `implicit_promise` 返回给调用者。一旦 `promise` 变为 fulfilled，恢复异步函数的执行，并将 `promise` 的值赋值给 `w`，而且这个 `w` 也是 `implicit_promise` 被 resolved 后的值。
 
-In a nutshell, the initial steps for `await v` are:
+简而言之，`await v` 的最初的执行步骤是：
 
-1. Wrap `v` — the value passed to `await` — into a promise.
-1. Attach handlers for resuming the async function later.
-1. Suspend the async function and return the `implicit_promise` to the caller.
+1. 将 `v` 转换为 Promise- `v` 代表传递给 `await` 的值。
+1. 给 Promise 附加处理程序以便稍后恢复异步函数。
+1. 挂起异步函数并返回 `implicit_promise` 给调用者。
 
-Let’s go through the individual operations step by step. Assume that the thing that is being `await`ed is already a promise, which was fulfilled with the value `42`. Then the engine creates a new `promise` and resolves that with whatever’s being `await`ed. This does deferred chaining of these promises on the next turn, expressed via what the specification calls a [`PromiseResolveThenableJob`](https://tc39.github.io/ecma262/#sec-promiseresolvethenablejob).
+让我们一步一步地完成各个操作。假设传递给 `await` 的内容已经是一个 Promise，而它的 fulfilled 的值是 `42`。随后 V8 引擎又创建一个新的 `promise` 并对 `await` 后面的 Promise 执行 resolve 操作从而取出值。这确实推迟了下一轮的 Promise 处理链，这些被定义在规范中的 [`PromiseResolveThenableJob`](https://tc39.github.io/ecma262/#sec-promiseresolvethenablejob)。
 
 <figure>
   <img src="/_img/fast-async/await-step-1.svg" alt="">
 </figure>
 
-Then the engine creates another so-called `throwaway` promise. It’s called *throwaway* because nothing is ever chained to it — it’s completely internal to the engine. This `throwaway` promise is then chained onto the `promise`, with appropriate handlers to resume the async function. This `performPromiseThen` operation is essentially what [`Promise.prototype.then()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) does, behind the scenes. Finally, execution of the async function is suspended, and control returns to the caller.
+然后引擎创造了另一个所谓的 `throwaway` Promise。它被称为 *throwaway*，因为它的 `then` 链没有任何处理程序 - 它完全在引擎内部。此 `throwaway` 然后被链接到 `promise`，使用适当的处理程序来恢复异步函数。这个 `performPromiseThen` 操作基本上就是 [`Promise.prototype.then()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) 的幕后操作。最后，暂停执行异步函数，并且控制权返回给调用者。
 
 <figure>
   <img src="/_img/fast-async/await-step-2.svg" alt="">
 </figure>
 
-Execution continues in the caller, and eventually the call stack becomes empty. Then the JavaScript engine starts running the microtasks: it runs the previously scheduled [`PromiseResolveThenableJob`](https://tc39.github.io/ecma262/#sec-promiseresolvethenablejob), which schedules a new [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob) to chain the `promise` onto the value passed to `await`. Then, the engine returns to processing the microtask queue, since the microtask queue must be emptied before continuing with the main event loop.
+调用者继续执行，最终调用栈变空。然后 JavaScript 引擎开始运行 microtask：它运行之前安排的计划任务 [`PromiseResolveThenableJob`](https://tc39.github.io/ecma262/#sec-promiseresolvethenablejob)，该计划任务又安排了新的 [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob)，作为 `await` 之后的 Promise 的处理链。然后，引擎返回并处理 microtask 队列，因为在继续主事件循环之前必须清空 microtask 队列。
 
 <figure>
   <img src="/_img/fast-async/await-step-3.svg" alt="">
 </figure>
 
-Next up is the [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob), which fulfills the `promise` with the value from the promise we’re `await`ing — `42` in this case — and schedules the reaction onto the `throwaway` promise. The engine then returns to the microtask loop again, which contains a final microtask to be processed.
+接下来是 [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob)，它将 `promise` 设置为状态 fulfilled，其值是我们正在 `await` 的 Promise 值 - 在这个例子中是 `42` - 并且将计划任务链到 `throwaway` Promise。然后引擎再次返回 microtask 循环，其中包含要处理的最终 microtask。
 
 <figure>
   <img src="/_img/fast-async/await-step-4-final.svg" alt="">
 </figure>
 
-Now this second [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob) propagates the resolution to the `throwaway` promise, and resumes the suspended execution of the async function, returning the value `42` from the `await`.
+现在这第二个 [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob) 将 resove 的值传播到 `throwaway` promise，并恢复异步函数的执行，`await` 的返回值为 `42`。
 
 <figure>
   <img src="/_img/fast-async/await-overhead.svg" alt="">
-  <figcaption>Summary of the overhead of <code>await</code></figcaption>
+  <figcaption><code>await</code> 的开销</figcaption>
 </figure>
 
-Summarizing what we’ve learned, for each `await` the engine has to create **two additional** promises (even if the right hand side is already a promise) and it needs **at least three** microtask queue ticks. Who knew that a single `await` expression resulted in _that much overhead_?!
+总结一下，每个 `await` 引擎必须创建**两个额外**的 Promise（即使右侧已经是一个 Promis）并且它需要**至少三个** microtask 队列 ticks。谁会意识到仅仅是一个 `await` 表达就导致了如此之多的开销？！
 
 <figure>
   <img src="/_img/fast-async/await-code-before.svg" alt="" width="400" height="191">
 </figure>
 
-Let’s have a look at where this overhead comes from. The first line is responsible for creating the wrapper promise. The second line immediately resolves that wrapper promise with the `await`ed value `v`. These two lines are responsible for one additional promise plus two out of the three microticks. That’s quite expensive if `v` is already a promise (which is the common case, since applications normally `await` on promises). In the unlikely case that a developer `await`s on e.g. `42`, the engine still needs to wrap it into a promise.
+我们来看看这些开销来自哪里。第一行创建了 Promise 包装器。第二行立即使用 `await` 解析 Promise 包装器 `v` 的值。这两行导致了另外一个额外的 Promise 和三个 microtick 中的两个。如果 `v` 已经是一个 Promise（这是常见的情况，因为应用程序通常会在 Promise 上调用 `await`），这是非常昂贵的。在开发者不常使用的情况下，例如 `await 42`，引擎仍然需要为其创建 Promise 包装器。
 
-As it turns out, there’s already a  [`promiseResolve`](https://tc39.github.io/ecma262/#sec-promise-resolve) operation in the specification that only performs the wrapping when needed:
+事实证明，规范中已经有一个 [`promiseResolve`](https://tc39.github.io/ecma262/#sec-promise-resolve) 操作，此操作只在需要时执行包装器：
 
 <figure>
   <img src="/_img/fast-async/await-code-comparison.svg" alt="">
 </figure>
 
-This operation returns promises unchanged, and only wraps other values into promises as necessary. This way you save one of the additional promises, plus two ticks on the microtask queue, for the common case that the value passed to `await` is already a promise. This new behavior is currently implemented behind the `--harmony-await-optimization` flag in V8 (starting with V8 v7.1). We’ve [proposed this change to the ECMAScript specification](https://github.com/tc39/ecma262/pull/1250) as well; the patch is supposed to be merged once we are sure that it’s web-compatible.
+此操作返回没有修改过的 promise，并且只在必要时将其值包装到 promise 中。当传递给 `await` 的值已经是一个 Promise 时，这可以节省其中一个额外的 promise，加上 microtick 队列上的两个 tick。从 V8 v7.1 开始，该行为可以通过 V8 的命令行参数 `--harmony-await-optimization` 开启。我们也提交了对 [proposed this change to the ECMAScript specification](https://github.com/tc39/ecma262/pull/1250) 的变更；一旦我们确定它与 Web 兼容，这个补丁就会合并到提案中。
 
-Here’s how the new and improved `await` works behind the scenes, step by step:
+以下是在引擎底层对 `await` 的改进，其按步执行的工作方式如下：
 
 <figure>
   <img src="/_img/fast-async/await-new-step-1.svg" alt="">
 </figure>
 
-Let’s assume again that we `await` a promise that was fulfilled with `42`. Thanks to the magic of [`promiseResolve`](https://tc39.github.io/ecma262/#sec-promise-resolve) the `promise` now just refers to the same promise `v`, so there’s nothing to do in this step. Afterwards the engine continues exactly like before, creating the `throwaway` promise, scheduling a [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob) to resume the async function on the next tick on the microtask queue, suspending execution of the function, and returning to the caller.
+让我们再次假设我们 `await` 后面的 Promise 返回了 `42`。感谢 [`promiseResolve`](https://tc39.github.io/ecma262/#sec-promise-resolve) 带来的魔法，现在 `promise` 指向了同一个 Promise `v`，所以这个步骤什么也不需要做。然后引擎继续像以前一样，创建 `throwaway` Promise，安排 [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob) 在 microtask 队列的下一个 tick 上恢复异步函数，暂停执行该函数，然后返回给调用者。
 
 <figure>
   <img src="/_img/fast-async/await-new-step-2.svg" alt="">
 </figure>
 
-Then eventually when all JavaScript execution finishes, the engine starts running the microtasks, so it executes the [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob). This job propagates the resolution of `promise` to `throwaway`, and resumes the execution of the async function, yielding `42` from the `await`.
+最终当所有 JavaScript 执行完成时，引擎开始运行 microtask，因此它执行 [`PromiseReactionJob`](https://tc39.github.io/ecma262/#sec-promisereactionjob)。这个过程将 `promise` 传播到 `throwaway`，并恢复异步函数的执行，为 `await` 得到 `42`。
 
 <figure>
   <img src="/_img/fast-async/await-overhead-removed.svg" alt="">
-  <figcaption>Summary of the reduction in <code>await</code> overhead</figcaption>
+  <figcaption>节省了执行 <code>await</code> 的开销</figcaption>
 </figure>
 
-This optimization avoids the need to create a wrapper promise if the value passed to `await` is already a promise, and in that case we go from a minimum of **three** microticks to just **one** microtick. This behavior is similar to what Node.js 8 does, except that now it’s no longer a bug — it’s now an optimization that is being standardized!
+如果传递给 `await` 的值已经是一个 Promise，那么这种优化避免了再次创建 Promise 包装器，在这种情况下，我们从**最少三个** microtick 到**只有一个** microtick。这种行为类似于 Node.js 8 所做的，但是现在它不再是一个 bug - 它现在是一个正在标准化的优化！
 
-It still feels wrong that the engine has to create this `throwaway` promise, despite being completely internal to the engine. As it turns out, the `throwaway` promise was only there to satisfy the API constraints of the internal `performPromiseThen` operation in the spec.
+虽然 `throwaway` 只是在 V8 引擎内部使用，但引擎必须创造这种 Promise。事实证明，`throwaway` Promise 只是为了满足 `performPromiseThen` 规范中内部操作的 API 约束。
 
 <figure>
   <img src="/_img/fast-async/await-optimized.svg" alt="">
 </figure>
 
-This was recently addressed in an [editorial change](https://github.com/tc39/ecma262/issues/694) to the ECMAScript specification. Engines no longer need to create the `throwaway` promise for `await` — most of the time[^2].
+最近在 ECMAScript 规范的[编辑性更改](https://github.com/tc39/ecma262/issues/694)中解决了这个问题。引擎不再需要为 `await` 创造 `throwaway` Promise - 在绝大部分时间[^2]。
 
-[^2]: V8 still needs to create the `throwaway` promise if [`async_hooks`](https://nodejs.org/api/async_hooks.html) are being used in Node.js, since the `before` and `after` hooks are run within the _context_ of the `throwaway` promise.
+[^2]: 如果在 Node.js 中使用 [`async_hooks`](https://nodejs.org/api/async_hooks.html)，V8 仍然需要创建 `throwaway`，因为 `before` 和 `after` 钩子需要在 `throwaway` 的 promise *上下文中*运行。
 
 <figure>
   <img src="/_img/fast-async/node-10-vs-node-12.svg" alt="">
-  <figcaption>Comparison of <code>await</code> code before and after the optimizations</figcaption>
+  <figcaption><code>await</code> 优化之前和之后的比较</figcaption>
 </figure>
 
-Comparing `await` in Node.js 10 to the optimized `await` that’s likely going to be in Node.js 12 shows the performance impact of this change:
+同 Node.js 10 的 `await` 对比，在 Node.js 12 中做了更进一步的优化，下图显示了此更改对性能的影响：
 
 <figure>
   <img src="/_img/fast-async/benchmark-optimization.svg" alt="">
 </figure>
 
-**`async`/`await` outperforms hand-written promise code now**. The key takeaway here is that we significantly reduced the overhead of async functions — not just in V8, but across all JavaScript engines, by patching the spec[^3].
+**`async`/`await` 现在优于手写的 Promise 代码**。这里的关键点是，我们通过修补规范[^3]，大大减少了异步函数的开销 - 不仅在 V8 中，而且在所有 JavaScript 引擎中。
 
-[^3]: As mentioned, [the patch](https://github.com/tc39/ecma262/pull/1250) hasn’t been merged into the ECMAScript specification just yet. The plan is to do so once we’ve made sure that the change doesn’t break the web.
+[^3]: 如上所述，[此补丁](https://github.com/tc39/ecma262/pull/1250)尚未合并到 ECMAScript 规范中。一旦我们确保此改变不会破坏网络，我们的计划就是马上执行。
 
-## Improved developer experience
+## 改善开发者体验 {#improved-developer-experience}
 
-In addition to performance, JavaScript developers also care about the ability to diagnose and fix problems, which is not always easy when dealing with asynchronous code. [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools) supports *async stack traces*, i.e. stack traces that not only include the current synchronous part of the stack, but also the asynchronous part:
+除了性能之外，JavaScript 开发者还关心诊断和修复 bug 的能力，这在处理异步代码时通常会更加困难。[Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools) 支持异步堆栈跟踪，即堆栈跟踪不仅包括堆栈的当前同步部分，还包括异步部分：
 
 <figure>
   <img src="/_img/fast-async/devtools.png" srcset="/_img/fast-async/devtools@2x.png 2x" alt="">
 </figure>
 
-This is an incredibly useful feature during local development. However, this approach doesn’t really help you once the application is deployed. During post-mortem debugging, you’ll only see the `Error#stack` output in your log files, and that doesn’t tell you anything about the asynchronous parts.
+这是本地开发过程中非常有用的功能。但是，一旦部署了应用程序，这种方法并没有真正帮助您。在线上调试期间，您只会在日志文件中看到 `Error#stack` 输出，并且不会告诉您有关异步部分的任何信息。
 
-We’ve recently been working on [*zero-cost async stack traces*](https://bit.ly/v8-zero-cost-async-stack-traces) which enrich the `Error#stack` property with async function calls. “Zero-cost” sounds exciting, doesn’t it? How can it be zero-cost, when the Chrome DevTools feature comes with major overhead? Consider this example where `foo` calls `bar` asynchronously, and `bar` throws an exception after `await`ing a promise:
+我们最近一直在研究[零成本的异步堆栈跟踪](https://bit.ly/v8-zero-cost-async-stack-traces)，它为异步函数调用提供了更丰富的 `Error#stack` 属性。“零成本”听起来令人兴奋，不是吗？当 Chrome DevTools 特性带来重大开销时，如何才能实现零成本？考虑这个 `foo` 异步调用 `bar` 的例子，而且 `bar` 在 `await` 的 Promise 之后抛出异常：
 
 ```js
 async function foo() {
@@ -429,7 +432,7 @@ async function bar() {
 foo().catch(error => console.log(error.stack));
 ```
 
-Running this code in Node.js 8 or Node.js 10 results in the following output:
+在 Node.js 8 或 Node.js 10 中运行此代码会产生以下输出：
 
 ```text/2
 $ node index.js
@@ -441,9 +444,9 @@ Error: BEEP BEEP
     at bootstrapNodeJSCore (internal/bootstrap/node.js:595:3)
 ```
 
-Note that although the call to `foo()` causes the error, `foo` is not part of the stack trace at all. This makes it tricky for JavaScript developers to perform post-mortem debugging, independent of whether your code is deployed in a web application or inside of some cloud container.
+请注意，虽然调用 `foo()` 导致错误，但 `foo` 根本不是堆栈跟踪的一部分。这使得 JavaScript 开发者执行事后调试变得棘手，无论您的代码是部署在 Web 应用程序中还是部署在云容器内部。
 
-The interesting bit here is that the engine knows where it has to continue when `bar` is done: right after the `await` in function `foo`. Coincidentally, that’s also the place where the function `foo` was suspended. The engine can use this information to reconstruct parts of the asynchronous stack trace, namely the `await` sites. With this change, the output becomes:
+这里有趣的是，引擎知道 `bar` 调用完成时它继续执行的位置：在 `foo` 函数的 `await` 之后。巧合的是，这也是函数 `foo` 暂停的地方。引擎可以使用此信息来重建异步堆栈跟踪的部分，即 `await` 现场。通过此更改，输出变为：
 
 ```text/2,7
 $ node --async-stack-traces index.js
@@ -456,20 +459,20 @@ Error: BEEP BEEP
     at async foo (index.js:2:3)
 ```
 
-In the stack trace, the topmost function comes first, followed by the rest of the synchronous stack trace, followed by the asynchronous call to `bar` in function `foo`. This change is implemented in V8 behind the new `--async-stack-traces` flag.
+在堆栈跟踪中，最顶层的函数首先出现，然后是同步堆栈跟踪的其余部分，然后是 `bar` 函数的异步调用 `foo`。此更改在 V8 中使用 `--async-stack-traces` 标志开启。
 
-However, if you compare this to the async stack trace in Chrome DevTools above, you’ll notice that the actual call site to `foo` is missing from the asynchronous part of the stack trace. As mentioned before, this approach utilizes the fact that for `await` the resume and suspend locations are the same — but for regular [`Promise#then()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) or [`Promise#catch()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) calls, this is not the case. For more background, see Mathias Bynens’s explanation on [why `await` beats `Promise#then()`](https://mathiasbynens.be/notes/async-stack-traces).
+但是，如果将此与上面 Chrome DevTools 中的异步堆栈跟踪进行比较，您会注意到 `foo` 堆栈跟踪的异步部分中缺少实际的调用现场。如前所述，这种方法利用了一个事实，`await` 即恢复和暂停位置是相同的 - 但对于常规 [`Promise#then()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) 或 [`Promise#catch()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) 调用，情况并非如此。有关更多背景信息，请参阅 Mathias Bynens 对[why `await` beats `Promise#then()`](https://mathiasbynens.be/notes/async-stack-traces) 的解释。
 
-## Conclusion
+## 结论 {#conclusion}
 
-We made async functions faster thanks to two significant optimizations:
+由于两个重要的优化，我们使异步函数更快：
 
-- the removal of two extra microticks, and
-- the removal of the `throwaway` promise.
+- 删除两个额外的 microtick，和
+- 去除了 `throwaway` promise。
 
-On top of that, we’ve improved the developer experience via [*zero-cost async stack traces*](https://bit.ly/v8-zero-cost-async-stack-traces), which work with `await` in async functions and `Promise.all()`.
+最重要的是，我们通过[零成本异步堆栈跟踪](https://bit.ly/v8-zero-cost-async-stack-traces)改进了开发体验，这些可以使用在异步函数的 `await` 表达式和异步函数中使用 `Promise.all()`。
 
-And we also have some nice performance advice for JavaScript developers:
+我们还为 JavaScript 开发者提供了一些很好的性能建议：
 
-- favor `async` functions and `await` over hand-written promise code, and
-- stick to the native promise implementation offered by the JavaScript engine to benefit from the shortcuts, i.e. avoiding two microticks for `await`.
+- 使用 `async` 函数和 `await` 替代手写的 Promise 代码，以及
+- 坚持 JavaScript 引擎提供的原生 Promise 实现，以避免在 `await` 中使用额外的两个 microtick。
