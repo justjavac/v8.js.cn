@@ -1,8 +1,9 @@
 ---
 title: '检出 V8 源码'
-author: 'who who who ([@fsx950223](https://github.com/fsx950223)),good at javascript'
+cn:
+  author: 'who who who ([@fsx950223](https://github.com/fsx950223)),good at javascript'
 ---
-本文档介绍了如何在本地检出V8源代码。如果你只是想浏览线上代码，请使用这些链接:
+本文档介绍了如何在本地检出 V8 源代码。如果你只是想浏览线上代码，请使用这些链接：
 
 - [browse](https://chromium.googlesource.com/v8/v8/)
 - [browse bleeding edge](https://chromium.googlesource.com/v8/v8/+/master)
@@ -17,7 +18,7 @@ V8 的 Git 项目位于 <https://chromium.googlesource.com/v8/v8.git>, 并且有
 ## 说明 {#instructions}
 
 1. 在 Linux 或 macOS 上，首先安装 Git， 然后安装 [`depot_tools`](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up).
-    在 Windows 上, 依照 Chromium 说明（[for Googlers](https://goto.google.com/building-chrome-win), [for non-Googlers](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#Setting-up-Windows)）安装 Visual Studio,Windows 的调试工具与 `depot_tools` (which on Windows includes Git).
+    在 Windows 上, 依照 Chromium 说明（[for Googlers](https://goto.google.com/building-chrome-win), [for non-Googlers](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#Setting-up-Windows)）安装 Visual Studio、Windows 的调试工具与 `depot_tools` (which on Windows includes Git).
 
 1. 在终端执行如下语句来更新 `depot_tools`。 在 Windows 中必须使用 `cmd.exe` 执行, 而不是 Powershell。
 
@@ -28,7 +29,7 @@ V8 的 Git 项目位于 <https://chromium.googlesource.com/v8/v8.git>, 并且有
 1. 为了使用 **push access**，你需要使用你的 Git 密码安装 `.netrc` 文件:
 
     1. 使用你的提交账户登陆 <https://chromium.googlesource.com/new-password>（通常是 `@chromium.org` 账户）。注意：创建新密码不会自动撤消以前创建的任何密码。请确保使用与 `git config user.email` 相同的电子邮件。
-    1. 看看包含shell命令的大灰盒子。将这些行粘贴到您的shell中。
+    1. 查看包含 shell 命令的灰色代码块。将这些命令粘贴到您的 shell 中。
 
 1. 现在，获取包含所有分支和依赖的 V8 源码：
 
@@ -39,7 +40,7 @@ V8 的 Git 项目位于 <https://chromium.googlesource.com/v8/v8.git>, 并且有
     cd v8
     ```
 
-现在，你处于一个独立的头状态。
+现在，你处于一个独立的 head 状态。
 
 你可以选择指定应如何跟踪新分支：
 
