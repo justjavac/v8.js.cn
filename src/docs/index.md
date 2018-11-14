@@ -57,7 +57,8 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [Ignition](/docs/ignition)
     - [TurboFan](/docs/turbofan)
     - [Torque](/docs/torque)
-    - [CodeStubAssembler 内置插件](/docs/csa-builtins)
+    - [编写 Torque 内置函数](/docs/torque-builtins)
+    - [编写 CSA  内置函数](/docs/csa-builtins)
 - 优化 JavaScript
     - [使用 V8 基本示例分析](/docs/profile)
     - [分析 Chromium](/docs/profile-chromium)
