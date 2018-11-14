@@ -1,36 +1,36 @@
 ---
-title: 'Checking out the V8 source code'
+title: '检出 V8 源码'
+author: 'who who who ([@fsx950223](https://github.com/fsx950223)),good at javascript'
 ---
-This document explains how to check out the V8 source code locally. If you just want to browse the source online, use these links:
+本文档介绍了如何在本地检出V8源代码。如果你只是想浏览线上代码，请使用这些链接:
 
 - [browse](https://chromium.googlesource.com/v8/v8/)
 - [browse bleeding edge](https://chromium.googlesource.com/v8/v8/+/master)
 - [changes](https://chromium.googlesource.com/v8/v8/+log/master)
 
-## Using Git
+## 使用 Git {#using-git}
 
-V8’s Git repository is located at <https://chromium.googlesource.com/v8/v8.git>, with an official mirror on GitHub: <https://github.com/v8/v8>.
+V8 的 Git 项目位于 <https://chromium.googlesource.com/v8/v8.git>, 并且有一个 Github 的官方镜像: <https://github.com/v8/v8>。
 
-Don’t just `git clone` either of these URLs! if you want to build V8 from your checkout, instead follow the instructions below to get everything set up correctly.
+不要直接 `git clone` 这些链接! 如果你想构建 V8，请按照如下说明执行构建。
 
-## Instructions
+## 说明 {#instructions}
 
-1. On Linux or macOS, first install Git and then [`depot_tools`](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up).
+1. 在 Linux 或 macOS 上，首先安装 Git， 然后安装 [`depot_tools`](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up).
+    在 Windows 上, 依照 Chromium 说明（[for Googlers](https://goto.google.com/building-chrome-win), [for non-Googlers](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#Setting-up-Windows)）安装 Visual Studio,Windows 的调试工具与 `depot_tools` (which on Windows includes Git).
 
-    On Windows, follow the Chromium instructions ([for Googlers](https://goto.google.com/building-chrome-win), [for non-Googlers](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#Setting-up-Windows)) to install Visual Studio, Debugging tools for Windows, and `depot_tools` (which on Windows includes Git).
-
-1. Update `depot_tools` by executing the following into your terminal/shell. On Windows, this has to be done in the Command Prompt (`cmd.exe`), as opposed to PowerShell or others.
+1. 在终端执行如下语句来更新 `depot_tools`。 在 Windows 中必须使用 `cmd.exe` 执行, 而不是 Powershell。
 
     ```
     gclient
     ```
 
-1. For **push access**, you need to setup a `.netrc` file with your Git password:
+1. 为了使用 **push access**，你需要使用你的 Git 密码安装 `.netrc` 文件:
 
-    1. Go to <https://chromium.googlesource.com/new-password> and log in with your committer account (usually an `@chromium.org` account). Note: creating a new password doesn’t automatically revoke any previously-created passwords. Please make sure you use the same email as the one set for `git config user.email`.
-    1. Have a look at the big, grey box containing shell commands. Paste those lines into your shell.
+    1. 使用你的提交账户登陆 <https://chromium.googlesource.com/new-password>（通常是 `@chromium.org` 账户）。注意：创建新密码不会自动撤消以前创建的任何密码。请确保使用与 `git config user.email` 相同的电子邮件。
+    1. 看看包含shell命令的大灰盒子。将这些行粘贴到您的shell中。
 
-1. Now, get the V8 source code, including all branches and dependencies:
+1. 现在，获取包含所有分支和依赖的 V8 源码：
 
     ```bash
     mkdir ~/v8
@@ -39,123 +39,123 @@ Don’t just `git clone` either of these URLs! if you want to build V8 from your
     cd v8
     ```
 
-After that you’re intentionally in a detached head state.
+现在，你处于一个独立的头状态。
 
-Optionally you can specify how new branches should be tracked:
+你可以选择指定应如何跟踪新分支：
 
 ```bash
 git config branch.autosetupmerge always
 git config branch.autosetuprebase always
 ```
 
-Alternatively, you can create new local branches like this (recommended):
+另外，你可以用如下命令创建分支 (推荐)：
 
 ```bash
 git new-branch fix-bug-1234
 ```
 
-## Staying up-to-date
+## 保持更新 {#staying-up-to-date}
 
-Update your current branch with `git pull`. Note that if you’re not on a branch, `git pull` won’t work, and you’ll need to use `git fetch` instead.
+使用 `git pull` 更新分支。注意：如果你不在一个分支上 `git pull` 将不起作用，你需要使用 `git fetch`。
 
 ```bash
 git pull
 ```
 
-Sometimes dependencies of V8 are updated. You can synchronize those by running:
+一般情况下 V8 的依赖都是最新的。你可以通过使用如下命令同步依赖:
 
 ```bash
 gclient sync
 ```
 
-## Sending code for reviewing
+## 发送用于审核的代码 {#sending-code-for-reviewing}
 
 ```bash
 git cl upload
 ```
 
-## Committing
+## 提交 {#committing}
 
-You can use the CQ checkbox on codereview for committing (preferred). See also the [chromium instructions](https://www.chromium.org/developers/testing/commit-queue) for CQ flags and troubleshooting.
+你可以使用 CQ 选项进行提交 (推荐). 在 [chromium instructions](https://www.chromium.org/developers/testing/commit-queue) 上查阅 CQ 标志位与故障排除。
 
-If you need more trybots than the default, add the following to your commit message on Gerrit (e.g. for adding a nosnap bot):
+如果你需要更多测试机器人，在 Gerrit 添加如下提交信息（e.g. 添加一个 nosnap 机器人）：
 
 ```
 CQ_INCLUDE_TRYBOTS=tryserver.v8:v8_linux_nosnap_rel
 ```
 
-To land manually, update your branch:
+请主动更新您的分支:
 
 ```bash
 git pull --rebase origin
 ```
 
-Then commit using
+然后提交
 
 ```bash
 git cl land
 ```
 
-## Try jobs
+## 尝试作业 {#try-jobs}
 
-This section is only useful for V8 project members.
+这部分只针对 V8 项目成员。
 
-### Creating a try job from codereview
+### 从 codereview 创建测试作业 {#creating-a-try-job-from-codereview}
 
-1. Upload a CL to Gerrit.
+1. 将 CL 上传到 Gerrit 。
 
     ```bash
     git cl upload
     ```
 
-1. Try the CL by sending a try job to the try bots like this:
+1. 尝试向机器人发送测试的 CL：
 
     ```bash
     git cl try
     ```
 
-1. Wait for the try bots to build and you get an email with the result. You can also check the try state at your patch on Gerrit.
+1. 等待测试机器人构建，然后您收到一封包含结果的电子邮件。您还可以在 Gerrit 的补丁中查看测试状态。
 
-1. If applying the patch fails you either need to rebase your patch or specify the V8 revision to sync to:
+1. 如果应用修补程序失败，则需要重新绑定补丁或指定要同步的V8修订版：
 
 ```bash
 git cl try --revision=1234
 ```
 
-### Creating a try job from a local branch
+### 从本地分支创建测试作业 {#creating-a-try-job-from-a-local-branch}
 
-1. Commit some changes to a git branch in the local repo.
+1. 给本地项目的一个分支提交一些修改。
 
-1. Try the change by sending a try job to the try bots like this:
+1. 使用如下命令尝试修改：
 
     ```bash
     git cl try
     ```
 
-1. Wait for the try bots to build and you get an email with the result. Note: There are issues with some of the slaves at the moment. Sending try jobs from codereview is recommended.
+1. 等待测试机器人构建，然后您收到一封包含结果的电子邮件。注意：目前有些附件存在问题。建议从 codereview 发送测试作业。
 
-### Useful arguments
+### 实用参数 {#useful-arguments}
 
-The revision argument tells the try bot what revision of the code base is used for applying your local changes to. Without the revision, [V8’s LKGR revision](https://v8-status.appspot.com/lkgr) is used as the base.
+revision 参数告诉测试机器人你的本地修改用于什么版本的代码库。 可以用 [V8’s LKGR revision](https://v8-status.appspot.com/lkgr) 替代 revision。
 
 ```bash
 git cl try --revision=1234
 ```
 
-To avoid running your try job on all bots, use the `--bot` flag with a comma-separated list of builder names. Example:
+为了避免在所有的机器人上运行测试作业，使用 `--bot` 标志指定一个以逗号分隔的构建器名称列表。例子：
 
 ```bash
 git cl try --bot=v8_mac_rel
 ```
 
-### Viewing the try server
+### 查看测试服务器 {#viewing-the-try-server}
 
 ```bash
 git cl try-results
 ```
 
-## Source code branches
+## 源码分支 {#source-code-branches}
 
-There are several different branches of V8; if you're unsure of which version to get, you most likely want the up-to-date stable version. Have a look at our [[Release Process|Release Process]] for more information about the different branches used.
+V8有几个不同的分支;如果你不确定要获得哪个版本，你很可能想要最新的稳定版本。有关所使用的不同分支的更多信息，请查看我们的[[发布过程|发布过程]]。
 
-You may want to follow the V8 version that Chrome is shipping on its stable (or beta) channels, see <https://omahaproxy.appspot.com/>.
+您可能需要关注Chrome在其稳定（或测试版）渠道上发布的V8版本，请查阅 <https://omahaproxy.appspot.com/>.
