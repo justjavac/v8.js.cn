@@ -1,5 +1,5 @@
 ---
-title: 'Getting things sorted in V8'
+title: 'V8 中的排序'
 author: 'Simon Zünd ([@nimODota](https://twitter.com/nimODota)), consistent comparator'
 avatars:
   - simon-zuend
@@ -9,30 +9,42 @@ tags:
   - internals
 description: 'Starting with V8 v7.0 / Chrome 70, Array.prototype.sort is stable.'
 tweet: '1045656758700650502'
+cn:
+  author: '[@froyog](https://github.com/froyog). Life was short, used python'
 ---
 `Array.prototype.sort` was among the last builtins implemented in self-hosted JavaScript in V8. Porting it offered us the opportunity to experiment with different algorithms and implementation strategies and finally [make it stable](https://mathiasbynens.be/demo/sort-stability) in V8 v7.0 / Chrome 70.
 
-## Background
+## 背景 {#background}
 
 Sorting in JavaScript is hard. This blog post looks at some of the quirks in the interaction between a sorting algorithm and the JavaScript language, and describes our journey to move V8 to a stable algorithm and make performance more predictable.
 
+Javascript 中的排序很难。这篇博客旨在分析一个排序算法和 Javascript 语言本身的交集中的一些怪癖，并且讲述我们是如何让 V8 的排序实现变为稳定排序，性能更加可预测的排序。
+
 When comparing different sorting algorithms we look at their worst and average performance given as a bound on the asymptotic growth (i.e. “Big O” notation) of either memory operations or number of comparisons. Note that in dynamic languages, such as JavaScript, a comparison operation is usually a magnitude more expensive than a memory access. This is due to the fact that comparing two values while sorting usually involves calls to user code.
 
+对比不同的排序算法时，我们常常关注它们最坏情况和平均情况下的性能。它们是由渐进增长的边界条件给出的（比如说，O 记号）,要么是内存使用，要么是比较次数。注意在 Javascript 这样的动态语言中，比较操作通常是比内存访问更昂贵。这是由于在排序时比较两个值常常涉及到调用用户代码。
+
 Let’s take a look at a simple example of sorting some numbers into ascending order based on a user-provided comparison function. A _consistent_ comparison function returns `-1` (or any other negative value), `0`, or `1` (or any other positive value) when the two provided values are either smaller, equal, or greater respectively. A comparison function that does not follow this pattern is _inconsistent_ and can have arbitrary side-effects, such as modifying the array it’s intended to sort.
+
+让我们来看一个简单的例子：基于用户提供的比较函数，对一些数进行升序排序。这是一个 **稳定** 的比较函数，在被比较的一个数小于另一个数时，返回 `-1`（或任意负数）；相互等于时，返回 `0`；大于时，返回 `1`（或任意正数）。如果某个比较函数不符合这种形式，它就是 **不稳定** 的，而且可能产生任意的副作用，比如修改了它想要排序的数组。
 
 ```js
 const array = [4, 2, 5, 3, 1];
 
 function compare(a, b) {
   // Arbitrary code goes here, e.g. `array.push(1);`.
+  // 任意代码，比如 `array.push(1)`
   return a - b;
 }
 
 // A “typical” sort call.
+// 一个“典型”的排序调用
 array.sort(compare);
 ```
 
 Even in the next example, calls to user code may happen. The “default” comparison function calls `toString` on both values and does a lexicographical comparison on the string representations.
+
+即使是在下面的例子中，用户代码也可能会被调用。“默认”的比较函数对两个值调用 `toString`，并对返回的字符串按字典序排序。
 
 ```js
 const array = [4, 2, 5, 3, 1];
@@ -40,21 +52,30 @@ const array = [4, 2, 5, 3, 1];
 array.push({
   toString() {
     // Arbitrary code goes here, e.g. `array.push(1);`.
+    // 任意代码，比如 `array.push(1)`
     return '42';
   }
 });
 
 // Sort without a comparison function.
+// 不传入比较函数来调用 sort
 array.sort();
 ```
 
 ### More fun with accessors and prototype-chain interactions{ #accessors-prototype }
+### 引入访问器和原形作用链 {#accessors-prototype}
 
 This is the part where we leave the spec behind and venture into “implementation-defined” behavior land. The spec has a whole list of conditions that, when met, allow the engine to sort the object/array as it sees fit — or not at all. Engines still have to follow some ground rules but everything else is pretty much up in the air. On the one hand, this gives engine developers the freedom to experiment with different implementations. On the other hand, users expect some reasonable behavior even though the spec doesn’t require there to be any. This is further complicated by the fact that “reasonable behavior” is not always straightforward to determine.
 
+这部分我们要将规范抛在脑后，进入“实现定义（implementation-defined）”的行为的领域。规范中存在一系列的情况，在这些条件下，引擎对这些对象或数组任意排序，或根本不排序。引擎仍然要遵守一些基本原则，但其余的可以完全不顾。一方面来说，这给予了引擎开发者相当大的自由来试验不同的实现，另一方面来说，用户期望着（引擎的）一些合理行为，尽管规范没有这方面的规定。然而所谓“合理行为”很难定义，这又加剧了问题的复杂性。
+
 This section shows that there are still some aspects of `Array#sort` where engine behavior differs greatly. These are hard edge cases, and as mentioned above it’s not always clear what “the right thing to do” actually is. We _highly_ recommend not writing code like this; engines won’t optimize for it.
 
+这部分要向你展示在 `Array#sort` 的某些方面中，不同引擎的行为差别很大。这些情况不太可能出现，而且依上文，我们很那说“正确的做法”究竟是什么。我们 **强烈不建议** 你写这种代码，引擎是不会优化它们的。
+
 The first example shows an array with some accessors (i.e. getters and setters) and a “call log” in different JavaScript engines. Accessors are the first case where the resulting sort order is implementation-defined:
+
+第一个例子给出了一个带有访问器（例如 getter 和 setter）的数组以及不同引擎的“调用顺序”。访问器是第一个“由具体实现决定输出数组排序”的第一种情况：
 
 ```js
 const array = [0, 1, 2];
@@ -73,6 +94,8 @@ array.sort();
 ```
 
 Here’s the output of that snippet in various engines. Note that there are no “right” or “wrong” answers here — the spec leaves this up to the implementation!
+
+这是不同引擎的输出结果。注意它们没有对错之分——因为规范让引擎自行决定！
 
 ```
 // Chakra
@@ -108,6 +131,8 @@ set 1
 
 The next example shows interactions with the prototype chain. For the sake of brevity we don’t show the call log.
 
+下一个例子展示了原型作用链的影响。简短起见我们不再显示调用栈。
+
 ```js
 const object = {
  1: 'd1',
@@ -139,6 +164,8 @@ Array.prototype.sort.call(object);
 
 The output shows the `object` after it’s sorted. Again, there is no right answer here. This example just shows how weird the interaction between indexed properties and the prototype chain can get:
 
+输出显示了排序后的 `object`。同样，这里没有所谓的正确结果。这个例子只是想展示当索引属性和原型作用链相互影响时，事情会变得多么怪异：
+
 ```js
 // Chakra
 ['a2', 'a3', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2', 'e3', undefined, undefined, undefined]
@@ -154,19 +181,24 @@ The output shows the `object` after it’s sorted. Again, there is no right answ
 ```
 
 ### What V8 does before actually sorting { #before-sort }
+### V8 在排序前做了什么 {#before-sort}
 
 V8 has two pre-processing steps before it actually sorts anything. First, if the object to sort has holes and elements on the prototype chain, they are copied from the prototype chain to the object itself. This frees us from caring about the prototype chain during all remaining steps. This is currently only done for non-`JSArray`s but other engines do it for `JSArray`s as well.
 
+V8 在排序前会进行两个预处理步骤。首先，如果被排序的对象的原型作用链上有洞（hole）或元素（element），V8 会把它们从原型链上拷贝到对象本身上来.这样一来我们在接下来的步骤中就不同考虑原型链的问题了。V8 只在非 `JSArray` 上才会这样做，但其他引擎在 `JSArray` 上也这么做。
+
 <figure>
   <img src="/_img/array-sort/copy-prototype.svg" alt="">
-  <figcaption>Copying from the prototype chain</figcaption>
+  <figcaption>从作用链中拷贝</figcaption>
 </figure>
 
 The second pre-processing step is the removal of holes. All elements in the sort-range are moved to the beginning of the object. `undefined`s are moved after that. This is even required by the spec to some degree as it requires us to *always* sort `undefined`s to the end. The result is that a user-provided comparison function will never get called with an `undefined` argument. After the second pre-processing step the sorting algorithm only needs to consider non-`undefined`s, potentially reducing the number of elements it actually has to sort.
 
+第二个预处理步骤是移除洞。排序范围内的所有元素会被移到对象最前面。随后所有 `undefined` 被移到其后。某种程度上来说这是规范要求的，它规定 `undefined` **必须** 排在末尾。所以如果排序的参数是 `undefined`，用户提供的比较函数永远不会被调用。第二步预处理结束后排序算法只需考虑所有非 `undefined` 的元素了，潜在地减少了需要排序的元素。
+
 <figure>
   <img src="/_img/array-sort/remove-array-holes.svg" alt="">
-  <figcaption>Removing holes and moving <code>undefined</code>s to the end</figcaption>
+  <figcaption>移除洞，并把所有 <code>undefined</code> 移到末尾 </figcaption>
 </figure>
 
 ## History
