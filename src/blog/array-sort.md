@@ -265,21 +265,31 @@ This worked reasonably well, but as it still utilized Quicksort, `Array#sort` re
 
 Timsort, initially developed by Tim Peters for Python in 2002, could best be described as an adaptive stable Mergesort variant. Even though the details are rather complex and are best described by [the man himself](https://github.com/python/cpython/blob/master/Objects/listsort.txt) or the [Wikipedia page](https://en.wikipedia.org/wiki/Timsort), the basics are easy to understand. While Mergesort usually works in recursive fashion, Timsort works iteratively. It processes an array from left to right and looks for so-called _runs_. A run is simply a sequence that is already sorted. This includes sequences that are sorted “the wrong way” as these sequences can simply be reversed to form a run. At the start of the sorting process a minimum run length is determined that depends on the length of the input. If Timsort can’t find natural runs of this minimum run length a run is “boosted artificially” using Insertion Sort.
 
+Timsort，最初由 Tim Peters 在 2002 年为 Python 所开发，可以被称为是一个自适应的稳定归并排序的变种。其细节比较复杂，最好参阅[作者本人](https://github.com/python/cpython/blob/master/Objects/listsort.txt)或[维基百科]的描述(https://en.wikipedia.org/wiki/Timsort)，但基础很容易理解。归并排序使用递归，而 Timsort 使用迭代。算法从左向右处理一个数组并且寻找所谓的 run。run 就是已排好序的序列。当然这也包括逆向排好序的序列，因为这样的序列只需翻转（reverse）就可以形成一个 run。排序的一开始算法会根据输入数组的长度来决定 run 的最小长度，如果算法没有找到自然形成的具有这样最小长度的 run，它就会使用插入排序人工生成一个。
+
 Runs that are found this way are tracked using a stack that remembers a starting index and a length of each run. From time to time runs on the stack are merged together until only one sorted run remains. Timsort tries to maintain a balance when it comes to deciding which runs to merge. On the one hand you want to try and merge early as the data of those runs has a high chance of already being in the cache, on the other hand you want to merge as late as possible to take advantage of patterns in the data that might emerge. To accomplish this, Timsort maintains two invariants. Assuming `A`, `B`, and `C` are the three top-most runs:
+
+找到的 run 会被一个栈追踪，这个栈会记录每个 run 的起始位置和长度。栈中的 run 会时不时的被合并，直到最后只剩一个排好序的 run。在决定要合并哪些 run 的时候，算法会试图保持平衡。一方面你想要尽可能早地合并，因为 run 的数据很可能还在缓存之中，另一方面你想尽可能晚地合并，因为这时可以利用数据中可能出现的某些共同规律。为了做到这一点，Timsort 维护着两条原则。假设 `A`，`B`，`C` 是三个最顶端的 run：
 
 - `|C| > |B| + |A|`
 - `|B| > |A|`
 
 <figure>
   <img src="/_img/array-sort/runs-stack.svg" alt="">
-  <figcaption>Runs stack before and after merging <code>A</code> with <code>B</code></figcaption>
+  <figcaption><code>A</code> 与 <code>B</code> 合并前后的栈</figcaption>
 </figure>
 
 The image shows the case where `|A| > |B|` so `B` is merged with the smaller of the two runs.
 
+图中的情况下 `|A| > |B|` 所以 `B` 被合并到两者中较小的 run 中。
+
 Note that Timsort only merges consecutive runs, this is needed to maintain stability, otherwise equal elements would be transferred between runs. Also the first invariant makes sure that run lengths grow at least as fast as the Fibonacci numbers, giving an upper bound on the size of the run stack when we know the maximum array length.
 
+注意 Timsort 只合并连续的 run，这是保持其稳定性所必需的，否则相等的元素会在不同的 run 中互相转移。另外，第一条原则保证了 run 的长度最差也会以斐波那契数列增长，这样给定了最大数组长度之后 run 栈的大小的上界也就随之确定了。
+
 One can now see that already-sorted sequences are sorted in O(n) as such an array would result in a single run that does not need to get merged. The worst case is O(n log n). These algorithmic properties together with the stable nature of Timsort were a few of the reasons why we chose Timsort over Quicksort in the end.
+
+现在你可以看出，已排序序列会以 O(n) 被排序，因为这样的数组会被分在一个 run 中，无需被合并。最坏情况是 O(n log n)。出于这样的算法性能，以及其稳定的特性，是我们最终选用 Timsort 而非快速排序的少数原因之一。
 
 ### Implementing Timsort in Torque
 
