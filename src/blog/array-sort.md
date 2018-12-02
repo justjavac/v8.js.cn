@@ -227,7 +227,7 @@ One of the advantages of Quicksort is that it sorts in-place. The memory overhea
 
 ### Introducing V8 Torque
 
-### 介绍 V8 Torque
+### 介绍 V8 Torque {#introducing-v8-torque}
 
 As an avid reader of the V8 blog you might have heard of [`CodeStubAssembler`](/blog/csa) or CSA for short. CSA is a V8 component that allows us to write low-level TurboFan IR directly in C++ that later gets translated to machine code for the appropriate architecture using TurboFan’s backend.
 
@@ -251,7 +251,7 @@ The first major builtins that were re-written in V8 Torque were [`TypedArray#sor
 
 ### Moving `Array#sort` to Torque
 
-### 将 `Array#sort` 迁移到 Torque
+### 将 `Array#sort` 迁移到 Torque {#moving-array#sort-to-torque}
 
 The initial `Array#sort` Torque version was more or less a straight up port of the JavaScript implementation. The only difference was that instead of using a sampling approach for larger arrays, the third element for the pivot calculation was chosen at random.
 
@@ -293,14 +293,27 @@ One can now see that already-sorted sequences are sorted in O(n) as such an arra
 
 ### Implementing Timsort in Torque
 
+### 在 Torque 中实现 Timsort {#implementing-timsort-in-torque}
+
 Builtins usually have different code-paths that are chosen during runtime depending on various variables. The most generic version can handle any kind of object, regardless if its a `JSProxy`, has interceptors or needs to do prototype chain lookups when retrieving or setting properties.
+
+内置函数通常有不同的代码版本，在运行时（runtime）基于各种各样的变量选择一个。它最通用的版本可以处理任何对象，不管它是 `JSProxy`，还是拥有拦截器，或者查找/设置属性时需要查询原型链。
+
 The generic path is rather slow in most cases, as it needs to account for all eventualities. But if we know upfront that the object to sort is a simple `JSArray` containing only Smis, all these expensive `[[Get]]` and `[[Set]]` operations can be replaced by simple Loads and Stores to a `FixedArray`. The main differentiator is the [`ElementsKind`](/blog/elements-kinds).
+
+大多数情况下通用的路径是很慢的，因为它需要考虑所有可能性。但如果我们提前就知道要排序的对象只是包含小整数的 `JSArray`，所有昂贵的 `[[Get]]` 和 `[[Set]]` 都可以用简单的 `FixedArray` 载入和储存来替换。唯一的不同就是 [`ElementsKind`](/blog/elements-kinds)。
 
 The problem now becomes how to implement a fast-path. The core algorithm stays the same for all but the way we access elements changes based on the `ElementsKind`. One way we could accomplish this is to dispatch to the correct “accessor” on each call-site. Imagine a switch for each “load”/”store” operation where we choose a different branch based on the chosen fast-path.
 
+现在的问题变成了我们如何实现一个快速路径。核心算法不管怎么样都是一样的，但我们获取元素的方式取决于 `ElementsKind`。一种实现方法是我们为每一种调用形式分配正确的“访问其（accessor）”。想象一下每一个“载入”/“储存”操作都对应一个开关，通过这个开关我们即可选择想要的分支，以对应选择的路径。
+
 Another solution (and this was the first approach tried) is to just copy the whole builtin once for each fast-path and inline the correct load/store access method. This approach turned out to be infeasible for Timsort as it’s a big builtin and making a copy for each fast-path turned out to require 106 KB in total, which is way too much for a single builtin.
 
+另一个解决方案（也是我们此前试过的方法）是为每一条路径、每一个载入/储存方法拷贝一遍整个内置函数。这样做对于 Timsort 来说是不可行的，因为它是一个很大的内置函数。每一个路径都拷贝一遍内置函数总共需要 106 KB 的空间，这对于一个内置函数来说太大了。
+
 The final solution is slightly different. Each load/store operation for each fast-path is put into its own “mini-builtin”. See the code example which shows the “load” operation for `FixedDoubleArray`s.
+
+最终方案有一点不同。每一种路径的每个“载入”/“储存”操作被放置在了它的“迷你内置函数”中。下面的代码展示了 `FixedDoubleArray` 的“载入”操作。
 
 ```torque
 Load<FastDoubleElements>(
@@ -316,12 +329,17 @@ Load<FastDoubleElements>(
     // The pre-processing step removed all holes by compacting all elements
     // at the start of the array. Finding a hole means the cmp function or
     // ToString changes the array.
+    // 预处理步骤通过把所有元素移到数组最前的方式
+    // 已经移除了所有的孔。这时找到了孔说明 cmp 函数
+    // 或 ToString 改变了数组本身。 
     return Failure(sortState);
   }
 }
 ```
 
 To compare, the most generic “load” operation is simply a call to `GetProperty`. But while the above version generates efficient and fast machine code to load and convert a `Number`, `GetProperty` is a call to another builtin that could potentially involve a prototype chain lookup or invoke an accessor function.
+
+相比较之下，最通用的“载入”操作只是简单地调用 `GetProperty`。而上方的版本产生了高效快速的机器码，来载入并转换一个 `Number`，`GetProperty` 是对另一个内置函数的调用，这可能会引发原型链搜索或者调用一个访问器。
 
 ```js
 builtin Load<ElementsAccessor : type>(
@@ -333,7 +351,11 @@ builtin Load<ElementsAccessor : type>(
 
 A fast-path then simply becomes a set of function pointers. This means we only need one copy of the core algorithm while setting up all relevant function pointers once upfront. While this greatly reduces the needed code space (down to 20k) it comes at the cost of an indirect branch at each access site. This is even exacerbated by the recent change to use [embedded builtins](/blog/embedded-builtins).
 
+这样一来一个快速路径就变成了一系列函数指针。这意味着我们只需一份核心算法的实现，然后提前好设定所有相关函数指针。这显著降低了代码体积（降至 20k），但这是以每个不同调用的不同分支为代价实现的。而这种现象随着近期 [embedded builtins](/blog/embedded-builtins) 的引入加剧了。
+
 ### Sort state
+
+### 排序状态 {#sort-state}
 
 <figure>
   <img src="/_img/array-sort/sort-state.svg" alt="">
