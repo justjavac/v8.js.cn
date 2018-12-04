@@ -22,7 +22,7 @@ Javascript 中的排序很难。这篇博客旨在分析一个排序算法和 Ja
 
 When comparing different sorting algorithms we look at their worst and average performance given as a bound on the asymptotic growth (i.e. “Big O” notation) of either memory operations or number of comparisons. Note that in dynamic languages, such as JavaScript, a comparison operation is usually a magnitude more expensive than a memory access. This is due to the fact that comparing two values while sorting usually involves calls to user code.
 
-对比不同的排序算法时，我们常常关注它们最坏情况和平均情况下的性能。它们是由渐进增长的边界条件给出的（比如说，O 记号）,要么是内存使用，要么是比较次数。注意在 Javascript 这样的动态语言中，比较操作通常是比内存访问昂贵一个数量级。这是由于在排序时比较两个值常常涉及到调用用户代码。
+对比不同的排序算法时，我们常常关注它们最坏情况和平均情况下的性能。它们是由渐进增长的边界条件给出的（比如说，大 O 表示法）,要么是内存使用，要么是比较次数。注意在 Javascript 这样的动态语言中，比较操作通常是比内存访问昂贵一个数量级。这是由于在排序时比较两个值常常涉及到调用用户代码。
 
 Let’s take a look at a simple example of sorting some numbers into ascending order based on a user-provided comparison function. A _consistent_ comparison function returns `-1` (or any other negative value), `0`, or `1` (or any other positive value) when the two provided values are either smaller, equal, or greater respectively. A comparison function that does not follow this pattern is _inconsistent_ and can have arbitrary side-effects, such as modifying the array it’s intended to sort.
 
@@ -363,23 +363,43 @@ A fast-path then simply becomes a set of function pointers. This means we only n
 
 The picture above shows the “sort state”. It’s a `FixedArray` that keeps track of all the things needed while sorting. Each time `Array#sort` is called, such a sort state is allocated. Entry 4 to 7 are the set of function pointers discussed above that comprise a fast-path.
 
+上图展示了“排序状态”。这是一个 `FixedArray`，它记录了所有排序时需要的东西。每次调用 `Array#sort`，就会创建这样一个排序状态。索引 4 到 7 是一系列函数指针，构成了一个快速路径，正如上文中我们讨论的那样。
+
 The “check” builtin is used every time we return from user JavaScript code, to check if we can continue on the current fast-path. It uses the “initial receiver map” and “initial receiver length” for this.  Should the user code have modified the current object, we simply abandon the sorting run, reset all pointers to their most generic version and restart the sorting process. The “bailout status” in slot 8 is used to signal this reset.
+
+每次用户的 Javascript 代码返回时，“check” 内置函数就会被调用，以检查我们能否继续当前的快速路径。它会用 “initial receiver map” 和 “initial receiver length” 来做检查。如果用户代码更改了当前对象，我们就会放弃整个排序进程，把所有指针重置为最通用的一版然后重新开始。第 8 个位置的 “bailout status” 记录了这样的重置。
 
 The “compare” entry can point to two different builtins. One calls a user-provided comparison function while the other implements the default comparison that calls `toString` on both arguments and then does a lexicographical comparison.
 
+“compare” 可以指向两个不同的内置函数。一个调用用户提供的比较函数，另一个是默认比较函数，它会对每一个参数执行 `toString` 然后按字典序比较。
+
 The rest of the fields (with the exception of the fast path ID) are Timsort-specific. The run stack (described above) is initialized with a size of 85 which is enough to sort arrays of length 2<sup>64</sup>. The temporary array is used for merging runs. It grows in size as needed but never exceeds `n/2` where `n` is the input length.
+
+其他索引（除了 fast path id）都是 Timsort 相关。run 栈（上文讨论过）初始化时长度为 85，足以排序一个长度为 2<sup>64</sup> 的数组。临时数组（temporary array） 用于合并 run。它的长度会根据需要增长，但永远不会超过 `n/2`，`n` 为输入数组长度。
 
 ### Performance trade-offs
 
+### 性能妥协
+
 Moving sorting from self-hosted JavaScript to Torque comes with performance trade-offs. As `Array#sort` is written in Torque, it’s now a statically compiled piece of code, meaning we still can build fast-paths for certain [`ElementsKind`s](/blog/elements-kinds) but it will never be as fast as a highly optimized TurboFan version that can utilize type feedback. On the other hand, in cases where the code doesn’t get hot enough to warrant JIT compilation or the call-site is megamorphic, we are stuck with the interpreter or a slow/generic version. The parsing, compiling and possible optimizing of the self-hosted JavaScript version is also an overhead that is not needed with the Torque implementation.
+
+将排序从自托管 Javascript 迁移到 Torque 牺牲了一些性能。现在 `Array#sort` 使用 Torque 编写，它成为了静态编译的代码。这意味着我们仍可以为不同的 [`ElementsKind`](/blog/elements-kinds) 构建快速路径，但它永远不会比 TurboFan 高度优化的代码更快，因为它们可以根据类型的反馈来调整。另一方面，如果代码不够“热”，不足以保证 JIT 编译，或者调用点是复态（megamorphic）的，我们就会卡在解释器或者很慢的通用版本那里。自托管 Javascript 中的解析，编译和可能存在的优化过程，在 Torque 中的都不需要了。
 
 While the Torque approach doesn’t result in the same peak performance for sorting, it does avoid performance cliffs. The result is a sorting performance that is much more predictable than it previously was. Keep in mind that Torque is very much in flux and in addition of targeting CSA it might target TurboFan in the future, allowing JIT compilation of code written in Torque.
 
+尽管 Torque 版本排序无法达到相同的巅峰性能，它确实避免了性能断崖。而且它的排序性能比之前更容易预测了。记住 Torque 仍在开发中，它目前已 CSA 为编译目标，未来可能以 TurboFan 为目标，即用 Torque 编写 JIT 编译代码。
+
 ### Microbenchmarks
+
+### 微基准测试
 
 Before we started with `Array#sort`, we added a lot of different micro-benchmarks to get a better understanding of the impact the re-implementation would have. The first chart shows the “normal” use case of sorting various ElementsKinds with a user-provided comparison function.
 
+我们开始开发 `Array#sort` 之前，我们添加了一些微型基准测试（micro-benchmarks）来更好地了解重写后会造成什么影响。第一张表展示了“正常”使用情况，使用用户提供的比较函数对不同 ElementsKind 进行排序。
+
 Keep in mind that in these cases the JIT compiler can do a lot of work, since sorting is nearly all we do. This also allows the optimizing compiler to inline the comparison function in the JavaScript version, while we have the call overhead from the builtin to JavaScript in the Torque case. Still, we perform better in nearly all cases.
+
+注意这些情况下 JIT 编译器会做很多工作，因为排序几乎都是我们（用户）做的。同时 Javascript 版本中优化编译器也可以内联比较函数，而我们在 Torque 版本有内置函数到 Javascript 的额外开销。尽管如此，我们还是在几乎所有情景下性能更好。
 
 <figure>
   <img src="/_img/array-sort/micro-bench-basic.svg" alt="">
@@ -387,13 +407,19 @@ Keep in mind that in these cases the JIT compiler can do a lot of work, since so
 
 The next chart shows the impact of Timsort when processing arrays that are already sorted completely, or have sub-sequences that are already sorted one-way or another. The chart uses Quicksort as a baseline and shows the speedup of Timsort (up to 17× in the case of “DownDown” where the array consists of two reverse-sorted sequences). As can be seen, expect in the case of random data, Timsort performs better in all other cases, even though we are sorting `PACKED_SMI_ELEMENTS`, where Quicksort outperformed Timsort in the microbenchmark above.
 
+下一张表展示了对已排序数组或含有已排序的子序列的数组进行排序时，Timsort 的威力。表中用快速排序做基准，显示了 Timsort 的速度提升（最高在 DownDown 中提升了 17 倍，这个数组是由两个反向排序的序列组成的）。如你所见，除了随机数据以外，Timsort 在其它所有情景中性能更好，即便我们排序的对象是 `PACKED_SMI_ELEMENTS`，它在上个测试中快速排序的性能优于 Timsort。
+
 <figure>
   <img src="/_img/array-sort/micro-bench-presorted.svg" alt="">
 </figure>
 
 ### Web Tooling Benchmark
 
+### Web 工具基准测试
+
 The [Web Tooling Benchmark](https://github.com/v8/web-tooling-benchmark) is a collection of workloads of tools usually used by web developers such as Babel and TypeScript. The chart uses JavaScript Quicksort as a baseline and compares the speedup of Timsort against it. In almost all benchmarks we retain the same performance with the exception of chai.
+
+[Web 工具基准测试](https://github.com/v8/web-tooling-benchmark) 是一系列对 web 开发者使用的工具（例如 Babel 或 Typescript）的测试。表中用快速排序做基准，比较了 Timsort 的速度提升。除了 chai 我们在几乎所有测试中获得了相同的性能。
 
 <figure>
   <img src="/_img/array-sort/web-tooling-benchmark.svg" alt="">
@@ -401,10 +427,20 @@ The [Web Tooling Benchmark](https://github.com/v8/web-tooling-benchmark) is a co
 
 The chai benchmark spends *a third* of its time inside a single comparison function (a string distance calculation). The benchmark is the test suite of chai itself. Due to the data, Timsort needs some more comparisons in this case, which has a bigger impact on the overall runtime, as such a big portion of time is spent inside that particular comparison function.
 
+chai 的测试花费了 **三分之一** 的时间在一个比较函数里面（字符串距离计算）。性能测试是 chai 的测试套件本身。由于这些数据，Timsort 在这种情况下需要进行更多比较，进而对整体时间消耗造成了很大影响，因为一大部分时间都在比较函数中消耗了。
+
 ### Memory impact
+
+### 内存影响
 
 Analyzing V8 heap snapshots while browsing some 50 sites (both on mobile as well as on desktop) didn’t show any memory regressions or improvements. On the one hand, this is surprising: the switch from Quicksort to Timsort introduced the need for a temporary array for merging runs, which can grow much larger than the temporary arrays used for sampling. On the other hand, these temporary arrays are very short-lived (only for the duration of the `sort` call) and can be allocated and discarded rather quickly in V8’s new space.
 
+浏览 50 个网页（手机端和桌面端都有）然后分析 V8 堆快照显示，内存消耗既没有退步也没有进步。一方面来说，这很意外：从快速排序切换到 Timsort 需要临时数组用于合并 run，这样的数组会比（快排中使用的）抽样数组大得多。另一方面来说，这些临时数组生存时间很短（只在 `sort` 调用时存在），在 V8 新的内存空间中会被快速创建然后删除。
+
 ## Conclusion
 
+## 结论
+
 In summary we feel much better about the algorithmic properties and the predictable performance behavior of a Timsort implemented in Torque. Timsort is available starting with V8 v7.0 and Chrome 70. Happy sorting!
+
+总的来说 Torque 实现的 Timsort 表现出的代数性质和可预测行为，让我们觉得它比以前好得多。Timsort 将在 V8 v7.0 和 Chrome 70 中推出。Happy sorting!
