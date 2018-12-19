@@ -68,7 +68,7 @@ module.exports = (eleventyConfig) => {
   // Match Firebase’s `cleanUrls` setting.
   eleventyConfig.addFilter('clean', (path) => {
     if (path === '/') return path;
-    if (path === 'https://v8.dev/') return path;
+    if (path === 'https://v8.js.cn/') return path;
     if (path.endsWith('/')) return path.slice(0, -1);
     return path;
   });
