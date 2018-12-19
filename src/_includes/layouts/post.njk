@@ -8,7 +8,7 @@ layout: layouts/base.njk
       发布时间：<time datetime="{{ date | htmlDateString }}" title="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
       {% if tags %}
         · 标签：{% for tag in tags %}
-          <a href="/blog/tags/{{ tag | slug }}" class="tag">{{ tag }}</a>
+          <a href="/blog/tags/{{ tag | slug }}/" class="tag">{{ tag }}</a>
         {% endfor %}
       {% endif %}
     </p>
