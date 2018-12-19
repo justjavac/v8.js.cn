@@ -339,7 +339,7 @@ each([1, 2, 3], doSomething);
 
 V8 中单态与多态的另一个例子涉及对象形状（object shape），也称为对象的隐藏类。要了解更多，请查看 [Vyacheslav 的文章](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html)。
 
-## 调试元素种类 {#debugging-elements-kinds}
+## 调试元素种类 {#debugging}
 
 找出一个给定的对象的“元素种类”，可以使用一个调试版本 `d8`（参见[“从源代码构建”](/docs/build)），并运行：
 
