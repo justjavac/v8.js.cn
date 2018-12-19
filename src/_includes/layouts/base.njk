@@ -20,8 +20,8 @@
       <nav>
         <ul>
           <li{% if '/' === page.url %} class="active"{% endif %}><a href="/">主页</a></li>
-          <li{% if '/blog' in page.url %} class="active"{% endif %}><a href="/blog">博客</a></li>
-          <li{% if '/docs' in page.url %} class="active"{% endif %}><a href="/docs">文档</a></li>
+          <li{% if '/blog/' in page.url %} class="active"{% endif %}><a href="/blog/">博客</a></li>
+          <li{% if '/docs/' in page.url %} class="active"{% endif %}><a href="/docs/">文档</a></li>
         </ul>
       </nav>
     </header>
@@ -31,9 +31,9 @@
     <footer id="footer">
       <nav>
         <a href="https://v8.dev{{ page.url | url | clean }}">原文</a> ·
-        <a href="/logo">商标</a> ·
-        <a href="/terms">条款</a> ·
-        <a href="https://policies.google.com/privacy">隐私</a> ·
+        <a href="/logo/">商标</a> ·
+        <a href="/terms/">条款</a> ·
+        <a href="https://policies.google.com/privacy/">隐私</a> ·
         <a href="https://twitter.com/v8js" rel="me nofollow">Twitter</a> ·
         <a href="https://github.com/justjavac/v8.js.cn/tree/master/{{ page.inputPath }}" rel="nofollow">在 GitHub 编辑此页面</a>
       </nav>
