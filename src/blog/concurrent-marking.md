@@ -1,5 +1,5 @@
 ---
-title: 'Concurrent marking in V8'
+title: 'V8 的并发标记'
 author: 'Ulan Degenbaev, Michael Lippautz, and Hannes Payer — main thread liberators'
 avatars:
   - 'ulan-degenbaev'
@@ -10,59 +10,61 @@ tags:
   - internals
   - memory
 tweet: '1006187194808233985'
+cn:
+  author: '本文由开源中国翻译，[原文地址](https://www.oschina.net/translate/v8-javascript-engine)。参与翻译：kevinlinkai, Tocy, 琪花亿草, 豆豆胡萝卜, 焙焙龙, 凉凉_'
 ---
-This post describes the garbage collection technique called _concurrent marking_. The optimization allows a JavaScript application to continue execution while the garbage collector scans the heap to find and mark live objects. Our benchmarks show that concurrent marking reduces the time spent marking on the main thread by 60%–70%. Concurrent marking is the last puzzle piece of the [Orinoco project](/blog/orinoco) — the project to incrementally replace the old garbage collector with the new mostly concurrent and parallel garbage collector. Concurrent marking is enabled by default in Chrome 64 and Node.js v10.
+本文详细描述了被称为**并发标记**的垃圾回收技术。该优化允许 JavaScript 应用在垃圾回收器扫描其堆以查找和标记活动对象时可继续执行。我们的基准测试显示，并发标记相比在主线程上标记节省了 60％-70％ 的时间。并发标记是 [Orinoco 项目](/blog/orinoco) 的最后一块拼图 - 使用新的多并发和并行垃圾回收机制增量地替换旧的垃圾回收机制的项目。Chrome 64 和 Node.js v10 默认启用并发标记。
 
-## Background
+## 背景 { #background }
 
-Marking is a phase of V8’s [Mark-Compact](https://en.wikipedia.org/wiki/Tracing_garbage_collection) garbage collector. During this phase the collector discovers and marks all live objects. Marking starts from the set of known live objects such as the global object and the currently active functions — the so-called roots. The collector marks the roots as live and follows the pointers in them to discover more live objects. The collector continues marking the newly discovered objects and following pointers until there are no more objects to mark. At the end of marking, all unmarked objects on the heap are unreachable from the application and can be safely reclaimed.
+标记是 V8 的 [Mark-Compact](https://en.wikipedia.org/wiki/Tracing_garbage_collection) 垃圾收集器的一个阶段。在这个阶段中，收集器发现并标记了所有的活动对象。标记从一组已知的活动对象开始，例如全局对象和当前活动函数——所谓的根。收集器将根标记为活动的，并跟随指针来发现更多的活动对象。收集器继续标记新发现的对象并跟随标记指针，直到没有需要标记的对象为止。在标记结束时，应用程序无法访问堆中未被标记的对象，并且可以安全的回收。
 
-We can think of marking as a [graph traversal](https://en.wikipedia.org/wiki/Graph_traversal). The objects on the heap are nodes of the graph. Pointers from one object to another are edges of the graph. Given a node in the graph we can find all out-going edges of that node using the [hidden class](/blog/fast-properties) of the object.
+我们可以将标记认为是[图遍历](https://en.wikipedia.org/wiki/Graph_traversal)。堆上的对象是图的节点。从一个对象指向另一个对象是图的边。从图中给一个节点，我们可以使用对象的[隐藏类 hidden class](/blog/fast-properties) 找出该节点所有外出边（out-going edges）。
 
 <figure>
   <img src="/_img/concurrent-marking/00.svg" intrinsicsize="508x293" alt="">
-  <figcaption>Figure 1. Object graph</figcaption>
+  <figcaption>图示 1. 对象关系图</figcaption>
 </figure>
 
-V8 implements marking using two mark-bits per object and a marking worklist. Two mark-bits encode three colors: white (`00`), grey (`10`), and black (`11`). Initially all objects are white, which means that the collector has not discovered them yet. A white object becomes grey when the collector discovers it and pushes it onto the marking worklist. A grey object becomes black when the collector pops it from the marking worklist and visits all its fields. This scheme is called tri-color marking. Marking finishes when there are no more grey objects. All the remaining white objects are unreachable and can be safely reclaimed.
+V8 使用每个对象的两个标记位和一个标记工作表来实现标记。两个标记位编码三种颜色：白色（`00`），灰色（`10`）和黑色（`11`）。最初所有的对象都是白色，意味着收集器还没有发现他们。当收集器发现一个对象时，将其标记为灰色并推入到标记工作表中。当收集器从标记工作表中弹出对象并访问他的所有字段时，灰色就会变成黑色。这种方案被称做三色标记法。当没有灰色对象时，标记结束。所有剩余的白色对象无法达到，可以被安全的回收。
 
 <figure>
   <img src="/_img/concurrent-marking/01.svg" intrinsicsize="380x290" alt="">
-  <figcaption>Figure 2. Marking starts from the roots</figcaption>
+  <figcaption>图示 2. 从根节点开始标记</figcaption>
 </figure>
 
 <figure>
   <img src="/_img/concurrent-marking/02.svg" intrinsicsize="380x290" alt="">
-  <figcaption>Figure 3. The collector turns a grey object into black by processing its pointers</figcaption>
+  <figcaption>图示 3. 收集器通过处理其指针将灰色对象变为黑色</figcaption>
 </figure>
 
 <figure>
   <img src="/_img/concurrent-marking/03.svg" intrinsicsize="380x290" alt="">
-  <figcaption>Figure 4. The final state after marking is finished</figcaption>
+  <figcaption>图示 Figure 4. 标记完成后的最终状态</figcaption>
 </figure>
 
-Note that the marking algorithm described above works only if the application is paused while marking is in progress. If we allow the application to run during marking, then the application can change the graph and eventually trick the collector into freeing live objects.
+需要注意的是，上述标记法仅适用于在标记进行中应用程序暂停的情况。如果我们允许应用程序在标记过程中运行，那么应用程序可能改变图并且最终欺骗收集器释放活动对象。
 
-## Reducing marking pause
+## 减少标记暂停 { #reducing-marking-pause }
 
-Marking performed all at once can take several hundred milliseconds for large heaps.
+一次执行标记可能需要几百毫秒才能完成一个很大的堆。
 
 <figure>
   <img src="/_img/concurrent-marking/04.svg" intrinsicsize="580x50" alt="">
 </figure>
 
-Such long pauses can make applications unresponsive and result in poor user experience. In 2011 V8 switched from the stop-the-world marking to incremental marking. During incremental marking the garbage collector splits up the marking work into smaller chunks and allows the application to run between the chunks:
+这样长时间的停顿可能会使应用程序无响应，并导致用户体验不佳。在 2011 年，V8 从 stop-the-world 标记切换到增量标记。在增量标记期间，垃圾收集器将标记工作分解为更小的块，并且允许应用程序在块之间运行：
 
 <figure>
   <img src="/_img/concurrent-marking/05.svg" intrinsicsize="595x50" alt="">
 </figure>
 
-The garbage collector chooses how much incremental marking work to perform in each chunk to match the rate of allocations by the application. In common cases this greatly improves the responsiveness of the application. For large heaps under memory pressure there can still be long pauses as the collector tries to keep up with the allocations.
+垃圾收集器选择在每个块中执行多少增量标记来匹配应用程序的分配速率。一般情况下，这极大地提高了应用程序的响应速度。对内存压力较大的堆，收集器仍然可能出现长时间的暂停来维持分配。
 
-Incremental marking does not come for free. The application has to notify the garbage collector about all operations that change the object graph. V8 implements the notification using a Dijkstra-style write-barrier. After each write operation of the form `object.field = value` in JavaScript, V8 inserts the write-barrier code:
+增量标记不是没有代价的。应用程序必须通知垃圾收集器关于改变对象图的所有操作。V8 使用 Dijkstra 风格的写屏障（write-barrier）机制来实现通知。在 JavaScript 中，每次形如 `object.field = value` 的写操作之后，V8 会插入 write-barrier 代码。
 
 ```cpp
-// Called after `object.field = value`.
+// 调用 `object.field = value` 之后
 write_barrier(object, field_offset, value) {
   if (color(object) == black && color(value) == white) {
     set_color(value, grey);
@@ -71,70 +73,70 @@ write_barrier(object, field_offset, value) {
 }
 ```
 
-The write-barrier enforces the invariant that no black object points to a white object. This is also known as the strong tri-color invariant and guarantees that the application cannot hide a live object from the garbage collector, so all white objects at the end of marking are truly unreachable for the application and can be safely freed.
+Write-barrier 机制强制不变黑的对象指向白色对象。这也被称为强三色不变性，保证应用程序不能在垃圾收集器中隐藏活动对象，因此标记结束时的所有白色对象对于应用程序来说都是不可达的，可以安全释放。
 
-Incremental marking integrates nicely with idle time garbage collection scheduling as described in an [earlier blog post](/blog/free-garbage-collection). Chrome’s Blink task scheduler can schedule small incremental marking steps during idle time on the main thread without causing jank. This optimization works really well if idle time is available.
+就像[之前博客](/blog/free-garbage-collection)中描述的那样，增量标记很好的集成了空闲时间垃圾收集调度。Chrome 的 Blink 任务调度程序可以在主线程的空闲时间调度小的增量标记步骤，而不会造成混乱。如果空闲时间可用，该优化效果将会非常好。
 
-Because of the write-barrier cost, incremental marking may reduce throughput of the application. It is possible to improve both throughput and pause times by making use of additional worker threads. There are two ways to do marking on worker threads: parallel marking and concurrent marking.
+由于 write-barrier 机制的成本，增量标记可能会降低应用程序的吞吐量。通过使用额外的工作线程可以改善吞吐量和暂停时间。有两种方法可以在工作线程上进行标记：并行标记和并发标记。
 
-**Parallel** marking happens on the main thread and the worker threads. The application is paused throughout the parallel marking phase. It is the multi-threaded version of the stop-the-world marking.
+**并行**标记发生在主线程和工作线程上。应用程序在整个并行标记阶段暂停。它是 stop-the-world 标记的多线程版本。
 
 <figure>
   <img src="/_img/concurrent-marking/06.svg" intrinsicsize="595x120" alt="">
 </figure>
 
-**Concurrent** marking happens mostly on the worker threads. The application can continue running while concurrent marking is in progress.
+**并发**标记主要发生在工作线程上。当并发标记正在进行时，应用程序可以继续运行。
 
 <figure>
   <img src="/_img/concurrent-marking/07.svg" intrinsicsize="595x120" alt="">
 </figure>
 
-The following two sections describe how we added support for parallel and concurrent marking in V8.
+下面两节描述我们如何在 V8 中添加对并行和并发标记的支持。
 
-## Parallel marking
+## 并行标记 { #parallel-marking }
 
-During parallel marking we can assume that the application is not running concurrently. This substantially simplifies the implementation because we can assume that the object graph is static and does not change. In order to mark the object graph in parallel, we need to make the garbage collector data structures thread-safe and find a way to efficiently share marking work between threads. The following diagram shows the data-structures involved in parallel marking. The arrows indicate the direction of data flow. For simplicity, the diagram omits data-structures that are needed for heap defragmentation.
+在并行标记的时候，我们可以假定应用都不会同时运行。这大大的简化了实现，因为我们可以假定对象图是静态的，而且不会改变。为了并行标记对象图，我们需要让垃圾收集数据结构是线程安全的，而且寻找一个可以在线程间运行的高效共享标记的方法。下面的示意图展示了并行标记包含的数据结构。箭头代表数据流的方向。简单来说，示意图省略了堆碎片处理所需的数据结构。
 
 <figure>
   <img src="/_img/concurrent-marking/08.svg" intrinsicsize="655x250" alt="">
-  <figcaption>Figure 5. Data structures for parallel marking</figcaption>
+  <figcaption>图示 5. 并行标记使用到的数据结构</figcaption>
 </figure>
 
-Note that the threads only read from the object graph and never change it. The mark-bits of the objects and the marking worklist have to support read and write accesses.
+注意，这些线程只能读取对象图，而不能修改它。对象的标记位和标记列表必须支持读写访问。
 
-## Marking worklist and work stealing
+## 标记工作列表和工作窃取 { #marking-worklist-and-work-stealing }
 
-The implementation of the marking worklist is critical for performance and balances fast thread-local performance with how much work can be distributed to other threads in case they run out of work to do.
+标记工作列表（marking-worklist）的实现对性能至关重要，而且它通过在其他线程没有工作可做的情况下，有多少工作可以分配给他们，来平衡快速线程本地的性能。
 
-The extreme sides in that trade-off space are (a) using a completely concurrent data structure for best sharing as all objects can potentially be shared and (b) using a completely thread-local data structure where no objects can be shared, optimizing for thread-local throughput. Figure 6 shows how V8 balances these needs by using a marking worklist that is based on segments for thread-local insertion and removal. Once a segment becomes full it is published to a shared global pool where it is available for stealing. This way V8 allows marking threads to operate locally without any synchronization as long as possible and still handle cases where a single thread reaches a new sub-graph of objects while another thread starves as it completely drained its local segments.
+要权衡的两个极端的情况是（a）使用完全并发数据结构，达成最佳共享即所有对象都可以隐式共享，和（b）使用完全本地线程（thread-local）数据结构，没有对象可以共享，优化线程本地吞吐量。图 6 展示了 V8 是如何通过使用一个基于本地线程插入和删除的段的标记工作列表来平衡这些需求的。一旦一个段满了，它会被发布到一个可以用来窃取的共享全局池。使用这种方法，V8 允许标记线程在不用任何同步的情况下尽可能长的执行本地操作，而且还处理了当单个线程达成了一个新的对象子图，而另一个线程在完全耗尽了本地段时饥饿的情况。
 
 <figure>
   <img src="/_img/concurrent-marking/09.svg" intrinsicsize="593x213" alt="">
-  <figcaption>Figure 6. Marking worklist</figcaption>
+  <figcaption>图示 6. Marking worklist</figcaption>
 </figure>
 
-## Concurrent marking
+## 并发标记 { #concurrent-marking }
 
-Concurrent marking allows JavaScript to run on the main thread while worker threads are visiting objects on the heap. This opens the door for many potential data races. For example, JavaScript may be writing to an object field at the same time as a worker thread is reading the field. The data races may confuse the garbage collector to free a live object or to mix up primitive values with pointers.
+当工作线程正在访问堆上的对象的同时，并发标记允许 JavaScript 在主线程上运行。这为潜在的竞态数据打开大门。举个例子：当工作者线程正在读取字段时，JavaScript 可能正在写入对象字段。竞态数据会混淆垃圾回收器释放活动对象或者将原始值和指针混合在一起。
 
-Each operation on the main thread that changes the object graph is a potential source of a data race. Since V8 is a high-performance engine with many object layout optimizations, the list of potential data race sources is rather long. Here is a high-level breakdown:
+主线程的每个改变对象图的操作将会是竞态数据的潜在来源。由于 V8 是具有多种对象布局优化功能的高性能引擎，潜在竞态数据来源相当多。以下是 high-level 列表：
 
-- Object allocation.
-- Write to an object field.
-- Object layout changes.
-- Deserialization from the snapshot.
-- Materialization during deoptimization of a function.
-- Evacuation during young generation garbage collection.
-- Code patching.
+- 对象分配
+- 写对象
+- 对象布局变化
+- 快照反序列化
+- 功能去优化（deopt）实现
+- 新生代垃圾回收期间的疏散
+- 代码修补
 
-The main thread needs to synchronize with the worker threads on these operations. The cost and complexity of synchronization depends on the operation. Most operations allow lightweight synchronization with atomic memory accesses, but a few operations require exclusive access to the object. In the following subsections we highlight some of the interesting cases.
+在以上这些操作上，主线程需要与工作线程同步。同步代价和复杂度视操作而定。大部分操作允许轻量级的同步和原子操作之间的访问，但是少部分操作需独占访问对象。在下面的小节中我们强调一些有趣的案例。
 
-### Write barrier
+### 写屏障 { #write-barrier }
 
-The data race caused by a write to an object field is resolved by turning the write operation into a [relaxed atomic write](https://en.cppreference.com/w/cpp/atomic/memory_order#Relaxed_ordering) and tweaking the write barrier:
+通过写入对象字段导致的数据竞争通过将写入操作转变为[放宽原子写入](https://en.cppreference.com/w/cpp/atomic/memory_order#Relaxed_ordering)并调整写屏障来解决：
 
 ```cpp
-// Called after atomic_relaxed_write(&object.field, value);
+// 调用 `atomic_relaxed_write(&object.field, value)` 后
 write_barrier(object, field_offset, value) {
   if (color(value) == white && atomic_color_transition(value, white, grey)) {
     marking_worklist.push(value);
@@ -142,10 +144,10 @@ write_barrier(object, field_offset, value) {
 }
 ```
 
-Compare it with the previously-used write barrier:
+与上面的写屏障进行比较：
 
 ```cpp
-// Called after `object.field = value`.
+// 调用 `object.field = value` 后
 write_barrier(object, field_offset, value) {
   if (color(object) == black && color(value) == white) {
     set_color(value, grey);
@@ -154,12 +156,12 @@ write_barrier(object, field_offset, value) {
 }
 ```
 
-There are two changes:
+这有两个变化：
 
-1. The color check of the source object (`color(object) == black`) is gone.
-2. The color transition of the `value` from white to grey happens atomically.
+1. 不对源对象进行颜色检查 (`color(object) == black`)
+2. `value` 的颜色从白色到灰色的转换变成了原子操作
 
-Without the source object color check the write barrier becomes more conservative, i.e. it may mark objects as live even if those objects are not really reachable. We removed the check to avoid an expensive memory fence that would be needed between the write operation and the write barrier:
+如果不对源对象进行颜色检查，写屏障变得更保守。举个例子，只要对象存在都会标记他们就算那些对象是无法获取的。我们删除了这个检查以避免在写操作和写障碍之间需要昂贵的内存栅栏（memory fence）：
 
 ```cpp
 atomic_relaxed_write(&object.field, value);
@@ -167,26 +169,26 @@ memory_fence();
 write_barrier(object, field_offset, value);
 ```
 
-Without the memory fence the object color load operation can be reordered before the write operation. If we don’t prevent the reordering, then the write barrier may observe grey object color and bail out, while a worker thread marks the object without seeing the new value. The original write barrier proposed by Dijkstra et al. also does not check the object color. They did it for simplicity, but we need it for correctness.
+没有内存栅栏（memory fence），当执行加载对象颜色的操作时在写操作之前将会被重排序。如果我们不阻止重排序，那么写屏障观察到对象颜色变灰并释放它（bail out），而工作线程在没有看到新值的情况下标记对象。由 Dijkstra 等人提出的原始写屏障不会检查对象的颜色。他们这么做是为了简单，但是我们这么做则是为了保证程序的正确性。
 
-### Bailout worklist
+### Bailout worklist { #bailout-worklist }
 
-Some operations, for example code patching, require exclusive access to the object. Early on we decided to avoid per-object locks because they can lead to the priority inversion problem, where the main thread has to wait for a worker thread that is descheduled while holding an object lock. Instead of locking an object, we allow the worker thread to bailout from visiting the object. The worker thread does that by pushing the object into the bailout worklist, which is processed only by the main thread:
+某些操作（例如代码打补丁）需要独占访问该对象。在早期，我们决定避免每个对象的锁，因为它们可能导致优先级反转问题，其中主线程必须等待一个持有该对象锁的非调度的工作线程。作为锁定一个对象的替代方案，我们允许工作线程通过访问该对象来避免这些麻烦。工作线程通过将对象推入 bailout worklist 来完成此功能，该工作清单仅由主线程处理：
 
 <figure>
   <img src="/_img/concurrent-marking/10.svg" intrinsicsize="655x336" alt="">
-  <figcaption>Figure 7. The bailout worklist</figcaption>
+  <figcaption>图示 7. The bailout worklist</figcaption>
 </figure>
 
-Worker threads bail out on optimized code objects, hidden classes and weak collections because visiting them would require locking or expensive synchronization protocol.
+工作线程在优化的代码对象、隐藏类和弱集合上进行处理，因为访问它们需要加锁或高开销的同步协议。
 
-In retrospect, the bailout worklist turned out to be great for incremental development. We started implementation with worker threads bailing out on all object types and added concurrency one by one.
+回顾过去，bailout worklist 对增量开发来说是非常有用的。我们开始使用工作线程来处理所有对象类型并逐一添加并发机制。
 
-### Object layout changes
+### 对象布局更改 { #object-layout-changes }
 
-A field of an object can store three kinds of values: a tagged pointer, a tagged small integer (also known as a Smi), or an untagged value like an unboxed floating-point number. [Pointer tagging](https://en.wikipedia.org/wiki/Tagged_pointer) is a well-known technique that allows efficient representation of unboxed integers. In V8 the least significant bit of a tagged value indicates whether it is a pointer or an integer. This relies on the fact that pointers are word-aligned. The information about whether a field is tagged or untagged is stored in the hidden class of the object.
+对象的字段可以存储三种值：标记的指针，标记的小整数（也称为 Smi），或未标记的值，如未装箱的浮点数。[指针标记 pointer tagging](https://en.wikipedia.org/wiki/Tagged_pointer) 是一种众所周知的技术，可以有效地表示未装箱的整数。在 V8 中，标记值的最低有效位指示它是指针还是整数。这依赖于指针是字对齐（word-aligned）的事实。有关字段是标记的还是未标记的信息存储在对象的隐藏类中。
 
-Some operations in V8 change an object field from tagged to untagged (or vice versa) by transitioning the object to another hidden class. Such an object layout change is unsafe for concurrent marking. If the change happens while a worker thread is visiting the object concurrently using the old hidden class, then two kinds of bugs are possible. First, the worker may miss a pointer thinking that it is an untagged value. The write barrier protects against this kind of bug. Second, the worker may treat an untagged value as a pointer and dereference it, which would result in an invalid memory access typically followed by a program crash. In order to handle this case we use a snapshotting protocol that synchronizes on the mark-bit of the object. The protocol involves two parties: the main thread changing an object field from tagged to untagged and the worker thread visiting the object. Before changing the field, the main thread ensures that the object is marked as black and pushes it into the bailout worklist for visiting later on:
+通过将对象转换为另一个隐藏类，V8 中的一些操作将对象字段从标记变为未标记（反之亦然）。这种对象布局更改对于并发标记是不安全的。如果在工作线程使用旧的隐藏类同时访问对象时发生更改，则可能会出现两种类型的错误。首先，工作流可能会错过一个指针，认为这是一个没有标记的值。使用写屏障可以防止这种错误。其次，工作流可能会将未标记的值视为指针并将其解引用，这会导致无效的内存访问，通常会导致程序崩溃。为了处理这种情况，我们使用一个在对象标记位上同步的快照协议。该协议涉及两方面：主线程将对象字段从标记变为未标记以及工作线程访问对象。在更改字段之前，主线程会确保该对象被标记为黑色并将其推入 bailout worklist 供以后访问：
 
 ```cpp
 atomic_color_transition(object, white, grey);
@@ -198,7 +200,7 @@ if (atomic_color_transition(object, grey, black)) {
 unsafe_object_layout_change(object);
 ```
 
-As shown in the code snippet below, the worker thread first loads the hidden class of the object and snapshots all the pointer fields of the object specified by the hidden class using [atomic relaxed load operations](https://en.cppreference.com/w/cpp/atomic/memory_order#Relaxed_ordering). Then it tries to mark the object black using an atomic compare and swap operation. If marking succeeded then this means that the snapshot must be consistent with the hidden class because the main thread marks the object black before changing its layout.
+如下面的代码片段所示，工作线程首先加载对象的隐藏类并使用[原子放宽加载操作 atomic relaxed load operations](https://en.cppreference.com/w/cpp/atomic/memory_order#Relaxed_ordering) 来为所有由隐藏类指定的对象的指针字段生成快照。然后它会尝试使用原子比较和交换操作将对象标记为黑色。如果标记成功，则意味着快照必须与隐藏类一致，因为主线程在更改其布局之前会将对象标记为黑色。
 
 ```cpp
 snapshot = [];
@@ -212,22 +214,22 @@ if (atomic_color_transition(object, grey, black)) {
 }
 ```
 
-Note that a white object that undergoes an unsafe layout change has to be marked on the main thread. Unsafe layout changes are relatively rare, so this does not have a big impact on performance of real world applications.
+请注意，必须在主线程上标记那些进行过不安全布局更改的白色对象。不安全的布局变化相对较少，所以这对实际应用程序的性能没有太大的影响。
 
-## Putting it all together
+## 把它们放一起 { #putting-it-all-together }
 
-We integrated concurrent marking into the existing incremental marking infrastructure. The main thread initiates marking by scanning the roots and filling the marking worklist. After that it posts concurrent marking tasks on the worker threads. The worker threads help the main thread to make faster marking progress by cooperatively draining the marking worklist. Once in a while the main thread participates in marking by processing the bailout worklist and the marking worklist. Once the marking worklists become empty, the main thread finalizes garbage collection. During finalization the main thread re-scans the roots and may discover more white objects. Those objects are marked in parallel with the help of worker threads.
+我们将并发标记整合到现有的增量标记基础设施中。主线程通过扫描 root 并填充标记工作表来启动标记。之后，它会在工作线程中发布并发标记任务。工作线程通过合作排除标记工作表来帮助主线程加快标记进度。偶尔主线程通过处理 bailout worklist 和标记工作表来参与标记。标记工作表变空之后，主线程完成垃圾收集。在最终确定期，主线程重新扫描 root，可能会发现更多的白色对象。这些对象在工作线程的帮助下被并行标记。
 
 <figure>
   <img src="/_img/concurrent-marking/11.svg" intrinsicsize="594x212" alt="">
 </figure>
 
-## Results
+## 结论 { #results }
 
-Our [real-world benchmarking framework](/blog/real-world-performance) shows about 65% and 70% reduction in main thread marking time per garbage collection cycle on mobile and desktop respectively.
+我们的[真实世界基准测试框架](/blog/real-world-performance)显示，在移动和桌面上每个垃圾回收周期的主线程标记时间分别减少了 65% 和 70%。
 
 <figure>
   <img src="/_img/concurrent-marking/12.png" intrinsicsize="2280x1453" alt="">
 </figure>
 
-Concurrent marking also reduces garbage collection jank in Node.js. This is particularly important since Node.js never implemented idle time garbage collection scheduling and therefore was never able to hide marking time in non-jank-critical phases. Concurrent marking shipped in Node.js v10.
+并发标记也减少了 Node.js 中的垃圾收集 jank。 这点尤其重要，因为 Node.js 从未实现空闲时间垃圾收集调度，因此永远无法在 non-jank-critical 阶段隐藏标记时间。并发标记在 Node.js v10 中发布。
