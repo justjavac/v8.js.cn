@@ -20,7 +20,9 @@ JavaScript 中的异步处理历来因其不是特别快而闻名（:p）。更�
 **注**：如果您更喜欢观看演示文稿，请欣赏下面的视频！如果没有，请跳过视频并继续阅读。
 
 <figure>
-  <iframe src="https://www.youtube.com/embed/DFP5DKDQfOc" width="640" height="360"></iframe>
+  <div class="video video-16:9">
+    <iframe src="https://www.youtube.com/embed/DFP5DKDQfOc" width="640" height="360"></iframe>
+  </div>
 </figure>
 
 ## 一种新的异步编程方法 {#a-new-approach-to-async-programming}
@@ -358,7 +360,7 @@ async function foo(v) {
   <img src="/_img/fast-async/await-code-comparison.svg" alt="">
 </figure>
 
-此操作返回没有修改过的 promise，并且只在必要时将其值包装到 promise 中。当传递给 `await` 的值已经是一个 Promise 时，这可以节省其中一个额外的 promise，加上 microtick 队列上的两个 tick。从 V8 v7.1 开始，该行为可以通过 V8 的命令行参数 `--harmony-await-optimization` 开启。我们也提交了对 [proposed this change to the ECMAScript specification](https://github.com/tc39/ecma262/pull/1250) 的变更；一旦我们确定它与 Web 兼容，这个补丁就会合并到提案中。
+此操作返回没有修改过的 promise，并且只在必要时将其值包装到 promise 中。当传递给 `await` 的值已经是一个 Promise 时，这可以节省其中一个额外的 promise，加上 microtick 队列上的两个 tick。这个新行为已经 [在 V8 v7.2 默认开启](/blog/v8-release-72#async%2Fawait)。从 V8 v7.1 开始，该行为可以通过 V8 的命令行参数 `--harmony-await-optimization` 开启。我们也提交了对 [proposed this change to the ECMAScript specification](https://github.com/tc39/ecma262/pull/1250) 的变更；一旦我们确定它与 Web 兼容，这个补丁就会合并到提案中。
 
 以下是在引擎底层对 `await` 的改进，其按步执行的工作方式如下：
 

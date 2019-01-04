@@ -40,7 +40,7 @@ cn:
 
 ### `async`/`await` {#async%2Fawait}
 
-V8 v7.2 带来了[更快的 `async`/`await` 实现](/blog/fast-async#await-under-the-hood)。我们提交了规范提案，目前正在收集 Web 兼容性数据，以便将更改正式合并到 ECMAScript 规范中。
+V8 v7.2 带来了[更快的 `async`/`await` 实现](/blog/fast-async#await-under-the-hood)。我们[提交了规范提案]((https://github.com/tc39/ecma262/pull/1250))，目前正在收集 Web 兼容性数据，以便将更改正式合并到 ECMAScript 规范中。
 
 ### 元素展开语法 {#spread-elements}
 

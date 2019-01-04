@@ -16,7 +16,9 @@ cn:
 注: 如果你正在阅读下面的文章，那么你肯定对这个视频也感兴趣！
 
 <figure>
-  <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360"></iframe>
+  <div class="video video-16:9">
+    <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360"></iframe>
+  </div>
 </figure>
 
 JavaScript 对象可以具有与它们相关联的任意属性。对象属性的名称可以包含任何字符。JavaScript 引擎可以进行优化的一个有趣的例子是当属性名是纯数字时，一个特例就是[数组索引的属性](https://tc39.github.io/ecma262/#sec-object-type)。
