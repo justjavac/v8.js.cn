@@ -9,8 +9,7 @@ description: 'V8 是一个由 Google 开源的高性能 JavaScript 和 WebAssemb
 
 <h2>最新博文</h2>
 
-{% set posts = collections.posts | head(10) %}
-{% set start = collections.posts | length %}
+{% set posts = collections.posts | head(20) %}
 {% include "posts.njk" %}
 
 <p>阅读更多文章可以访问 <a href="/blog">文章归档</a>.</p>
