@@ -16,7 +16,9 @@ cn:
 注: 如果你正在阅读下面的文章，那么你肯定对这个视频也感兴趣！
 
 <figure>
-  <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360"></iframe>
+  <div class="video video-16:9">
+    <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360"></iframe>
+  </div>
 </figure>
 
 JavaScript 对象可以具有与它们相关联的任意属性。对象属性的名称可以包含任何字符。JavaScript 引擎可以进行优化的一个有趣的例子是当属性名是纯数字时，一个特例就是[数组索引的属性](https://tc39.github.io/ecma262/#sec-object-type)。
@@ -339,7 +341,7 @@ each([1, 2, 3], doSomething);
 
 V8 中单态与多态的另一个例子涉及对象形状（object shape），也称为对象的隐藏类。要了解更多，请查看 [Vyacheslav 的文章](https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html)。
 
-## 调试元素种类 {#debugging-elements-kinds}
+## 调试元素种类 {#debugging}
 
 找出一个给定的对象的“元素种类”，可以使用一个调试版本 `d8`（参见[“从源代码构建”](/docs/build)），并运行：
 

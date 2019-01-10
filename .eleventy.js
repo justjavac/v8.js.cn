@@ -38,10 +38,10 @@ const md = markdownIt(markdownItConfig)
   .use(markdownItAttrs)
   .use(markdownItAnchor, markdownItAnchorConfig);
 
-module.exports = function(eleventyConfig) {
+module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(pluginRss);
   eleventyConfig.addPlugin(pluginSyntaxHighlight, {
-    init: function({ Prism }) {
+    init({ Prism }) {
       installPrismLanguages(Prism);
     },
   });
@@ -68,7 +68,7 @@ module.exports = function(eleventyConfig) {
   // Match Firebase’s `cleanUrls` setting.
   eleventyConfig.addFilter('clean', (path) => {
     if (path === '/') return path;
-    if (path === 'https://v8.dev/') return path;
+    if (path === 'https://v8.js.cn/') return path;
     if (path.endsWith('/')) return path.slice(0, -1);
     return path;
   });
