@@ -3,7 +3,7 @@ title: 'Documentation'
 cn:
   author: 'who who who ([@fsx950223](https://github.com/fsx950223))，good at javascript'
 ---
-V8 是 Google 基于 C++ 编写的开源高性能 Javascript 与 WebAssembly 引擎。用于 Google Chrome（Google 的开源浏览器） 以及 Node.js 等。
+V8 是 Google 基于 C++ 编写的开源高性能 Javascript 与 WebAssembly 引擎。用于 Chrome 以及 Node.js 等。
 
 本文档面向希望在其应用程序中使用 V8 的 C++ 开发人员，以及任何对 V8 设计和性能感兴趣的人。本文档向您介绍 V8，其余文档向您展示如何在代码中使用 V8 并描述一些设计细节，以及提供一组用于测量 V8 性能的 JavaScript 基准测试。
 
