@@ -346,7 +346,7 @@ async function foo(v) {
   <figcaption><code>await</code> 的开销</figcaption>
 </figure>
 
-总结一下，每个 `await` 引擎必须创建**两个额外**的 Promise（即使右侧已经是一个 Promis）并且它需要**至少三个** microtask 队列 ticks。谁会意识到仅仅是一个 `await` 表达就导致了如此之多的开销？！
+总结一下，每个 `await` 引擎必须创建**两个额外**的 Promise（即使右侧已经是一个 Promise）并且它需要**至少三个** microtask 队列 ticks。谁会意识到仅仅是一个 `await` 表达就导致了如此之多的开销？！
 
 <figure>
   <img src="/_img/fast-async/await-code-before.svg" intrinsicsize="451x214" alt="" width="400" height="191">
