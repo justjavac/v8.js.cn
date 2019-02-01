@@ -43,7 +43,7 @@ html {
   background: var(--darkgray);
 }
 body {
-  max-width: 860px;
+  max-width: 928px;
   margin: 0 auto;
   padding: 0 1em;
 }
