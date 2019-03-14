@@ -7,6 +7,10 @@ date: 2019-03-13 13:03:19
 tags:
   - internals
 tweet: '1105777150051999744'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
+  avatars:
+    - justjavac
 ---
 V8 v7.4 now supports JavaScript execution without allocating executable memory at runtime.
 
