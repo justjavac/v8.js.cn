@@ -104,7 +104,7 @@ V8 之所以做这个区别是因为 `PACKED` 数组的操作比在 `HOLEY` 数�
 V8 将这个变换系统实现为[格 lattice](https://en.wikipedia.org/wiki/Lattice_%28order%29)(数学概念)。这是一个简化的可视化，仅显示最常见的元素种类：
 
 <figure>
-  <img src="/_img/elements-kinds/lattice.svg" alt="">
+  <img src="/_img/elements-kinds/lattice.svg" intrinsicsize="960x540" alt="">
 </figure>
 
 只能通过格子向下过渡。一旦将单精度浮点数添加到 Smi 数组中，即使稍后用 Smi 覆盖浮点数，它也会被标记为 DOUBLE。类似地，一旦在数组中创建了一个洞，它将被永久标记为有洞 HOLEY，即使稍后填充它也是如此。
@@ -343,7 +343,7 @@ V8 中单态与多态的另一个例子涉及对象形状（object shape），�
 
 ## 调试元素种类 {#debugging}
 
-找出一个给定的对象的“元素种类”，可以使用一个调试版本 `d8`（参见[“从源代码构建”](/docs/build)），并运行：
+找出一个给定的对象的“元素种类”，可以使用一个调试版本 `d8`（可以通过[“从源代码构建”](/docs/build)的调试版本，或者使用 [`jsvu`](https://github.com/GoogleChromeLabs/jsvu) 安装预编译版本），并运行：
 
 ```bash
 out/x64.debug/d8 --allow-natives-syntax

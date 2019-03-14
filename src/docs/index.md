@@ -36,6 +36,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [Handling of ports](/docs/ports)
     - [Merging & patching](/docs/merge-patch)
     - [Node.js integration build](/docs/node-integration)
+    - [New Node.js integration build](/docs/node-next-generation)
     - [Reporting security bugs](/docs/security-bugs)
     - [Running benchmarks locally](/docs/benchmarks)
     - [Testing](/docs/test)

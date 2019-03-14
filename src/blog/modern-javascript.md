@@ -16,7 +16,7 @@ Given the nature of an evolving spec, the differences between various types of c
 When TC39 decided to publish more frequent updates to the JavaScript specification, the most up-to-date version of the language became the master, draft version. Although versions of the ECMAScript spec are still produced yearly and ratified, V8 implements a combination of the most recently ratified version (e.g. ES2015), certain features which are close enough to standardization that they are safe to implement (e.g. the exponentiation operator and `Array.prototype.includes()` from the ES2016 candidate draft), and a collection of bug fixes and web compatibility amendments from more recent drafts. Part of the rationale for such an approach is that language implementations in browsers should match the specification, even if the it’s the specification that needs to be updated. In fact, the process of implementing a ratified version of the spec often uncovers many of the fixes and clarifications that comprise the next version of the spec.
 
 <figure>
-  <img src="/_img/modern-javascript/shipped-features.png" alt="">
+  <img src="/_img/modern-javascript/shipped-features.png" intrinsicsize="652x241" alt="">
   <figcaption>Currently shipping parts of the evolving ECMAScript specification</figcaption>
 </figure>
 
@@ -37,7 +37,7 @@ The remaining 2% of the Kangax ES2015 table tests [proper tail calls](http://www
 Proper tail calls have been implemented but not yet shipped given that a change to the feature is [currently under discussion at TC39](https://github.com/tc39/proposal-ptc-syntax). ES2015 specifies that strict mode function calls in tail position should never cause a stack overflow. While this is a useful guarantee for certain programming patterns, the current semantics have two problems. First, since the tail call elimination is implicit, it can be [difficult for programmers to identify](http://2ality.com/2015/06/tail-call-optimization.html#checking-whether-a-function-call-is-in-a-tail-position) which functions are actually in tail call position. This means that developers may not discover misplaced attempted tail calls in their programs until they overflow the stack. Second, implementing proper tail calls requires eliding tail call stack frames from the stack, which loses information about execution flow. This in turn has two consequences:
 
 1. It makes it more difficult to understand during debugging how execution arrived at a certain point since the stack contains discontinuities, and
-2. [`Error.prototype.stack`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/Stack) contains less information about execution flow which may break telemetry software that collects and analyzes client-side errors.
+2. [`error.stack`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/Stack) contains less information about execution flow which may break telemetry software that collects and analyzes client-side errors.
 
 Implementing a [shadow stack](https://bugs.webkit.org/attachment.cgi?id=274472&action=review) can improve the readability of call stacks, but the V8 and DevTools teams believe that debugging is easiest, most reliable, and most accurate when the stack displayed during debugging is completely deterministic and always matches the true state of the actual virtual machine stack. Moreover, a shadow stack is too expensive performance-wise to turn on all the time.
 

@@ -93,7 +93,7 @@ function(arr) {
 针对快速数组，我们使用 [CSA](/blog/csa) 来实现这一简单的想法，例如拥有最常见的六种[元素类型](/blog/elements-kinds)的数组。这一[真实世界情景](/blog/real-world-performance)的优化，适用于在数组字面量开头使用对象展开操作，例如 `[...foo]`。如下图所示，新的 Fast-Path 在展开长度为 100,000 的数组时获得了 3 倍的性能提升，比手写的 `clone` 循环快了 25%。
 
 <figure>
-  <img src="/_img/spread-elements/spread-fast-array.png" srcset="/_img/spread-elements/spread-fast-array@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-fast-array.png" srcset="/_img/spread-elements/spread-fast-array@2x.png 2x" intrinsicsize="268x243" alt="">
   <figcaption>为快速数组进行元素展开操作的性能提升</figcaption>
 </figure>
 
@@ -138,14 +138,14 @@ const result = [...arr];
 注意，虽然图中包含了 `slice` 方法的结果，但是与它比较是不公平的，因为 `slice` 对稀疏数组拥有不同的语义，它会保留所有的空洞，所以少做了很多工作。
 
 <figure>
-  <img src="/_img/spread-elements/spread-holey-smi-array.png" srcset="/_img/spread-elements/spread-holey-smi-array@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-holey-smi-array.png" srcset="/_img/spread-elements/spread-holey-smi-array@2x.png 2x" intrinsicsize="284x250" alt="">
   <figcaption>对稀疏整型数组进行元素展开的性能 (<a href="/blog/elements-kinds"><code>HOLEY_SMI_ELEMENTS</code></a>)</figcaption>
 </figure>
 
 我们的 Fast-Path 必须把空洞填充为 `undefined`，这个操作并没有听起来这么简单：他可能需要把整个数组转换成另一种元素类型。下图展示了这种情景。初始化和前文一样，不同的是这次的 600 个数组元素是未拆封的 double 类型，数组的元素类型是 `HOLEY_DOUBLE_ELEMENTS`。因为该元素类型无法承载类似 `undefined` 的标记值，展开这样的数组需要执行代价高昂的元素类型转换操作，这就是为什么 `[...a]` 的分数比上一张图低许多。不过，还是比 `clone(a)` 要快许多。
 
 <figure>
-  <img src="/_img/spread-elements/spread-holey-double-array.png" srcset="/_img/spread-elements/spread-holey-double-array@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-holey-double-array.png" srcset="/_img/spread-elements/spread-holey-double-array@2x.png 2x" intrinsicsize="282x242" alt="">
   <figcaption>对稀疏双精度数组进行元素展开的性能 (<a href="/blog/elements-kinds"><code>HOLEY_DOUBLE_ELEMENTS</code></a>)</figcaption>
 </figure>
 
@@ -160,12 +160,12 @@ const result = [...arr];
 对字符串进行元素展开操作（`[...string]`），我们测得了大约 5 倍的性能提升，在下图中以紫色和绿色折现表示。注意，这甚至比在下图中以蓝色和粉色显示的 TurboFan 优化的 for-of 循环还要快。（TurboFan 可以分析字符串迭代并为其生成优化后的代码）。在每种情况下都有两个图标，因为微基准测试在两个不同的字符串表示法上操作（单字节字符串和双字节字符串）。
 
 <figure>
-  <img src="/_img/spread-elements/spread-string.png" srcset="/_img/spread-elements/spread-string@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-string.png" srcset="/_img/spread-elements/spread-string@2x.png 2x" intrinsicsize="356x248" alt="">
   <figcaption>对字符串进行元素展开操作</figcaption>
 </figure>
 
 <figure>
-  <img src="/_img/spread-elements/spread-set.png" srcset="/_img/spread-elements/spread-set@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-set.png" srcset="/_img/spread-elements/spread-set@2x.png 2x" intrinsicsize="313x248" alt="">
   <figcaption>对含有 10 万个整数的 Set 进行元素展开（品红色，大概快 18 倍），并且和 <code>for</code>-<code>of</code> 循环进行对比（红色）</figcaption>
 </figure>
 
@@ -174,7 +174,7 @@ const result = [...arr];
 幸运的是，元素展开的 Fast-Path 同样可以用于 `Array.from`，只要传入 `Array.from` 的是一个可迭代对象并且不包含映射函数。（例如 `Array.from([1, 2, 3])`）。之所以可以使用，因为 `Array.from` 的表现与展开操作一致。这显著地提升了性能，下图展示了 100 个双精度数的数组的性能。
 
 <figure>
-  <img src="/_img/spread-elements/array-from-array-of-doubles.png" srcset="/_img/spread-elements/array-from-array-of-doubles@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/array-from-array-of-doubles.png" srcset="/_img/spread-elements/array-from-array-of-doubles@2x.png 2x" intrinsicsize="284x242" alt="">
   <figcaption>当 <code>array</code> 包含 100 个双精度数时，<code>Array.from(array)</code> 的性能提升</figcaption>
 </figure>
 

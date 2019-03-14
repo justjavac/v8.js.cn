@@ -31,7 +31,7 @@ function mapAdd(a, x) {
 注意，这里的 `x` 是局部作用域闭包 `y => y + x` 的自由变量。V8 v7.1 现在可以完全忽略上下文中分配的 `x`，在某些情况下可以提高 40%。
 
 <figure>
-  <img src="/_img/v8-release-71/improved-escape-analysis.svg" alt="">
+  <img src="/_img/v8-release-71/improved-escape-analysis.svg" intrinsicsize="705x371" alt="">
   <figcaption>通过新的逃逸分析提升性能（越低越好）</figcaption>
 </figure>
 

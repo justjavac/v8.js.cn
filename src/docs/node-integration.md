@@ -7,6 +7,8 @@ If the [`v8_node_linux64_rel` bot](https://ci.chromium.org/p/v8/builders/luci.v8
 
 *Note: Patches in V8’s fork are usually cherry-picked by the person who updates V8 in [Node](https://github.com/nodejs/node) (usually several weeks or month later). If you merged a fix to V8’s Node fork, there’s nothing else you need to do.*
 
+*Note: these instructions will soon be replaced by the [next-generation Node.js build](/docs/node-next-generation).*
+
 ## Reproduce locally
 
 Clone V8’s Node repository and check out the <abbr title="last known good revision">lkgr</abbr> branch.
@@ -30,6 +32,12 @@ Apply your patch, i.e., replace `node/deps/v8` with a copy of `v8` (lkgr branch)
 $V8/tools/node/update_node.py $V8 $NODE
 cd $NODE
 ./configure --build-v8-with-gn && make -j48 test
+```
+
+Note that you may need to install `libstdc++-8-dev` as build dependency.
+
+```bash
+sudo apt-get install libstdc++-8-dev
 ```
 
 You can run single tests.

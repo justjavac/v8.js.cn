@@ -56,17 +56,17 @@ The Torque compiler doesn’t create machine code directly, but rather generates
 Graphically, the build process looks like this:
 
 <figure>
-  <img src="/_img/docs/torque/build-process.svg" alt="">
+  <img src="/_img/docs/torque/build-process.svg" intrinsicsize="800x480" alt="">
 </figure>
 
-## Torque tooling
+## Torque tooling { #tooling }
 
 Basic tooling and development environment support is available for Torque.
 
 - There is a Visual Studio code syntax highlighting plugin available for Torque: `tools/torque/vscode-torque`
 - There is also a formatting tool that should be used after changing `.tq` files: `tools/torque/format-torque.py -i <filename>`
 
-## Troubleshooting builds involving Torque
+## Troubleshooting builds involving Torque { #troubleshooting }
 
 Why do you need to know this? Understanding how Torque files get converted into machine code is important because different problems (and bugs) can potentially arise in the different stages of translating Torque into the binary bits embedded in the snapshot:
 
@@ -75,7 +75,7 @@ Why do you need to know this? Understanding how Torque files get converted into 
 - Even once `mksnapshot` successfully builds, it can fail during execution if a Torque-provided builtin has a bug. Many builtins run as part of snapshot creation, including Torque-generated ones. For example, `Array.prototype.splice`, a Torque-authored builtin, is called as part of the JavaScript snapshot initialization process to setup the default JavaScript environment. If there is a bug in the implementation, `mksnapshot` crashes during execution. When `mksnapshot` crashes, it’s sometimes useful to call `mksnapshot` passing the `--gdb-jit-full` flag, which generates extra debug information that provides useful context, e.g. names for Torque-generated builtins in `gdb` stack crawls.
 - Of course, even if Torque-authored code makes it through `mksnapshot`, it still may be buggy or crash. Adding test cases to `torque-test.tq` and `torque-test.cc` is a good way to ensure that your Torque code does what you actually expect. If your Torque code does end up crashing in `d8` or `chrome`, the `--gdb-jit-full` flag is again very useful.
 
-## `constexpr`: compile-time vs. run-time
+## `constexpr`: compile-time vs. run-time { #constexpr }
 
 Understanding the Torque build process is also important to understanding a core feature in the Torque language: `constexpr`.
 
@@ -331,7 +331,7 @@ Macros are a callable that correspond to a chunk of generated CSA-producing C++.
 
 Every non-`extern` Torque `macro` uses the `StatementBlock` body of the `macro` to create a CSA-generating function in its namespace’s generated `Assembler` class. This code looks just like other code that you might find in `code-stub-assembler.cc`, albeit a bit less readable because it’s machine-generated. `macro`s that are marked `extern` have no body written in Torque and simply provide the interface to hand-written C++ CSA code so that it’s usable from Torque.
 
-`macro` definitions specify implicit and explict parameters, an optional return type and optoinal labels. Parameters and return types will be discussed in more detail below, but for now it suffices to know that they work somewhat like TypeScript parameters, which as discussed in the Function Types section of the TypeScript documentation [here](https://www.typescriptlang.org/docs/handbook/functions.html).
+`macro` definitions specify implicit and explict parameters, an optional return type and optional labels. Parameters and return types will be discussed in more detail below, but for now it suffices to know that they work somewhat like TypeScript parameters, which as discussed in the Function Types section of the TypeScript documentation [here](https://www.typescriptlang.org/docs/handbook/functions.html).
 
 Labels are a mechanism for exceptional exit from a `macro`. They map 1:1 to CSA labels and are added as `CodeStubAssemblerLabels*`-typed parameters to the C++ method generated for the `macro`. Their exact semantics are discussed below, but for the purpose of a `macro` declartion, the comma-separated list of a `macro`’s labels is optionally provided with the `labels` keywords and positioned after the `macro`’s parameter lists and return type.
 
@@ -349,7 +349,7 @@ macro BranchIfNotFastJSArrayForCopy(implicit context: Context)(o: Object):
 
 #### `builtin` callables
 
-`builtin`s are similar to `macro`s in that they can either be fully defined in Torque or marked `extern`. In the Torque-based builtin case, the body for the builtin is used to generate a V8 builtin that can be called just like any other V8 builtin, including automatically adding the relevant information in `builtin-definitions.h`. Like `macro`s, Torque `builtin`s that are mared `extern` have no Torque-based body and simply provide an interface to existing V8 `builtin`s so that they can be used from Torque code.
+`builtin`s are similar to `macro`s in that they can either be fully defined in Torque or marked `extern`. In the Torque-based builtin case, the body for the builtin is used to generate a V8 builtin that can be called just like any other V8 builtin, including automatically adding the relevant information in `builtin-definitions.h`. Like `macro`s, Torque `builtin`s that are marked `extern` have no Torque-based body and simply provide an interface to existing V8 `builtin`s so that they can be used from Torque code.
 
 `builtin` declarations in Torque have the following form:
 
@@ -361,6 +361,8 @@ macro BranchIfNotFastJSArrayForCopy(implicit context: Context)(o: Object):
 There is only one copy of the code for a Torque builtin, and that is in the generated builtin code object. Unlike `macro`s, when `builtin`s are called from Torque code, the CSA code is not inlined at the callsite, but instead a call is generated to the builtin.
 
 `builtin`s cannot have labels.
+
+If you are coding the implementation of a `builtin`, you can craft a [tailcall](https://en.wikipedia.org/wiki/Tail_call) to a builtin or a runtime function iff (if and only if) it's the final call in the builtin. The compiler may be able to avoid creating a new stack frame in this case. Simply add `tail` before the call, as in `tail MyBuiltin(foo, bar);`.
 
 #### `runtime` callables
 
@@ -375,6 +377,8 @@ There is only one copy of the code for a Torque builtin, and that is in the gene
 The `extern runtime` specified with name <i>IdentifierName</i> corresponds to the runtime function specified by Runtime::k<i>IdentifierName</i>.
 
 Like `builtin`s, `runtime`s cannot have labels.
+
+You can also call a `runtime` function as a tailcall when appropriate. Simply include the `tail` keyword before the call.
 
 #### `intrinsic` callables
 
@@ -480,6 +484,36 @@ When comparing a pair of corresponding parameters of two overloads…
     - it doesn’t require an implicit conversion, while the other does.
 
 If no overload is strictly better than all alternatives, this results in a compile error.
+
+### Deferred blocks
+
+A statement block can optionally be marked as `deferred`, which is a signal to the compiler that it's entered less often. The compiler may choose to locate these blocks at the end of the function, thus improving cache locality for the non-deferred regions of code. For example, in this code from the `Array.prototype.forEach` implementation, we expect to remain on the "fast" path, and only rarely take the bailout case:
+
+```torque
+  let k: Number = 0;
+  try {
+    return FastArrayForEach(o, len, callbackfn, thisArg)
+        otherwise Bailout;
+  }
+  label Bailout(kValue: Smi) deferred {
+    k = kValue;
+  }
+```
+
+Here is another example, where the dictionary elements case is marked as deferred to improve code generation for the more likely cases (from the `Array.prototype.join` implementation):
+
+```torque
+  if (IsElementsKindLessThanOrEqual(kind, HOLEY_ELEMENTS)) {
+    loadFn = LoadJoinElement<FastSmiOrObjectElements>;
+  } else if (IsElementsKindLessThanOrEqual(kind, HOLEY_DOUBLE_ELEMENTS)) {
+    loadFn = LoadJoinElement<FastDoubleElements>;
+  } else if (kind == DICTIONARY_ELEMENTS)
+    deferred {
+      const dict: NumberDictionary =
+          UnsafeCast<NumberDictionary>(array.elements);
+      const nofElements: Smi = GetNumberDictionaryNumberOfElements(dict);
+      // <etc>...
+```
 
 ## Porting CSA code to Torque
 
