@@ -16,13 +16,6 @@
     "start": "superstatic dist --port=9001",
     "ci": "npm run lint && npm run build"
   },
-  "husky": {
-    "hooks": {
-      "post-merge": "post-npm-install",
-      "post-rebase": "post-npm-install",
-      "pre-commit": "npm run lint"
-    }
-  },
   "devDependencies": {
     "@11ty/eleventy": "^0.7.1",
     "@11ty/eleventy-plugin-rss": "^1.0.6",
@@ -32,7 +25,6 @@
     "cssnano": "^4.1.10",
     "he": "^1.2.0",
     "html-minifier": "^3.5.21",
-    "husky": "^1.3.1",
     "json-minify": "^1.0.0",
     "luxon": "^1.11.3",
     "markdown-it": "^8.4.2",
