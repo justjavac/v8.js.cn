@@ -13,7 +13,7 @@ cn:
     - leyayun
 ---
 
-代码缓存（也被称为字节码缓存）是浏览器的一个重要优化手段。它通过缓存解析+编译后的结果来提升高频访问网站的启动速度。[大多数]](https://blog.mozilla.org/javascript/2017/12/12/javascript-startup-bytecode-cache/)的主流[浏览器](https://bugs.webkit.org/show_bug.cgi?id=192782)都实现了代码缓存，Chrome 也不例外。事实上，关于 Chrome 和 V8 缓存编译后代码的实现，之前我们已经写文章（[Code caching](/blog/code-caching、[改进代码缓存](/blog/improved-code-caching)）也做过[演讲](https://www.youtube.com/watch?v=YqHOUy2rYZ8)。
+代码缓存（也被称为字节码缓存）是浏览器的一个重要优化手段。它通过缓存解析+编译后的结果来提升高频访问网站的启动速度。[大多数](https://blog.mozilla.org/javascript/2017/12/12/javascript-startup-bytecode-cache/)的主流[浏览器](https://bugs.webkit.org/show_bug.cgi?id=192782)都实现了代码缓存，Chrome 也不例外。事实上，关于 Chrome 和 V8 缓存编译后代码的实现，之前我们已经写文章（[Code caching](/blog/code-caching、[改进代码缓存](/blog/improved-code-caching)）也做过[演讲](https://www.youtube.com/watch?v=YqHOUy2rYZ8)。
 
 在这篇文章中，我们将为那些想要更好的利用代码缓存来提高网站启动速度的 JS 开发者提供一些建议。这些建议集中在 Chrome/V8 的代码缓存实现上，但是其他大多数浏览器实现原理基本也是这样的。
 
