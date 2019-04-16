@@ -160,12 +160,12 @@ const result = [...arr];
 对字符串进行元素展开操作（`[...string]`），我们测得了大约 5 倍的性能提升，在下图中以紫色和绿色折现表示。注意，这甚至比在下图中以蓝色和粉色显示的 TurboFan 优化的 for-of 循环还要快。（TurboFan 可以分析字符串迭代并为其生成优化后的代码）。在每种情况下都有两个图标，因为微基准测试在两个不同的字符串表示法上操作（单字节字符串和双字节字符串）。
 
 <figure>
-  <img src="/_img/spread-elements/spread-string.png" srcset="/_img/spread-elements/spread-string@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-string.png" srcset="/_img/spread-elements/spread-string@2x.png 2x" intrinsicsize="356x248" alt="">
   <figcaption>对字符串进行元素展开操作</figcaption>
 </figure>
 
 <figure>
-  <img src="/_img/spread-elements/spread-set.png" srcset="/_img/spread-elements/spread-set@2x.png 2x" alt="">
+  <img src="/_img/spread-elements/spread-set.png" srcset="/_img/spread-elements/spread-set@2x.png 2x" intrinsicsize="313x248" alt="">
   <figcaption>对含有 10 万个整数的 Set 进行元素展开（品红色，大概快 18 倍），并且和 <code>for</code>-<code>of</code> 循环进行对比（红色）</figcaption>
 </figure>
 

@@ -17,6 +17,18 @@
 - `npm run watch` 构建网站并输出到 `dist`，然后监听文件的更改
 - `npm start` 启动一个本地 HTTP server
 
+`npm run` 会触发某些 Unix 风格的命令。如果你正在 Windows 系统中使用类 linux 风格的环境，例如 git bash、msys2 或者 Cygwin，可以修改 npm 的配置文件以使用 linux 终端。如果你没有配置，那么默认使用的是 `cmd.exe`。下面是一个修改配置的例子：
+
+```sh
+npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
+```
+
+或者：
+
+```sh
+npm config set script-shell "C:\\msys64\\usr\\bin\\sh.exe"
+```
+
 ## 参与翻译
 
 当你翻译完一篇文章后，请在 markdown 文件的 meta 信息中添加译者信息。格式如下：

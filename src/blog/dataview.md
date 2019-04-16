@@ -87,7 +87,7 @@ LittleEndian.prototype.getUint32 = function(byteOffset) {
 
 <figure>
   <img src="/_img/dataview/dataview-original.svg" intrinsicsize="600x371" alt="">
-  <figcaption>原始 <code>DataView</code> 性能</figcaption>
+  <figcaption>原始 <code>DataView</code> 性能</figcaption>
 </figure>
 
 我们的基准测试显示，在大端序和小端序的数据存取测试中，原生 `DataView` getter 的性能均比基于 `Uint8Array` 的包装函数低了**4倍**。
@@ -128,7 +128,7 @@ macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
 
 <figure>
   <img src="/_img/dataview/dataview-torque.svg" intrinsicsize="600x371" alt="">
-  <figcaption> Torque 编写的 <code>DataView</code> 性能 </figcaption>
+  <figcaption>Torque 编写的 <code>DataView</code> 性能 </figcaption>
 </figure>
 
 ## 优化 TurboFan {#optimizing-for-turbofan}

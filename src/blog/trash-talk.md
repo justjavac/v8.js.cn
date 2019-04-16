@@ -161,7 +161,7 @@ V8 中的主垃圾回收器主要使用并发标记，一旦堆的动态分配�
 JavaScript 是无法去直接访问垃圾回收器的，这些都是在V8的实现中已经定义好的。但是 V8 确实提供了一种机制让Embedders（嵌入V8的环境）去触发垃圾回收，即便 JavaScript 本身不能直接去触发垃圾回收。垃圾回收器会发布一些 “空闲时任务（Idle Tasks）”，虽然这些任务都是可选的，但最终这些任务会被触发。像 Chrome 这些嵌入了 V8 的环境会有一些空闲时间的概念。比如：在 Chrome 中，以每秒60帧的速度去执行一些动画，浏览器大约有16.6毫秒的时间去渲染动画的每一帧，如果动画提前完成，那么 Chrome 在下一帧之前的空闲时间去触发垃圾回收器发布的空闲时任务。
 
 <figure>
-  <img src="/_img/trash-talk/10.svg" alt="">
+  <img src="/_img/trash-talk/10.svg" intrinsicsize="424x252" alt="">
   <figcaption>空闲时垃圾回收器，利用主线程上的空闲时间主动的去执行垃圾回收工作</figcaption>
 </figure>
 
