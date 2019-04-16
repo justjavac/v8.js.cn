@@ -7,6 +7,10 @@ date: 2019-04-08 13:33:37
 tags:
   - internals
 tweet: '1115264282675953664'
+cn:
+  author: '[不良帅帅](https://www.zhihu.com/people/leyayun)，做最不像程序员的程序员 | 公众号：FENews，文章来源 <https://zhuanlan.zhihu.com/p/62530599>'
+  avatars:
+    - leyayun
 ---
 Code caching (also known as _bytecode caching_) is an important optimization in browsers. It reduces the start-up time of commonly visited websites by caching the result of parsing + compilation. Most [popular](https://blog.mozilla.org/javascript/2017/12/12/javascript-startup-bytecode-cache/) [browsers](https://bugs.webkit.org/show_bug.cgi?id=192782) implement some form of code caching, and Chrome is no exception. Indeed, we’ve [written](/blog/code-caching) [and](/blog/improved-code-caching) [talked](https://www.youtube.com/watch?v=YqHOUy2rYZ8) about how Chrome and V8 cache compiled code in the past.
 
