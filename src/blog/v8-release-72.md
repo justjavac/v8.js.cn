@@ -127,14 +127,13 @@ lf.format(['Frank', 'Christine', 'Flora', 'Harrison']);
 // Old behavior:
 JSON.stringify('\uD800');
 // → '"�"'
-```
-
-V8 现在实现了一个 [stage 3 提案](/features/well-formed-json-stringify)，该提议改变了 `JSON.stringify` 输出含有单独代理(Lone surrogates)的转义序列的方式，使其输出有效的 Unicode（并以 UTF-8 表示）：
 
 // New behavior:
 JSON.stringify('\uD800');
 // → '"\\ud800"'
 ```
+
+V8 现在实现了一个 [stage 3 提案](/features/well-formed-json-stringify)，该提议改变了 `JSON.stringify` 输出含有单独代理(Lone surrogates)的转义序列的方式，使其输出有效的 Unicode（并以 UTF-8 表示）：
 
 请注意，`JSON.parse(stringified)` 的运行结果仍然和以前一样。
 
