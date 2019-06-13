@@ -23,6 +23,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [检出 V8 源码](/docs/source-code/)
     - [使用 GN 构建](/docs/build-gn/)
     - [ARM 跨平台编译](/docs/cross-compile-arm/)
+    - [iOS 跨平台编译](/docs/cross-compile-ios)
     - [GUI 与 IDE 安装](/docs/ide-setup/)
 - [贡献](/docs/contribute/)
     - [V8 的公共 API 与稳定性](/docs/api/)
@@ -37,6 +38,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [合并与补丁](/docs/merge-patch/)
     - [Node.js 集成构建](/docs/node-integration/)
     - [报告安全 bugs](/docs/security-bugs/)
+    - [本地运行性能基准测试](/docs/benchmarks)
     - [测试](/docs/test/)
     - [分类问题](/docs/triage-issues/)
 - 调试

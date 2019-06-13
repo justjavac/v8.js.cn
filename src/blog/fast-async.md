@@ -17,11 +17,13 @@ cn:
 ---
 JavaScript 中的异步处理历来因其不是特别快而闻名（:p）。更糟糕的是，调试实时 JavaScript 应用程序 - 例如 Node.js 服务器 - 并非易事，尤其是涉及到异步编程时更甚。幸运的是，现在有了一个重大的改变。本文探讨了我们如何在 V8（甚至其它 JavaScript 引擎中）中优化异步函数和 promise，并描述了我们如何改进异步代码的调试体验。
 
+:::note
 **注**：如果您更喜欢观看演示文稿，请欣赏下面的视频！如果没有，请跳过视频并继续阅读。
+:::
 
 <figure>
   <div class="video video-16:9">
-    <iframe src="https://www.youtube.com/embed/DFP5DKDQfOc" width="640" height="360"></iframe>
+    <iframe src="https://www.youtube.com/embed/DFP5DKDQfOc" width="640" height="360" loading="lazy"></iframe>
   </div>
 </figure>
 

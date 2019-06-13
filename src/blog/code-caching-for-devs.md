@@ -202,7 +202,7 @@ Tracing 记录着整个浏览器的行为，包含其他 tab、窗口和扩展�
 
 ```bash
 # 开始一次干净的用户配置的 Chrome 浏览会话
-google-chrome --user-data-dir="$(mktemp -d)"
+google-chrome --user-data-dir="$(mktemp -d)" --disable-extensions
 ```
 
 当收集追踪信息时，你需要选中追踪类别。在大多数情况下，你可以简单的选中 "web developer" 这个类别，但你也可以手动选择类别。代码追踪的重要类别是 `v8`。

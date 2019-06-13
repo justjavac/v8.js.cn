@@ -13,11 +13,13 @@ cn:
   avatars:
     - justjavac
 ---
+:::note
 注: 如果你正在阅读下面的文章，那么你肯定对这个视频也感兴趣！
+:::
 
 <figure>
   <div class="video video-16:9">
-    <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360"></iframe>
+    <iframe src="https://www.youtube.com/embed/m9cTaYI95Zc" width="640" height="360" loading="lazy"></iframe>
   </div>
 </figure>
 

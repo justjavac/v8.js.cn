@@ -16,11 +16,13 @@ cn:
 ---
 过去这些年 V8 的垃圾回收器（GC）发生了很多的变化，Orinoco 项目采用了 stop-the-world 垃圾回收器，以使其变成了一个更加并行，并发和增量的垃圾回收器。
 
+:::note
 **注：**如果您更喜欢在阅读文章时观看演示文稿，请欣赏以下视频！如果喜欢阅读文章，请跳过视频并继续阅读。
+:::
 
 <figure>
   <div class="video video-16:9">
-    <iframe src="https://www.youtube.com/embed/Scxz6jVS4Ls" width="640" height="360"></iframe>
+    <iframe src="https://www.youtube.com/embed/Scxz6jVS4Ls" width="640" height="360" loading="lazy"></iframe>
   </div>
 </figure>
 

@@ -129,7 +129,7 @@ counter.#count = 42;
 // → SyntaxError
 ```
 
-For more information, read our [WebFu article on public and private class fields](https://developers.google.com/web/updates/2018/12/class-fields).
+For more information, read our [explainer on public and private class fields](/features/class-fields).
 
 ### `Intl.Locale`
 
@@ -149,6 +149,15 @@ locale.region;
 // → '419'
 locale.toString();
 // → 'es-419-u-ca-gregory-hc-h12'
+```
+
+### Hashbang grammar
+
+JavaScript programs can now start with `#!`, a so-called [hashbang](https://github.com/tc39/proposal-hashbang). The rest of the line following the hashbang is treated as a single-line comment. This matches de facto usage in command-line JavaScript hosts, such as Node.js. The following is now a syntactically valid JavaScript program:
+
+```js
+#!/usr/bin/env node
+console.log(42);
 ```
 
 ## V8 API

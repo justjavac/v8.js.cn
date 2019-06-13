@@ -58,7 +58,7 @@ function sum2(x, y) {
 
 ## JavaScript 语言新特性 {#javascript-language-features}
 
-[`Intl.RelativeTimeFormat` API](https://zhuanlan.zhihu.com/p/47417391) 可以让我们处理相对时间的本地化格式（例如，“昨天”，“42秒前”或“3个月”），而不牺牲性能。下面是一个例子：
+[`Intl.RelativeTimeFormat` API](/features/intl-relativetimeformat) 可以让我们处理相对时间的本地化格式（例如，“昨天”，“42秒前”或“3个月”），而不牺牲性能。下面是一个例子：
 
 ```js
 // 创建一个本地化相对时间，中文
@@ -83,7 +83,7 @@ rtf.format(1, 'week');
 // → '下周'
 ```
 
-有关 `Intl.RelativeTimeFormat` 的更多信息，请阅读 Google Web Fundamentals 的 [The Intl.RelativeTimeFormat API](https://developers.google.com/web/updates/2018/10/intl-relativetimeformat) 文章，中文翻译版[国际化相对时间格式化API：Intl.RelativeTimeFormat](https://zhuanlan.zhihu.com/p/47417391)。
+有关 `Intl.RelativeTimeFormat` 的更多信息，请阅读 Google Web Fundamentals 的 [The Intl.RelativeTimeFormat API](/features/intl-relativetimeformat) 文章，中文翻译版[国际化相对时间格式化API：Intl.RelativeTimeFormat](https://zhuanlan.zhihu.com/p/47417391)。
 
 V8 v7.1 还增加了对 [`globalThis` 提案](https://github.com/tc39/proposal-global)的支持，此提案提供了访问全局对象的通用机制，即使在严格模式的函数或模块中，而不管平台如何。
 

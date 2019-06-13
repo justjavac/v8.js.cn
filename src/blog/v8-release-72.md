@@ -62,7 +62,7 @@ Trap handlers 正在改进 WebAssembly 代码的吞吐量。它们在 V8 v7.2 �
 
 ### Public class fields
 
-V8 v7.2 增加了对 [public class fields](https://developers.google.com/web/updates/2018/12/class-fields) 的支持。用来代替：
+V8 v7.2 增加了对 [public class fields](/features/class-fields) 的支持。用来代替：
 
 ```js
 class Animal {
@@ -99,11 +99,11 @@ class Cat extends Animal {
 }
 ```
 
-计划在未来的 V8 版本中支持 [private class fields](https://developers.google.com/web/updates/2018/12/class-fields#private_class_fields)。
+计划在未来的 V8 版本中支持 [private class fields](/features/class-fields#private-class-fields)。
 
 ### `Intl.ListFormat`
 
-V8 v7.2 增加了对 [`Intl.ListFormat` 提案](https://developers.google.com/web/updates/2018/12/intl-listformat)的支持，实现了列表的本地化格式。
+V8 v7.2 增加了对 [`Intl.ListFormat` 提案](/features/intl-listformat)的支持，实现了列表的本地化格式。
 
 ```js
 const lf = new Intl.ListFormat('en');
@@ -117,20 +117,21 @@ lf.format(['Frank', 'Christine', 'Flora', 'Harrison']);
 // → 'Frank, Christine, Flora, and Harrison'
 ```
 
-有关更多信息和用法示例，请查看我们的 [Web 基础知识：`Intl.ListFormat`](https://developers.google.com/web/updates/2018/12/intl-listformat)。
+有关更多信息和用法示例，请查看我们的 [Web 基础知识：`Intl.ListFormat`](/features/intl-listformat)。
 
 ### Well-formed `JSON.stringify` {#well-formed-json.stringify}
 
-在之前的 `JSON.stringify` 规范中，如果输入中包含了任何的单独代理(Lone surrogates)，会返回格式错误的 Unicode 字符串：
+在之前的 `JSON.stringify` 规范中，如果输入中包含了任何的单独代理(Lone surrogates)，会返回格式错误的 Unicode 字符串（以及 UTF-8 表示形式）：
 
 ```js
+// Old behavior:
 JSON.stringify('\uD800');
 // → '"�"'
 ```
 
-V8 现在实现了一个 [stage 3 提案](https://github.com/tc39/proposal-well-formed-stringify)，该提议改变了 `JSON.stringify` 输出含有单独代理(Lone surrogates)的转义序列的方式，使其输出有效的 Unicode（并以 UTF-8 表示）：
+V8 现在实现了一个 [stage 3 提案](/features/well-formed-json-stringify)，该提议改变了 `JSON.stringify` 输出含有单独代理(Lone surrogates)的转义序列的方式，使其输出有效的 Unicode（并以 UTF-8 表示）：
 
-```js
+// New behavior:
 JSON.stringify('\uD800');
 // → '"\\ud800"'
 ```
@@ -139,7 +140,7 @@ JSON.stringify('\uD800');
 
 ### Module namespace exports {#module-namespace-exports}
 
-在 [JavaScript 模块](https://developers.google.com/web/fundamentals/primers/modules) 中，已经可以使用以下语法：
+在 [JavaScript 模块](/features/modules) 中，已经可以使用以下语法：
 
 ```js
 import * as utils from './utils.mjs';

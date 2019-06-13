@@ -11,7 +11,7 @@ tweet: '915846050447003648'
 ---
 Proxies have been an integral part of JavaScript since ES2015. They allow intercepting fundamental operations on objects and customizing their behavior. Proxies form a core part of projects like [jsdom](https://github.com/tmpvar/jsdom) and the [Comlink RPC library](https://github.com/GoogleChrome/comlink). Recently, we put a lot of effort into improving the performance of proxies in V8. This article sheds some light on general performance improvement patterns in V8 and for proxies in particular.
 
-Proxies are “objects used to define custom behavior for fundamental operations (e.g. property lookup, assignment, enumeration, function invocation, etc.)” (definition by [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)). More info can be found in the [full specification](https://tc39.github.io/ecma262/#sec-proxy-objects). For example, the following code snippet adds logging to every property access on the object:
+Proxies are “objects used to define custom behavior for fundamental operations (e.g. property lookup, assignment, enumeration, function invocation, etc.)” (definition by [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)). More info can be found in the [full specification](https://tc39.es/ecma262/#sec-proxy-objects). For example, the following code snippet adds logging to every property access on the object:
 
 ```js
 const target = {};
@@ -150,7 +150,9 @@ The jsdom-proxy-benchmark project compiles the [ECMAScript specification](https:
   <img src="/_img/optimizing-proxies/7.png" intrinsicsize="1028x634" alt="">
 </figure>
 
-Note: These results were provided by [Timothy Gu](https://github.com/TimothyGu). Thanks!
+:::note
+**Note:** These results were provided by [Timothy Gu](https://github.com/TimothyGu). Thanks!
+:::
 
 ### Results from [Chai.js](https://chaijs.com/)
 

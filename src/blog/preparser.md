@@ -1,6 +1,6 @@
 ---
 title: 'Blazingly fast parsing, part 2: lazy parsing'
-author: 'Toon Verwaest ([@tverwaes](https://twitter.com/tverwaes) and Marja Hölttä ([@marjakh](https://twitter.com/marjakh)), sparser parsers'
+author: 'Toon Verwaest ([@tverwaes](https://twitter.com/tverwaes)) and Marja Hölttä ([@marjakh](https://twitter.com/marjakh)), sparser parsers'
 avatars:
   - 'toon-verwaest'
   - 'marja-holtta'
@@ -118,7 +118,7 @@ function f(d) {
 
 Initially our preparser was implemented as a standalone copy of the parser without too much sharing, which caused the two parsers to diverge over time. By rewriting the parser and preparser to be based on a `ParserBase` implementing the [curiously recurring template pattern](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern), we managed to maximize sharing while keeping the performance benefits of separate copies. This greatly simplified adding full variable tracking to the preparser, since a large part of the implementation can be shared between the parser and the preparser.
 
-Actually it was incorrect to ignore variable declarations and references even for top-level functions. The ECMAScript spec requires various types of variable conflicts to be detected upon first parse of the script. E.g., if a variable is twice declared as a lexical variable in the same scope, that is considered an [early `SyntaxError`](https://tc39.github.io/ecma262/#early-error). Since our preparser simply skipped over variable declarations, it would incorrectly allow the code during preparse. At the time we considered that the performance win warranted the spec violation. Now that the preparser tracks variables properly, however, we eradicated this entire class of variable resolution-related spec violations at no significant performance cost.
+Actually it was incorrect to ignore variable declarations and references even for top-level functions. The ECMAScript spec requires various types of variable conflicts to be detected upon first parse of the script. E.g., if a variable is twice declared as a lexical variable in the same scope, that is considered an [early `SyntaxError`](https://tc39.es/ecma262/#early-error). Since our preparser simply skipped over variable declarations, it would incorrectly allow the code during preparse. At the time we considered that the performance win warranted the spec violation. Now that the preparser tracks variables properly, however, we eradicated this entire class of variable resolution-related spec violations at no significant performance cost.
 
 ## Skipping inner functions
 
@@ -138,7 +138,7 @@ outer(); // Fully parses and compiles `outer`, but not `inner`.
 
 The function directly points to the outer context which contains the values of variable declarations that need to be available to inner functions. To allow lazy compilation of functions (and to support the debugger), the context points to a metadata object called [`ScopeInfo`](https://cs.chromium.org/chromium/src/v8/src/objects/scope-info.h?rcl=ce2242080787636827dd629ed5ee4e11a4368b9e&l=36). `ScopeInfo` objects describe what variables are listed in a context. This means that while compiling inner functions, we can compute where variables live in the context chain.
 
-To compute whether or not the lazy compiled function itself needs a context, though, we need to perform scope resolution again: We need to know whether functions nested in the lazy-compiled function reference the variables declared by the lazy function. We can figure this out by re-preparsing those functions. This is exactly what V8 did up to V8 6.3 / Chrome 63. This is not ideal performance-wise though, as it makes the relation between source size and parse cost nonlinear: we would preparse functions as many times as they are nested. In addition to natural nesting of dynamic programs, JavaScript packers commonly wrap code in “[immediately-invoked function expressions](https://en.wikipedia.org/wiki/Immediately_invoked_function_expression)” (IIFEs), making most JavaScript programs have multiple nesting layers.
+To compute whether or not the lazy compiled function itself needs a context, though, we need to perform scope resolution again: We need to know whether functions nested in the lazy-compiled function reference the variables declared by the lazy function. We can figure this out by re-preparsing those functions. This is exactly what V8 did up to V8 v6.3 / Chrome 63. This is not ideal performance-wise though, as it makes the relation between source size and parse cost nonlinear: we would preparse functions as many times as they are nested. In addition to natural nesting of dynamic programs, JavaScript packers commonly wrap code in “[immediately-invoked function expressions](https://en.wikipedia.org/wiki/Immediately_invoked_function_expression)” (IIFEs), making most JavaScript programs have multiple nesting layers.
 
 <figure>
   <img src="/_img/preparser/parse-complexity-before.svg" intrinsicsize="960x540" alt="">
@@ -173,8 +173,8 @@ Why don’t you simply compile called functions, you might ask? While it’s typ
 
 For this reason V8 has two simple patterns it recognizes as _possibly-invoked function expressions_ (PIFEs; pronounced “piffies”), upon which it eagerly parses and compiles a function:
 
-- If a function is a parenthesized function expression, i.e. `(function(){…})`, we assume it will be called.
-- Since V8 v5.7 / Chrome 57 we also detect the pattern `!function(){…}(),function(){…}(),function(){…}()` generated by [UglifyJS](https://github.com/mishoo/UglifyJS2).
+- If a function is a parenthesized function expression, i.e. `(function(){…})`, we assume it will be called. We make this assumption as soon as we see the start of this pattern, i.e. `(function`.
+- Since V8 v5.7 / Chrome 57 we also detect the pattern `!function(){…}(),function(){…}(),function(){…}()` generated by [UglifyJS](https://github.com/mishoo/UglifyJS2). This detection kicks in as soon as we see `!function`, or `,function` if it immediately follows a PIFE.
 
 Since V8 eagerly compiles PIFEs, they can be used as [profile-directed feedback](https://en.wikipedia.org/wiki/Profile-guided_optimization)[^2], informing the browser which functions are needed for startup.
 
@@ -196,7 +196,7 @@ There is still a cost though, especially a memory cost, so it’s not a good ide
   <figcaption>Eagerly compiling <em>all</em> JavaScript comes at a significant memory cost.</figcaption>
 </figure>
 
-While adding parentheses around functions you need during startup is a good idea (e.g., based on profiling startup), using a package like `optimize-js` that applies simple static heuristics is not a great idea. It for example assumes that a function will be called during startup if it’s an argument to a function call. If such a function implements an entire module that’s only needed much later, however, you end up compiling too much. Over-eagerly compilation is bad for performance: V8 without lazy compilation significantly regresses load time. Additionally, some of the benefits of `optimize-js` come from issues with UglifyJS and other minifiers which remove parentheses from PIFEs that aren’t IIFEs, removing useful hints that could have been applied to e.g., [Universal Module Definition](https://github.com/umdjs/umd) style modules. This is likely an issue that minifiers should fix to get the maximum performance on browsers that eagerly compile PIFEs.
+While adding parentheses around functions you need during startup is a good idea (e.g., based on profiling startup), using a package like `optimize-js` that applies simple static heuristics is not a great idea. It for example assumes that a function will be called during startup if it’s an argument to a function call. If such a function implements an entire module that’s only needed much later, however, you end up compiling too much. Over-eagerly compilation is bad for performance: V8 without lazy compilation significantly regresses load time. Additionally, some of the benefits of `optimize-js` come from issues with UglifyJS and other minifiers which remove parentheses from PIFEs that aren’t IIFEs, removing useful hints that could have been applied to e.g., [Universal Module Definition](https://github.com/umdjs/umd)-style modules. This is likely an issue that minifiers should fix to get the maximum performance on browsers that eagerly compile PIFEs.
 
 [^2]: PIFEs can also be thought of as profile-informed function expressions.
 

@@ -97,7 +97,9 @@ function(arr) {
   <figcaption>为快速数组进行元素展开操作的性能提升</figcaption>
 </figure>
 
+:::note
 **注意：**虽然没有在此显示，但是 Fast-Path 同样也适用于展开操作后面由其它元素时（例如 `[...arr, 1, 2, 3]`，但如果前面有其他元素则无效（例如 `[1, 2, 3, ...arr]`）。
+:::
 
 ## 仔细检查 Fast-Path  { #tread-carefully-down-that-Fast-Path }
 
