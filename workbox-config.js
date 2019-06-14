@@ -23,5 +23,8 @@ module.exports = {
     '/': [
       'index.html',
     ],
+    '/blog/': 'blog/index.html',
+    '/docs/': 'docs/index.html',
+    '/features/': 'features/index.html',
   },
 };
