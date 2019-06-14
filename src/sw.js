@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-importScripts('https://cdn.devtips.cn/workbox-cdn/releases/4.0.0-alpha.0/workbox-sw.js');
+importScripts('https://cdn.devtips.cn/workbox-cdn/releases/4.3.1/workbox-sw.js');
 
 workbox.core.setCacheNameDetails({
   prefix: 'v8.js.cn',
