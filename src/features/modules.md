@@ -129,7 +129,7 @@ You may have noticed we’re using the `.mjs` file extension for modules. On the
 Still, we recommend using the `.mjs` extension for modules, for two reasons:
 
 1. During development, it makes it crystal clear that the file is a module as opposed to a regular script. (It’s not always possible to tell just by looking at the code.) As mentioned before, modules are treated differently than regular scripts, so the difference is hugely important!
-2. It’s consistent with Node.js, where [the experimental modules implementation](https://nodejs.org/api/esm.html) only supports files with the `.mjs` extension.
+1. It’s consistent with Node.js, where [the experimental modules implementation](https://nodejs.org/api/esm.html) only supports files with the `.mjs` extension by default.
 
 :::note
 **Note:** To deploy `.mjs` on the web, your web server needs to be configured to serve files with this extension using the appropriate `Content-Type: text/javascript` header, as mentioned above. Additionally, you may want to configure your editor to treat `.mjs` files as `.js` files to get syntax highlighting. Most modern editors already do this by default.
@@ -264,7 +264,7 @@ export function zip() { /* … */ }
 If your code base only really needs the `pluck` functionality, you’d probably import it as follows:
 
 ```js
-import { pluck } from './util.mjs';
+import {pluck} from './util.mjs';
 ```
 
 In this case, (without a build-time bundling step) the browser still ends up having to download, parse, and compile the entire `./util.mjs` module even though it only really needs that one export. That’s wasteful!
@@ -278,7 +278,7 @@ export function pluck() { /* … */ }
 We can then import `pluck` without the overhead of dealing with `drop` and `zip`:
 
 ```js
-import { pluck } from './pluck.mjs';
+import {pluck} from './pluck.mjs';
 ```
 
 :::note
@@ -322,7 +322,7 @@ The Chrome team is working on improving the development-time experience with JS 
 
 We proposed a change to the module resolution algorithm that addressed a deficiency in speed and determinism. The new algorithm is now live in both [the HTML specification](https://github.com/whatwg/html/pull/2991) and [the ECMAScript specification](https://github.com/tc39/ecma262/pull/1006), and is implemented in [Chrome 63](http://crbug.com/763597). Expect this improvement to land in more browsers soon!
 
-The new algorithm is much more efficient and faster. The computational complexity of the old algorithm was quadratic, i.e. O(n²), in the size of the dependency graph, and so was Chrome’s implementation at the time. The new algorithm is linear, i.e. O(n).
+The new algorithm is much more efficient and faster. The computational complexity of the old algorithm was quadratic, i.e. 𝒪(n²), in the size of the dependency graph, and so was Chrome’s implementation at the time. The new algorithm is linear, i.e. 𝒪(n).
 
 Moreover, the new algorithm reports resolution errors in a deterministic way. Given a graph containing multiple errors, different runs of the old algorithm could report different errors as being responsible for the resolution failure. This made debugging unnecessarily difficult. The new algorithm is guaranteed to report the same error every time.
 
@@ -359,7 +359,7 @@ In Node.js/npm, it’s common to import JS modules by their “package name”. 
 
 ```js
 import moment from 'moment';
-import { pluck } from 'lodash-es';
+import {pluck} from 'lodash-es';
 ```
 
 Currently, [per the HTML spec](https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-specifier), such “bare import specifiers” throw an exception. [Our import maps proposal](https://github.com/domenic/import-maps) allows such code to work on the web, including in production apps. An import map is a JSON resource that helps the browser convert bare import specifiers into full URLs.

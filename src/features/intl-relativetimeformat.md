@@ -8,6 +8,7 @@ tags:
   - Intl
   - Node.js 12
   - io19
+description: 'Intl.RelativeTimeFormat enables localized formatting of relative times without sacrificing performance.'
 tweet: '1054387117571354624'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'

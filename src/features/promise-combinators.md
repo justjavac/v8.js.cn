@@ -7,6 +7,7 @@ date: 2019-06-12
 tags:
   - ECMAScript
   - io19
+description: 'There are four promise combinators in JavaScript: Promise.all, Promise.race, Promise.allSettled, and Promise.any.'
 tweet: '1138819493956710400'
 ---
 Since the introduction of promises in ES2015, JavaScript has supported exactly two promise combinators: the static methods `Promise.all` and `Promise.race`.
@@ -89,8 +90,8 @@ We kick off a computationally expensive task that might take a long time, but we
 ## `Promise.allSettled`
 
 <feature-support chrome="76"
-                 firefox="no https://bugzilla.mozilla.org/show_bug.cgi?id=1549176"
-                 safari="no https://bugs.webkit.org/show_bug.cgi?id=197600"
+                 firefox="68"
+                 safari="13"
                  nodejs="no"
                  babel="yes"></feature-support>
 
@@ -117,7 +118,7 @@ removeLoadingIndicator();
                  firefox="no"
                  safari="no"
                  nodejs="no"
-                 babel="no"></feature-support>
+                 babel="yes"></feature-support>
 
 `Promise.any` gives you a signal as soon as one of the promises fulfills. This is similar to `Promise.race`, except `any` doesn’t reject early when one of the promises rejects.
 

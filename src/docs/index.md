@@ -67,3 +67,4 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [分析 Chromium](/docs/profile-chromium/)
     - [使用 Linux `perf`](/docs/linux-perf/)
     - [追踪 V8](/docs/trace/)
+    - [使用运行时调用分析](/docs/rcs)

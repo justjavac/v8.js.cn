@@ -3,11 +3,11 @@ title: '`Symbol.prototype.description`'
 author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
 avatars:
   - 'mathias-bynens'
-date: 2019-05-20
+date: 2019-06-25
 tags:
   - ECMAScript
   - ES2019
-tweet: 'TODO'
+tweet: '1143432835665211394'
 ---
 JavaScript `Symbol`s can be given a description upon creation:
 
@@ -24,9 +24,13 @@ const symbol = Symbol('foo');
 symbol.toString();
 // → 'Symbol(foo)'
 //           ^^^
+symbol.toString().slice(7, -1); // 🤔
+// → 'foo'
 ```
 
-[The new `Symbol.prototype.description` getter](https://tc39.es/proposal-Symbol-description/) provides a more ergonomic way of accessing the description of a `Symbol`:
+However, the code is slightly magical-looking, not very self-explanatory, and violates the “express intent, not implementation” principle. The above technique also doesn’t let you distinguish between a symbol with no description (i.e. `Symbol()`) and a symbol with the empty string as its description (i.e. `Symbol('')`).
+
+[The new `Symbol.prototype.description` getter](https://tc39.es/ecma262/#sec-symbol.prototype.description) provides a more ergonomic way of accessing the description of a `Symbol`:
 
 ```js
 const symbol = Symbol('foo');
@@ -49,4 +53,4 @@ symbol.description;
                  firefox="63"
                  safari="12.1"
                  nodejs="12 https://twitter.com/mathias/status/1120700101637353473"
-                 babel="no"></feature-support>
+                 babel="yes"></feature-support>

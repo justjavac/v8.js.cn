@@ -24,7 +24,7 @@ TurboFan 中的逃逸分析（对局部作用域的对象执行标量替换）�
 
 ```js
 function mapAdd(a, x) {
-  return a.map(y => y + x);
+  return a.map(y => y + x);
 }
 ```
 
@@ -39,14 +39,14 @@ function mapAdd(a, x) {
 
 ```js
 function sum(...args) {
-  let total = 0;
-  for (let i = 0; i < args.length; ++i)
-    total += args[i];
-  return total;
+  let total = 0;
+  for (let i = 0; i < args.length; ++i)
+    total += args[i];
+  return total;
 }
 
 function sum2(x, y) {
-  return sum(x, y);
+  return sum(x, y);
 }
 ```
 

@@ -1,17 +1,27 @@
 ---
 title: '`Object.fromEntries`'
-author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
+author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias)), JavaScript whisperer'
 avatars:
   - 'mathias-bynens'
-date: 2019-02-07
+date: 2019-06-18
 tags:
   - ECMAScript
   - ES2019
   - io19
+description: 'Object.fromEntries is a useful addition to the built-in JavaScript library that complements Object.entries.'
+tweet: '1140993821897121796'
 ---
 `Object.fromEntries` is a useful addition to the built-in JavaScript library. Before explaining what it does, it helps to understand the pre-existing `Object.entries` API.
 
 ## `Object.entries`
+
+The `Object.entries` has been around for a while.
+
+<feature-support chrome="54"
+                 firefox="47"
+                 safari="10.1"
+                 nodejs="7"
+                 babel="yes"></feature-support>
 
 For each key-value pair in an object, `Object.entries` gives you an array where the first element is the key, and the second element is the value.
 
@@ -81,6 +91,23 @@ const objectCopy = Object.fromEntries(map);
 ```
 
 With both `Object.entries` and `Object.fromEntries` in the language, you can now easily convert between maps and objects.
+
+### Warning: beware of data loss { #data-loss }
+
+When converting maps into plain objects like in the above example, there’s a implicit assumption that each key stringifies uniquely. If this assumption does not hold, data loss occurs:
+
+```js
+const map = new Map([
+  [{}, 'a'],
+  [{}, 'b'],
+]);
+Object.fromEntries(map);
+// → { '[object Object]': 'b' }
+// Note: the value 'a' is nowhere to be found, since both keys
+// stringify to the same value of '[object Object]'.
+```
+
+Before using `Object.fromEntries` or any other techique to convert a map into a object, make sure the map’s keys produce unique `toString` results.
 
 ## `Object.fromEntries` support { #support }
 
