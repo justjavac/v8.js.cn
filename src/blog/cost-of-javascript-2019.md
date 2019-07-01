@@ -9,6 +9,10 @@ tags:
   - parsing
 description: 'The dominant costs of processing JavaScript are download and CPU execution time.'
 tweet: '1143531042361487360'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
+  avatars:
+    - justjavac
 ---
 :::note
 **Note:** If you prefer watching a presentation over reading articles, then enjoy the video below! If not, skip the video and read on.
