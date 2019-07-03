@@ -5,9 +5,9 @@ layout: layouts/base.njk
   <header>
     <h1 itemprop="headline">{{ title | markdown | safe }}</h1>
     <p class="meta">
-      Published <time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
+      发布时间：<time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
       {% if tags %}
-        · tagged with {% for tag in tags %}{% if not 'io' in tag and not 'Node.js' in tag %}
+        · 标签：{% for tag in tags %}{% if not 'io' in tag and not 'Node.js' in tag %}
           <a href="/features/tags/{{ tag | slug }}" class="tag">{{ tag }}</a>
         {% endif %}{% endfor %}
       {% endif %}
@@ -23,7 +23,7 @@ layout: layouts/base.njk
           <img src="/_img/avatars/{{ avatar }}.jpg" srcset="/_img/avatars/{{ avatar }}@2x.jpg 2x" alt="" width="96" height="96" loading="lazy">
         {% endfor %}
       {% endif %}
-      <p>Posted by {{ author | markdown | safe }}.</p>
+      <p>作者：{{ author | markdown | safe }}.</p>
     </div>
     {% if tweet %}
       <a href="https://twitter.com/v8js/status/{{ tweet }}" class="retweet">Retweet this article!</a>
