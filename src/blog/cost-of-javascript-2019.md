@@ -15,7 +15,7 @@ cn:
     - justjavac
 ---
 :::note
-**Note:** If you prefer watching a presentation over reading articles, then enjoy the video below! If not, skip the video and read on.
+**注**：如果您更喜欢观看演示文稿，请欣赏下面的视频！如果没有，请跳过视频并继续阅读。
 :::
 
 <figure>
