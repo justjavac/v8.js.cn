@@ -1,5 +1,5 @@
 ---
-title: 'Stable `Array.prototype.sort`'
+title: '稳定的数组排序 `Array.prototype.sort`'
 author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
 avatars:
   - 'mathias-bynens'
@@ -9,11 +9,15 @@ tags:
   - ES2019
   - io19
 tweet: '1146067251302244353'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
+  avatars:
+    - justjavac
 ---
-Let’s say you have an array of dogs, where each dog has a name and a rating. (If this sounds like a weird example, you should know that there’s a Twitter account that specializes in exactly this… Don’t ask!)
+假设你有一个存储狗的数组 `doggos`，每只狗都有一个名字和评级。（如果这个例子听起来有些奇怪，你可能不知道有一个专门针对这个的 Twitter 账户...所以，不要问！）
 
 ```js
-// Note how the array is pre-sorted alphabetically by `name`.
+// 注意未排序的数组是按 `name` 排序的
 const doggos = [
   { name: 'Abby',   rating: 12 },
   { name: 'Bandit', rating: 13 },
@@ -23,12 +27,12 @@ const doggos = [
   { name: 'Falco',  rating: 13 },
   { name: 'Ghost',  rating: 14 },
 ];
-// Sort the dogs by `rating` in descending order.
-// (This updates `doggos` in place.)
+// 根据 `rating` 降序排列
+// (这将会更改 `doggos` 本身)
 doggos.sort((a, b) => b.rating - a.rating);
 ```
 
-The array is pre-sorted alphabetically by name. To sort by rating instead (so we get the highest-rated dogs first), we use `Array#sort`, passing in a custom callback that compares the ratings. This is the result that you’d probably expect:
+数组根据名字(`name`)按字母顺序预排序。要通过评级(`rating`)来排序（这样我们就可以获得评分最高的狗），我们使用 `Array#sort`，传入一个比较评级的自定义回调函数。这是您期望的结果：
 
 ```js
 [
@@ -42,9 +46,9 @@ The array is pre-sorted alphabetically by name. To sort by rating instead (so we
 ]
 ```
 
-The dogs are sorted by rating, but within each rating, they’re still sorted alphabetically by name. For example, Choco and Ghost have the same rating of 14, but Choco appears before Ghost in the sort result, because that’s the order they had in the original array as well.
+狗按等级排序，但在每个评级中，它们仍然根据名字按字母顺序排序。例如，Choco 和 Ghost 具有相同的等级 14，但 Choco 在排序结果中出现在 Ghost 之前，因为这也是他们在原始数组中的顺序。
 
-To get this result however, the JavaScript engine can’t just use _any_ sorting algorithm — it has to be a so-called “stable sort”. For a long time, the JavaScript spec didn’t require sort stability for `Array#sort`, and instead left it up to the implementation. And because this behavior was unspecified, you could also get this sort result, where Ghost now suddenly appears before Choco:
+然而，为了得到这个结果，JavaScript 引擎不能随意使用排序算法 - 它必须是所谓的“稳定排序”。很长一段时间，JavaScript 规范 `Array#sort` 不需要排序稳定性，而是将其留给实现。而且由于这种行为未指定，你也可能会得到这种结果：Ghost 现在突然出现在 Choco 之前：
 
 ```js
 [
@@ -58,14 +62,14 @@ To get this result however, the JavaScript engine can’t just use _any_ sorting
 ]
 ```
 
-In other words, JavaScript developers could not rely on sort stability. In practice, the situation was even more infuriating, since some JavaScript engines would use a stable sort for short arrays and an unstable sort for larger arrays. This was really confusing, as developers would test their code, see a stable result, but then suddenly get an unstable result in production when the array was slightly bigger.
+换句话说，JavaScript 开发人员不能依赖排序稳定性。在实践中，情况更令人愤怒，因为一些 JavaScript 引擎会对短数组使用稳定排序，对较大数组使用不稳定排序。这真的令人困惑，因为开发人员会测试他们的代码，看到稳定的结果，但是当数组稍微大一点时，突然会在生产环境中获得不稳定的结果。
 
-But there’s some good news. We [proposed a spec change](https://github.com/tc39/ecma262/pull/1340) that makes `Array#sort` stable, and it was accepted. All major JavaScript engines now implement a stable `Array#sort`. It’s just one less thing to worry about as a JavaScript developer. Nice!
+但是有一些好消息。我们提出了一个 `Array#sort` 稳定性的[规范变化](https://github.com/tc39/ecma262/pull/1340)，它被接受了。现在所有主流的 JavaScript 引擎都实现了稳定 `Array#sort`。这是作为 JavaScript 开发人员一直担心的一件事。太帮了！
 
-(Oh, and [we did the same thing for `TypedArray`s](https://github.com/tc39/ecma262/pull/1433): that sort is now stable as well.)
+（哦，[我们为 `TypedArray` 做了同样的事情](https://github.com/tc39/ecma262/pull/1433)：它们的排序现在也稳定了。）
 
 :::note
-**Note:** Although stability is now required per spec, JavaScript engines are still free to implement whatever sorting algorithm they prefer. [V8 uses Timsort](/blog/array-sort#timsort), for example. The spec does not mandate any particular sorting algorithm.
+**注意:** 虽然现在规范要求排序必须具有稳定性，但 JavaScript 引擎仍然可以自由地实现他们喜欢的任何排序算法。例如，[V8 使用 Timsort](/blog/array-sort#timsort)。该规范并未强制要求任何特定的排序算法。
 :::
 
 ## Feature support { #support }
