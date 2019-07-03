@@ -1,13 +1,13 @@
 function describeSupport(input) {
   switch (input) {
     case 'no': {
-      return `<span class="support">no support</span>`;
+      return `<span class="support">不支持</span>`;
     }
     case 'yes': {
-      return `<span class="support">supported</span>`;
+      return `<span class="support">支持</span>`;
     }
     default: {
-      return `<span class="support">supported since version <span class="version">${input}</span></span>`;
+      return `<span class="support">自 <span class="version">${input}</span> 版开始支持</span>`;
     }
   }
 }
@@ -41,7 +41,7 @@ function expandFeatureSupport(input) {
         </li>
       `);
     }
-    buf.push('</ul><div class="feature-support-info"><a href="/features/support">about this feature support listing</a></div>');
+    buf.push('</ul><div class="feature-support-info"><a href="/features/support">关于特性支持列表</a></div>');
     return buf.join('\n').replace(/\s+/g, ' ');
   });
 }
