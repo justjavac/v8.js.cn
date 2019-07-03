@@ -12,19 +12,14 @@
 // limitations under the License.
 
 module.exports = {
-  globDirectory: 'dist/',
-  globPatterns: [
-    '**/*.{css,mjs}',
-    '_img/v8-outline.svg',
-  ],
-  swDest: 'dist/sw.js',
-  swSrc: 'src/sw.js',
+  globDirectory: "dist/",
+  globPatterns: ["**/*.{css,mjs}", "_img/v8-outline.svg"],
+  swDest: "dist/sw.js",
+  swSrc: "src/sw.js",
   templatedURLs: {
-    '/': [
-      'index.html',
-    ],
-    '/blog/': 'blog/index.html',
-    '/docs/': 'docs/index.html',
-    '/features/': 'features/index.html',
-  },
+    "/": ["index.html"],
+    "/blog/": ["blog/index.html"],
+    "/docs/": ["docs/index.html"],
+    "/features/": ["features/index.html"]
+  }
 };
