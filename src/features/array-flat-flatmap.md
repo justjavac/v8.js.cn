@@ -1,5 +1,5 @@
 ---
-title: '`Array.prototype.flat` and `Array.prototype.flatMap`'
+title: '`Array.prototype.flat` 和 `Array.prototype.flatMap`'
 author: 'Mathias Bynens ([@mathias](https://twitter.com/mathias))'
 avatars:
   - 'mathias-bynens'
@@ -9,19 +9,23 @@ tags:
   - ES2019
   - io19
 tweet: '1138457106380709891'
+cn:
+  author: '迷渡 ([@justjavac](https://github.com/justjavac))，[v8.js.cn](https://v8.js.cn) 站长'
+  avatars:
+    - justjavac
 ---
 ## `Array.prototype.flat` { #flat }
 
-The array in this example is several levels deep: it contains an array which in turn contains another array.
+此示例是一个深度嵌套数组：它包含一个数组，该数组又包含另一个数组。
 
 ```js
 const array = [1, [2, [3]]];
-//            ^^^^^^^^^^^^^ outer array
-//                ^^^^^^^^  inner array
-//                    ^^^   innermost array
+//            ^^^^^^^^^^^^^ 外层数组
+//                ^^^^^^^^  内层数组
+//                    ^^^   更内层数组
 ```
 
-`Array#flat` returns a flattened version of a given array.
+`Array#flat` 将一个数组展平，并返回展平后的数组。
 
 ```js
 array.flat();
@@ -32,19 +36,19 @@ array.flat(1);
 // → [1, 2, [3]]
 ```
 
-The default depth is `1`, but you can pass any number to recursively flatten up to that depth. To keep flattening recursively until the result contains no more nested arrays, we pass `Infinity`.
+默认深度为 `1`，但您可以传递任何数字以递归展平到该深度。如果想要递归展平一个数组，直到结果不再包含嵌套数组，可以传递 `Infinity`。
 
 ```js
-// Flatten recursively until the array contains no more nested arrays:
+// 递归展平数组，直到结果不再包含嵌套数组:
 array.flat(Infinity);
 // → [1, 2, 3]
 ```
 
-Why is this method known as `Array.prototype.flat` and not `Array.prototype.flatten`? [Read our #SmooshGate write-up to find out!](https://developers.google.com/web/updates/2018/03/smooshgate)
+为什么这个函数名字是 `Array.prototype.flat` 不是 `Array.prototype.flatten`？[阅读我们的 #SmooshGate 文章，了解相关信息！](https://developers.google.com/web/updates/2018/03/smooshgate)([中文版](https://zhuanlan.zhihu.com/p/34741293))
 
 ## `Array.prototype.flatMap` { #flatMap }
 
-Here’s another example. We have a `duplicate` function that takes a value, and returns an array that contains that value twice. If we apply `duplicate` to each value in an array, we end up with a nested array.
+这是另一个例子。我们有一个 `duplicate`函数，它接受一个值作为参数，并返回一个包含该值两次的数组。如果我们对数组中的每个值调用 `duplicate` ，我们最终会得到一个嵌套数组。
 
 ```js
 const duplicate = (x) => [x, x];
@@ -53,23 +57,23 @@ const duplicate = (x) => [x, x];
 // → [[2, 2], [3, 3], [4, 4]]
 ```
 
-You can then call `flat` on the result to flatten the array:
+然后，您可以对结果调用 `flat` 来展平数组：
 
 ```js
 [2, 3, 4].map(duplicate).flat(); // 🐌
 // → [2, 2, 3, 3, 4, 4]
 ```
 
-Since this pattern is so common in functional programming, there’s now a dedicated `flatMap` method for it.
+由于这种模式在函数式编程中非常常见，现在有一个专门的 `flatMap` 函数。
 
 ```js
 [2, 3, 4].flatMap(duplicate); // 🚀
 // → [2, 2, 3, 3, 4, 4]
 ```
 
-`flatMap` is a little bit more efficient compared to doing a `map` followed by a `flat` separately.
+`flatMap` 与单独执行 `flat` 并执行 `map` 相比，效率更高一些。
 
-Interested in use cases for `flatMap`? Check out [Axel Rauschmayer’s explanation](https://exploringjs.com/impatient-js/ch_arrays.html#flatmap-mapping-to-zero-or-more-values).
+如果对 `flatMap` 感兴趣？查看 [Axel Rauschmayer 的解释](https://exploringjs.com/impatient-js/ch_arrays.html#flatmap-mapping-to-zero-or-more-values)。
 
 ## `Array#{flat,flatMap}` support { #support }
 
