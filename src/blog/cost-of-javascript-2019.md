@@ -1,5 +1,5 @@
 ---
-title: 'The cost of JavaScript in 2019'
+title: 'JavaScript 的性能开销(2019版)'
 author: 'Addy Osmani ([@addyosmani](https://twitter.com/addyosmani)), JavaScript Janitor'
 avatars:
   - 'addy-osmani'
@@ -10,9 +10,7 @@ tags:
 description: 'The dominant costs of processing JavaScript are download and CPU execution time.'
 tweet: '1143531042361487360'
 cn:
-  author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
-  avatars:
-    - justjavac
+  author: '猫眼前端团队公众号：MY-FEE'
 ---
 :::note
 **注**：如果您更喜欢观看演示文稿，请欣赏下面的视频！如果没有，请跳过视频并继续阅读。
@@ -25,100 +23,102 @@ cn:
   <figcaption><a href="https://www.youtube.com/watch?v=X9eRLElSW1c">“The cost of JavaScript”</a> as presented by Addy Osmani at #PerfMatters Conference 2019.</figcaption>
 </figure>
 
-One large change to [the cost of JavaScript](https://medium.com/@addyosmani/the-cost-of-javascript-in-2018-7d8950fbb5d4) over the last few years has been an improvement in how fast browsers can parse and compile script. **In 2019, the dominant costs of processing scripts are now download and CPU execution time.**
+过去几年中，[JavaScript 性能](https://medium.com/@addyosmani/the-cost-of-javascript-in-2018-7d8950fbb5d4)的大幅改进很大程度上依赖于浏览器解析和编译 JavaScript 的速度。**在 2019 年，处理 JavaScript 的主要性能损耗在于下载和 CPU 执行时间**。
 
-User interaction can be delayed if the browser’s main thread is busy executing JavaScript, so optimizing bottlenecks with script execution time and network can be impactful.
+浏览器主线程忙于执行 JavaScript 时，用户交互会被延迟，因此脚本执行时间和网络上的瓶颈优化尤其重要。
 
-## Actionable high-level guidance { #guidance }
+## 可行的高级指南 { #guidance }
 
-What does this mean for web developers? Parse & compile costs are **no longer as slow** as we once thought. The three things to focus on for JavaScript bundles are:
+这对于 web 开发者意味着什么？解析和编译的性能损耗**不再像从前我们认为的那样慢**。我们需要关注三点：
 
-- **Improve download time**
-    - Keep your JavaScript bundles small, especially for mobile devices. Small bundles improve download speeds, lower memory usage, and reduce CPU costs.
-    - Avoid having just a single large bundle; if a bundle exceeds ~50–100 kB, split it up into separate smaller bundles. (With HTTP/2 multiplexing, multiple request and response messages can be in flight at the same time, reducing the overhead of additional requests.)
-    - On mobile you’ll want to ship much less especially because of network speeds, but also to keep plain memory usage low.
-- **Improve execution time**
-    - Avoid [Long Tasks](https://w3c.github.io/longtasks/) that can keep the main thread busy and can push out how soon pages are interactive. Post-download, script execution time is now a dominant cost.
-- **Avoid large inline scripts** (as they’re still parsed and compiled on the main thread). A good rule of thumb is: if the script is over 1 kB, avoid inlining it (also because 1 kB is when [code caching](/blog/code-caching-for-devs) kicks in for external scripts).
+- **提升下载速度**
+    - 减小 JavaScript 包的体积，尤其是在移动设备上。更小的包可以提升下载速度，带来更低的内存占用，并减少 CPU 性能损耗。
+    - 避免把代码打包成一个大文件。如果一个包超过 50–100 kB，把它分割成多个更小的包。（由于 HTTP/2 的多路复用特性，多个请求和响应可以同时到达，从而减少额外请求的负载。）
+    - 由于移动设备上的网络速度，你应该减少网络传输，而且也需要维持更低的内存使用。
+- **提升执行速度**
+    - 避免使主线程忙碌的[长任务(Long Tasks)](https://w3c.github.io/longtasks/)，使页面快点进行可交互态。脚本执行时间目前成为了一个主要的性能损耗。
+- **避免大型内联脚** 因为它们也会在主线程中解析和编译）。一个不错的规定是：如果脚本超过 1KB，就不要将其内联（外部脚本的[字节码缓存](/blog/code-caching-for-devs)要求最小为 1KB 也是一个原因）。
 
-## Why does download and execution time matter? { #download-execute }
+## 为何优化下载和执行时间很重要？ { #download-execute }
 
-Why is it important to optimize download and execution times? Download times are critical for low-end networks. Despite the growth in 4G (and even 5G) across the world, our [effective connection types](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/effectiveType) remain inconsistent with many of us running into speeds that feel like 3G (or worse) when we’re on the go.
+为何优化下载和执行时间很重要？下载时间在低端网络环境下很关键。尽管 4G（甚至 5G）在全球范围快速发展，我们[实际感受到的网络速度](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/effectiveType)和宣传并不一致，很多时候感觉就像 3G（甚至更差）。
 
-JavaScript execution time is important for phones with slow CPUs. Due to differences in CPU, GPU, and thermal throttling, there are huge disparities between the performance of high-end and low-end phones. This matters for the performance of JavaScript, as execution is CPU-bound.
+JavaScript 执行时间在使用低端 CPU 的手机上很重要。由于 CPU、GPU 和散热上的差异，不同手机上性能差异非常大。这会影响到 JavaScript 的性能，因为 JavaScript 的执行是 CPU 密集型任务。
 
-In fact, of the total time a page spends loading in a browser like Chrome, anywhere up to 30% of that time can be spent in JavaScript execution. Below is a page load from a site with a pretty typical workload (Reddit.com) on a high-end desktop machine:
+实际上，像 Chrome 这样的浏览器上的页面加载总时间，有多达 30% 的时间花在 JavaScript 执行上。下面是一个任务负载（Reddit.com）很典型的网站在高端桌面设备上的页面加载，
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/reddit-js-processing.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>JavaScript processing represents 10–30% of time spent in V8 during page load.</figcaption>
+  <figcaption>V8 中的 JavaScript 处理占用了页面加载时间的 10-30%。</figcaption>
 </figure>
 
-On mobile, it takes 3–4× longer for a median phone (Moto G4) to execute Reddit’s JavaScript compared to a high-end device (Pixel 3), and over 6× as long on a low-end device (the <$100 Alcatel 1X):
+移动设备上，中端机（Moto G4）的 JavaScript 执行时间是高端机（Pixel 3）的 3 到 4 倍，低端机（不到 100 刀的 Alcatel 1X）上有超过 6 倍的性能差异：
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/reddit-js-processing-devices.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>The cost of Reddit’s JavaScript across a few different device classes (low-end, average, and high-end)</figcaption>
+  <figcaption>Reddit 在不同设备类型上（低端、中端和高端）的 JavaScript 性能损耗</figcaption>
 </figure>
 
 :::note
-**Note:** Reddit has different experiences for desktop and mobile web, and so the MacBook Pro results cannot be compared to the other results.
+**注意：** Reddit 在桌面端和移动端的体验完全不同，因此 MacBook Pro 上的结果并不能和其他设备上的结果直接做比较。
 :::
 
-When you’re trying to optimize JavaScript execution time, keep an eye out for [Long Tasks](https://web.dev/long-tasks-devtools/) that might be monopolizing the UI thread for long periods of time. These can block critical tasks from executing even if the page looks visually ready. Break these up into smaller tasks. By splitting up your code and prioritizing the order in which it is loaded, you can get pages interactive faster and hopefully have lower input latency.
+当你尝试优化 JavaScript 执行时间，注意关注[长任务](https://web.dev/long-tasks-devtools/)，它可能长期独占 UI 线程。这些任务会阻塞执行关键任务，即便页面看起来已经加载完成。把长任务拆分成多个小任务。通过代码分割和指定加载优先级，可以提升页面可交互速度，并且有希望降低输入延迟。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/long-tasks.png" srcset="/_img/cost-of-javascript-2019/long-tasks@2x.png 2x" intrinsicsize="1280x774" alt="">
-  <figcaption>Long tasks monopolize the main thread. You should break them up.</figcaption>
+  <figcaption>长任务独占主线程，应该拆分它们。</figcaption>
 </figure>
 
-## What has V8 done to improve parse/compile? { #v8-improvements }
+## V8 在提升解析编译速度上做了什么？ { #v8-improvements }
 
-Raw JavaScript parsing speed in V8 has increased 2× since Chrome 60. At the same time, raw parse (and compile) cost has become less visible/important due to other optimization work in Chrome that parallelizes it.
+Chrome 60+ 上，V8 对于初始 JavaScript 的解析速度提升了 2 倍。与此同时， 由于 Chrome 上的其他并行优化，初始解析和编译的性能损耗更少了。
 
-V8 has reduced the amount of parsing and compilation work on the main thread by an average of 40% (e.g. 46% on Facebook, 62% on Pinterest) with the highest improvement being 81% (YouTube), by parsing and compiling on a worker thread. This is in addition to the existing off-main-thread streaming parse/compile.
+V8 减少了主线程上的解析编译任务，平均减少了 40%（比如 Facebook 上是 46%，Pinterest 上是 62%）,最高减少了 81%（YouTube），这得益于将解析编译任务搬到了 worker 线程上。这对于流式解析/编译是一个补充。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/chrome-js-parse-times.svg" intrinsicsize="1280x836" alt="">
-  <figcaption>V8 parse times across different versions</figcaption>
+  <figcaption>不同 V8 版本上的解析时间</figcaption>
 </figure>
 
-We can also visualize the CPU time impact of these changes across different versions of V8 across Chrome releases. In the same amount of time it took Chrome 61 to parse Facebook’s JS, Chrome 75 can now parse both Facebook’s JS AND 6 times Twitter’s JS.
+下图形象呈现了不同 Chrome V8 版本上 CPU 解析时间。Chrome 61 解析 Facebook 的 JS 花了相同的时间，Chrome 75 现在解析 Facebook 的时间是 Twitter 的 6 倍。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/js-parse-times-websites.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>In the time it took Chrome 61 to parse Facebook’s JS, Chrome 75 can now parse both Facebook’s JS and 6 times Twitter’s JS.</figcaption>
+  <figcaption>Chrome 61 解析 Facebook 的 JS 时间，Chrome 75 可以同时解析 Facebook 和 6次 Twitter 的 JS。</figcaption>
 </figure>
 
-Let’s dive into how these changes were unlocked. In short, script resources can be streaming-parsed and-compiled on a worker thread, meaning:
+我们来研究下这些释放出来的改变。长话短说，流式解析和 worker 线程编译脚本，这意味着：
 
-- V8 can parse+compile JavaScript without blocking the main thread.
-- Streaming starts once the full HTML parser encounters a `<script>` tag. For parser-blocking scripts, the HTML parser yields, while for async scripts it continues.
-- For most real-world connection speeds, V8 parses faster than download, so V8 is done parsing+compiling a few milliseconds after the last script bytes are downloaded.
+- V8 可以解析编译 JavaScript 时不阻塞主线程。
+- 流式解析始于整个 HTML 解析器遇到 `<script>` 标签。对于阻塞解析的脚本，HTML 解析器会暂停，而异步脚本会继续执行。
+- 对于大多数真实世界的网络连接速度，V8 解析比下载快，因此 V8 在脚本下载完后很快就完成了解析编译。
 
-The not-so-short explanation is… Much older versions of Chrome would download a script in full before beginning to parse it, which is a straightforward approach but it doesn’t fully utilize the CPU. Between versions 41 and 68, Chrome started parsing async and deferred scripts on a separate thread as soon as the download begins.
+稍微解释下...很老的 Chrome 上会在完整下载完脚本后才开始解析，这很直接但并没有完全利用好 CPU。Chrome 41 和 68 之间的版本上，Chrome 在下载一开始就在一个独立线程上解析 async 和 defer 的脚本。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/script-streaming-1.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>Scripts arrive in multiple chunks. V8 starts streaming once it’s seen at least 30 kB.</figcaption>
+  <figcaption>页面上的脚本被分割成多个块。只要代码块超过 30KB，V8 就会开始流式解析。</figcaption>
 </figure>
 
-In Chrome 71, we moved to a task-based setup where the scheduler could parse multiple async/deferred scripts at once. The impact of this change was a ~20% reduction in main thread parse time, yielding an overall ~2% improvement in TTI/FID as measured on real-world websites.
+Chrome 71 上，我们开始做一个基于任务的调整，调度器可以一次解析多个 async/defer 脚本。这一改变的影响是，主线程解析时间减少 20%，在真实网站上，带来超过 2% 的 TTI/FID 提升。
+
+> 译者注：FID(First Input Delay)，第一输入延迟（FID）测量用户首次与您的站点交互时的时间（即，当他们单击链接，点击按钮或使用自定义的 JavaScript 驱动控件时）到浏览器实际能够的时间回应这种互动。交互时间（TTI）是衡量应用加载所需时间并能够快速响应用户交互的指标。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/script-streaming-2.svg" intrinsicsize="1280x774" alt="">
   <figcaption>Chrome 71 moved to a task-based setup where the scheduler could parse multiple async/deferred scripts at once.</figcaption>
 </figure>
 
-In Chrome 72, we switched to using streaming as the main way to parse: now also regular synchronous scripts are parsed that way (not inline scripts though). We also stopped canceling task-based parsing if the main thread needs it, since that just unnecessarily duplicates any work already done.
+Chrome 72 上，我们转向使用流式解析作为主要解析方式：现在一般异步的脚本都以这种方式解析（内联脚本除外）。我们也停止了废除基于任务的解析，如果主线程需要的话，因为那样只是在做不必要的重复工作。
 
-[Previous versions of Chrome](/blog/v8-release-75#script-streaming-directly-from-network) supported streaming parsing and compilation where the script source data coming in from the network had to make its way to Chrome’s main thread before it would be forwarded to the streamer.
+[早期版本的 Chrome](/blog/v8-release-75#script-streaming-directly-from-network) 支持流式解析和编译，来自网络的脚本源数据必须先到达 Chrome 的主线程，然后才会转发给流处理器。
 
-This often resulted in the streaming parser waiting for data that arrived from the network already, but had not yet been forwarded to the streaming task as it was blocked by other work on the main thread (like HTML parsing, layout, or JavaScript execution).
+这常会造成流式解析器等待早已下载完成但还没有被转发到流任务的数据，因为它被主线程上的其他任务（比如 HTML 解析，布局或者 JavaScript 执行）所阻塞。
 
-We are now experimenting with starting parsing on preload, and the main-thread-bounce was a blocker for this beforehand.
+我们现在正在尝试开始对预加载进行解析，而主线程弹跳会事先对此形成阻塞。
 
-Leszek Swirski’s BlinkOn presentation goes into more detail:
+Leszek Swirski 的 BlinkOn 演示呈现了更多细节：
 
 <figure>
   <div class="video video-16:9">
@@ -127,99 +127,99 @@ Leszek Swirski’s BlinkOn presentation goes into more detail:
   <figcaption><a href="https://www.youtube.com/watch?v=D1UJgiG4_NI">“Parsing JavaScript in zero* time”</a> as presented by Leszek Swirski at BlinkOn 10.</figcaption>
 </figure>
 
-## How do these changes reflect what you see in DevTools?
+## DevTools 上如何查看这些改变？ { #how-do-these-changes-reflect-what-you-see-in-devtools%3F }
 
-In addition to the above, there was [an issue in DevTools](https://bugs.chromium.org/p/chromium/issues/detail?id=939275) that rendered the entire parser task in a way that hints that it’s using CPU (full block). However, the parser blocks whenever it’s starved for data (that needs to go over the main thread). Since we moved from a single streamer thread to streaming tasks, this became really obvious. Here’s what you’d use to see in Chrome 69:
+除了上述之外，[DevTools 有个问题](https://bugs.chromium.org/p/chromium/issues/detail?id=939275)，它暗中使用了 CPU，这会影响到整个解析任务的呈现。然而，解析器解析数据时就会阻塞（它需要在主线程上运行）。自从我们从一个单一的流处理线程中移动到流任务中，这一点就变成更为明显了。下面是你在 Chrome 69 中经常会看到的：
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/devtools-69.png" srcset="/_img/cost-of-javascript-2019/devtools-69@2x.png 2x" intrinsicsize="931x98" alt="">
   <figcaption>The DevTools issue that rendered the entire parser task in a way that hints that it’s using CPU (full block)</figcaption>
 </figure>
 
-The “parse script” task is shown to take 1.08 seconds. However, parsing JavaScript isn’t really that slow! Most of that time is spent doing nothing except waiting for data to go over the main thread.
+上图中的“解析脚本”任务花了 1.08 秒。而解析 JavaScript 其实并不慢！多数时间里除了等待数据通过主线程之外什么都不做。
 
-Chrome 76 paints a different picture:
+Chrome 76 的表现大不相同：
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/devtools-76.png" srcset="/_img/cost-of-javascript-2019/devtools-76@2x.png 2x" intrinsicsize="922x441" alt="">
-  <figcaption>In Chrome 76, parsing is broken up into multiple smaller streaming tasks.</figcaption>
+  <figcaption>Chrome 76 上，解析脚本被拆分成多个更小的流式任务。</figcaption>
 </figure>
 
-In general, the DevTools performance pane is great for getting a high-level overview of what’s happening on your page. For detailed V8-specific metrics such as JavaScript parse and compile times, we recommend [using Chrome Tracing with Runtime Call Stats (RCS)](/docs/rcs). In RCS results, `Parse-Background` and `Compile-Background` tell you how much time was spent parsing and compiling JavaScript off the main thread, whereas `Parse` and `Compile` captures the main thread metrics.
+通常，DevTools 性能面板很适合用来查看页面上发生的行为。对于更详细的 V8 特定指标，比如 JavaScript 解析编译时间，我们推荐[使用带有运行时调用统计(RCS)的 Chrome Tracing](/docs/rcs)。RCS 结果中，`Parse-Background` 和 `Compile-Background` 代表主线程之外解析和编译 JavaScript 花费的时间，然而 `Parse` 和 `Compile` 记录了主线程的指标。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/rcs.png" srcset="/_img/cost-of-javascript-2019/rcs@2x.png 2x" intrinsicsize="848x526" alt="">
 </figure>
 
-## What is the real-world impact of these changes? { #impact }
+## 这些改变的真实影响？ { #impact }
 
-Let’s look at some examples of real-world sites and how script streaming applies.
+来看一些真实网站的例子和脚本流式解析如何应用。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/reddit-main-thread.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>Main thread vs. worker thread time spent parsing and compiling Reddit’s JS on a MacBook Pro</figcaption>
+  <figcaption>在 MacBook Pro 上，主线程和 workder 线程解析编译 Reddit 的 JS 所花的时间。</figcaption>
 </figure>
 
-Reddit.com has several 100 kB+ bundles which are wrapped in outer functions causing lots of [lazy compilation](/blog/preparser) on the main thread. In the above chart, the main thread time is all that really matters because keeping the main thread busy can delay interactivity. Reddit spends most of its time on the main thread with minimum usage of the Worker/Background thread.
+Reddit.com 有多个 100 KB+ 的代码包，这些包被包装在引起主线程大量[懒编译](/blog/preparser)的外部函数中。在上图中，由于主线程忙碌会延迟可交互时间，其运行时间至关重要。Reddit 花了多数时间在主线程上，Work/Background 线程的利用率很低。
 
-They’d benefit from splitting up some of their larger bundles into smaller ones (e.g 50 kB each) without the wrapping to maximize parallelization — so that each bundle could be streaming-parsed + compiled separately and reduce main thread parse/compile during start-up.
+这得益于将大包分割成多个小包（比如每个 50KB），以达到最大并行化，从而每个包都可以被独立地流式解析编译，减轻主线程在启动阶段的压力。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/facebook-main-thread.svg" intrinsicsize="1280x774" alt="">
-  <figcaption>Main thread vs. worker thread time spent parsing and compiling Facebook’s JS on a MacBook Pro</figcaption>
+  <figcaption>Facebook 在 Macbook Pro 上的主线程和 worker 线程解析编译时间对比</figcaption>
 </figure>
 
-We can also look at a site like Facebook.com. Facebook loads ~6MB of compressed JS across ~292 requests, some of it async, some preloaded, and some fetched with a lower priority. A lot of their scripts are very small and granular — this can help with overall parallelization on the Background/Worker thread as these smaller scripts can be streaming-parsed/compiled at the same time.
+再来看看 Facebook.com。Facebook通过 292 个请求加载了 6MB 压缩后的 JS，其中有些是异步的，有些是预加载的，还有些的加载优先级较低。它们很多 JavaScript 的粒度都非常小 - 这对 Background/Worker 线程上的整体并行化很有用，因为这些小的 JavaScript 可以同时被流式解析编译。
 
-Note, you’re probably not Facebook and likely don’t have a long-lived app like Facebook or Gmail where this much script may be justifiable on desktop. However, in general, keep your bundles coarse and only load what you need.
+注意，你可能不是 Facebook，很可能没有一个类似 Facebook 或者 Gmail 这样的长寿应用，在桌面端，它们放如此多的 JavaScript 是无可非议的。然而，一般来说，应该让你的包的粒度较粗，并且按需加载。
 
-Although most JavaScript parsing and compilation work can happen in a streaming fashion on a background thread, some work still has to happen on the main thread. When the main thread is busy, the page can’t respond to user input. Do keep an eye on the impact both downloading and executing code has on your UX.
+尽管多数 JavaScript 解析编译任务可以在 background 线程中以流的形式完成，但是某些任务仍然必须要在主线程中进行。当主线程忙碌时，页面不能响应用户输入。注意关注下载执行代码对你的用户体验造成的影响。
 
 :::note
-**Note:** Currently, not all JavaScript engines and browsers implement script streaming as a loading optimization. We still believe the overall guidance here leads to good user experiences across the board.
+**注意：** 当下，不是所有的 JavaScript 引擎和浏览器都实现了 script streaming 来优化加载。但我们相信大家为了优秀用户体验会加入这项优化的。
 :::
 
-## The cost of parsing JSON { #json }
+## 解析 JSON 的性能损耗 { #json }
 
-Because the JSON grammar is much simpler than JavaScript’s grammar, JSON can be parsed more efficiently than JavaScript. This knowledge can be applied to improve start-up performance for web apps that ship large JSON-like configuration object literals (such as inline Redux stores). Instead of inlining the data as a JavaScript object literal, like so:
+由于 JSON 语法比 JavaScript 语法简单得多，解析 JSON 也会更快。这一点可以用于提升 web 应用的启动性能，我们可以使用类似 JSON 的对象字面量配置（比如内联 Redux store）。不要使用 JavaScript 对象字面量来内联数据，比如这样：
 
 ```js
 const data = { foo: 42, bar: 1337 }; // 🐌
 ```
 
-…it can be represented in JSON-stringified form, and then JSON-parsed at runtime:
+…它可以被表示成字符串化的 JSON 格式，运行时会变成解析后的 JSON:
 
 ```js
 const data = JSON.parse('{"foo":42,"bar":1337}'); // 🚀
 ```
 
-As long as the JSON string is only evaluated once, the `JSON.parse` approach is much faster compared to the JavaScript object literal, especially for cold loads.
+若 JSON 字符串只被执行一次，尤其是在冷启动阶段，`JSON.parse` 方法相比 JavaScript 对象字面量会快得多。在大于 10 KB 的对象上使用这个技巧的效果更佳 - 但在实际应用前，还是先要测试下真实效果。
 
-There’s an additional risk when using plain object literals for large amounts of data: they could be parsed _twice_!
+在大型数据上使用普通对象字面量还有个风险：它们可能被解析**两次**！
 
-1. The first pass happens when the literal gets preparsed.
-2. The second pass happens when the literal gets lazy-parsed.
+1. 第一次发生于字面量预解析阶段。
+2. 第二次发生于字面量懒解析阶段。
 
-The first pass can’t be avoided. Luckily, the second pass can be avoided by placing the object literal at the top-level, or within a [PIFE](/blog/preparser#pife).
+第一次解析无法避免。幸运地，第二次可以通过将对象字面量放在顶层来避免，或者放在 [PIFE](/blog/preparser#pife).
 
-## What about parse/compile on repeat visits? { #repeat-visits }
+## 关于重复访问上的解析/编译？ { #repeat-visits }
 
-V8’s (byte)code-caching optimization can help. When a script is first requested, Chrome downloads it and gives it to V8 to compile. It also stores the file in the browser’s on-disk cache. When the JS file is requested a second time, Chrome takes the file from the browser cache and once again gives it to V8 to compile. This time, however, the compiled code is serialized, and is attached to the cached script file as metadata.
+V8 的字节码缓存优化大有帮助。当首次请求 JavaScript，Chrome 下载然后将其交给 V8 编译。Chrome 也会将文件存进浏览器的磁盘缓存中。当 JS 文件再次请求，Chrome 从浏览器缓存中将其取出，并再次将其交给 V8 编译。这个时候，编译后代码是序列化后的，会作为元数据被添加到缓存的脚本文件上。
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/code-caching.png" srcset="/_img/cost-of-javascript-2019/code-caching@2x.png 2x" intrinsicsize="1431x774" alt="">
-  <figcaption>Visualization of how code caching works in V8</figcaption>
+  <figcaption>V8 中的字节码缓存工作示意图</figcaption>
 </figure>
 
-The third time, Chrome takes both the file and the file’s metadata from the cache, and hands both to V8. V8 deserializes the metadata and can skip compilation. Code caching kicks in if the first two visits happen within 72 hours. Chrome also has eager code caching if a service worker is used to cache scripts. You can read more about code caching in [code caching for web developers](/blog/code-caching-for-devs).
+第三次，Chrome 将文件和文件元数据从缓存中取出，一起交给 V8 处理。V8 对元数据作反序列化，这样可以跳过编译。字节码缓存会在 72 小时内的前两次访问生效。配合使用 service worker 来缓存 JavaScript 代码，Chrome 的字节码缓存效果更佳。你可以在给开发者讲的[字节码缓存](/blog/code-caching-for-devs)这篇文章中了解到更多细节。
 
-## Conclusions
+## 结论 { #conclusions }
 
-Download and execution time are the primary bottlenecks for loading scripts in 2019. Aim for a small bundle of synchronous (inline) scripts for your above-the-fold content with one or more deferred scripts for the rest of the page. Break down your large bundles so you focus on only shipping code the user needs when they need it. This maximizes parallelization in V8.
+2019 年，下载和执行时间是加载 JavaScript 的主要瓶颈。首屏展示内容里使用异步的（内联）JavaScript的小型包，页面剩下部分使用延迟（deferred）加载的 JavaScript。分解大型包，实现代码按需加载。这样可以最大化 V8 中的并行解析。
 
-On mobile, you’ll want to ship a lot less script because of network, memory consumption and execution time for slower CPUs. Balance latency with cacheability to maximize the amount of parsing and compilation work that can happen off the main thread.
+移动设备上，考虑到网络、内存使用和低端 CPU 上的执行时间，你应该传输更少的 JavaScript。平衡可缓存性和延迟，实现在主线程之外解析编译任务数量的最大化。
 
-## Further reading
+## 进一步阅读 { #further-reading }
 
 - [Blazingly fast parsing, part 1: optimizing the scanner](/blog/scanner)
 - [Blazingly fast parsing, part 2: lazy parsing](/blog/preparser)
