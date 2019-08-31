@@ -1,5 +1,6 @@
 ---
 title: 'Tracing V8'
+description: 'This document explains how to make use of V8’s built-in tracing support.'
 ---
 V8 provides support for tracing. It [works automatically when V8 is embedded in Chrome through the Chrome tracing system](/docs/rcs). But you can also enable it in any standalone V8 or within an embedder that uses the Default Platform. More details about the trace-viewer can be found [here](https://github.com/catapult-project/catapult/blob/master/tracing/README.md).
 
@@ -31,7 +32,7 @@ The trace config format is compatible with the one of Chrome Tracing, however, w
 To get Runtime Call Statistics (<abbr>RCS</abbr>), please record the trace with the following two categories enabled: `v8` and `disabled-by-default-v8.runtime_stats`. Each top-level V8 trace event contains the runtime statistics for the period of that event. By selecting any of those events in `trace-viewer`, the runtime stats table are displayed in the lower panel. Selecting multiple events create a merged view.
 
 <figure>
-  <img src="/_img/docs/trace/runtime-stats.png" intrinsicsize="2048x1068" alt="">
+  <img src="/_img/docs/trace/runtime-stats.png" width="2048" height="1068" alt="" loading="lazy">
 </figure>
 
 ## Enabling GC Object Statistics in tracing
@@ -45,5 +46,5 @@ To get the GC Object Statistics in tracing, you need to collect a trace with `di
 Once you load the trace in `trace-viewer`, search for slices named: `V8.GC_Object_Stats`. The statistics appear in the lower panel. Selecting multiple slices creates a merged view.
 
 <figure>
-  <img src="/_img/docs/trace/gc-stats.png" intrinsicsize="2586x1162" alt="">
+  <img src="/_img/docs/trace/gc-stats.png" width="2586" height="1162" alt="" loading="lazy">
 </figure>

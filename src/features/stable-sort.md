@@ -8,6 +8,7 @@ tags:
   - ECMAScript
   - ES2019
   - io19
+description: 'Array.prototype.sort is now guaranteed to be stable.'
 tweet: '1146067251302244353'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'

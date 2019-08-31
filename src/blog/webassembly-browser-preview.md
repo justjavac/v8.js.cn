@@ -4,8 +4,9 @@ author: 'the V8 team'
 date: 2016-10-31 13:33:37
 tags:
   - WebAssembly
+description: 'WebAssembly or Wasm is a new runtime and compilation target for the web, now available behind a flag in Chrome Canary!'
 ---
-Today we’re happy to announce, in tandem with [Firefox](https://hacks.mozilla.org/2016/10/webassembly-browser-preview) and [Edge](https://blogs.windows.com/msedgedev/2016/10/31/webassembly-browser-preview/), a WebAssembly browser preview. [WebAssembly](http://webassembly.org/) or wasm is a new runtime and compilation target for the web, designed by collaborators from Google, Mozilla, Microsoft, Apple, and the [W3C WebAssembly Community Group](https://www.w3.org/community/webassembly/).
+Today we’re happy to announce, in tandem with [Firefox](https://hacks.mozilla.org/2016/10/webassembly-browser-preview) and [Edge](https://blogs.windows.com/msedgedev/2016/10/31/webassembly-browser-preview/), a WebAssembly browser preview. [WebAssembly](http://webassembly.org/) or Wasm is a new runtime and compilation target for the web, designed by collaborators from Google, Mozilla, Microsoft, Apple, and the [W3C WebAssembly Community Group](https://www.w3.org/community/webassembly/).
 
 ## What does this milestone mark?
 
@@ -19,7 +20,7 @@ This milestone is significant because it marks:
 You can read more about WebAssembly on the [project site](http://webassembly.org/) as well as follow our [developers guide](http://webassembly.org/getting-started/developers-guide/) to test out WebAssembly compilation from C & C++ using Emscripten. The [binary format](http://webassembly.org/docs/binary-encoding/) and [JS API](http://webassembly.org/docs/js/) documents outline the binary encoding of WebAssembly and the mechanism to instantiate WebAssembly modules in the browser, respectively. Here’s a quick sample to show what wasm looks like:
 
 <figure>
-  <img src="/_img/webassembly-browser-preview/gcd.svg" intrinsicsize="408x513" alt="">
+  <img src="/_img/webassembly-browser-preview/gcd.svg" width="408" height="514" alt="" loading="lazy">
   <figcaption>An implementation of the Greatest Common Divisor function in WebAssembly, showing the raw bytes, the text format (WAST), and the C source code.</figcaption>
 </figure>
 

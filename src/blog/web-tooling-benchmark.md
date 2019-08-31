@@ -7,6 +7,7 @@ date: 2017-11-06 13:33:37
 tags:
   - benchmarks
   - Node.js
+description: 'The brand-new Web Tooling Benchmark helps identify and fix V8 performance bottlenecks in Babel, TypeScript, and other real-world projects.'
 tweet: '927572065598824448'
 ---
 JavaScript performance has always been important to the V8 team, and in this post we would like to discuss a new JavaScript [Web Tooling Benchmark](https://v8.github.io/web-tooling-benchmark) that we have been using recently to identify and fix some performance bottlenecks in V8. You may already be aware of V8’s [strong commitment to Node.js](/blog/v8-nodejs) and this benchmark extends that commitment by specifically running performance tests based on common developer tools built upon Node.js. The tools in the Web Tooling Benchmark are the same ones used by developers and designers today to build modern web sites and cloud-based applications. In continuation of our ongoing efforts to focus on [real-world performance](/blog/real-world-performance/) rather than artificial benchmarks, we created the benchmark using actual code that developers run every day.
@@ -37,7 +38,7 @@ lead to accesses of the property `"-1"`, because the code didn’t check whether
 Our strong focus on real-world performance and especially on improving popular Node.js workloads is shown by the constant improvements in V8’s score on the benchmark over the last couple of releases:
 
 <figure>
-  <img src="/_img/web-tooling-benchmark/chart.png" intrinsicsize="1198x738" alt="">
+  <img src="/_img/web-tooling-benchmark/chart.svg" width="600" height="371" alt="" loading="lazy">
 </figure>
 
 Since V8 v5.8, which is the last V8 release before [switching to the Ignition+TurboFan architecture](/blog/launching-ignition-and-turbofan), V8’s score on the tooling benchmark has improved by around **60%**.

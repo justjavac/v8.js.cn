@@ -1,5 +1,6 @@
 ---
 title: "由源码构建 V8"
+description: '这篇文档解释了如何从源代码构建 V8 项目'
 cn:
   author: "Suyan ([@suyanhanx](https://github.com/suyanhanx))"
   avatars:

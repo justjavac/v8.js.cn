@@ -1,5 +1,6 @@
 ---
-title: 'Documentation'
+title: '文档'
+description: 'V8 项目文档'
 cn:
   author: 'who who who ([@fsx950223](https://github.com/fsx950223))，good at javascript'
 ---
@@ -32,6 +33,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [Blink 布局测试](/docs/blink-layout-tests/)
     - [评估代码覆盖率](/docs/evaluate-code-coverage/)
     - [发布过程](/docs/release-process/)
+    - [Design review guidelines](/docs/design-review-guidelines)
     - [功能启动过程](/docs/feature-launch-process/)
     - [片状平分](/docs/flake-bisect/)
     - [处理端口](/docs/ports/)
@@ -62,6 +64,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [Torque](/docs/torque/)
     - [编写 Torque 内置函数](/docs/torque-builtins/)
     - [编写 CSA  内置函数](/docs/csa-builtins/)
+    - [Adding a new WebAssembly opcode](/docs/webassembly-opcode)
 - 优化 JavaScript
     - [使用 V8 基本示例分析](/docs/profile/)
     - [分析 Chromium](/docs/profile-chromium/)

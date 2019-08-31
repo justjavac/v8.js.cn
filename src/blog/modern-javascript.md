@@ -4,6 +4,7 @@ author: 'the V8 team, ECMAScript Enthusiasts'
 date: 2016-04-29 13:33:37
 tags:
   - ECMAScript
+description: 'V8 v5.2 supports ES2015 and ES2016!'
 ---
 The V8 team places great importance on the evolution of JavaScript into an increasingly expressive and well-defined language that makes writing fast, safe, and correct web applications easy. In June 2015, the [ES2015 specification](https://www.ecma-international.org/ecma-262/6.0/) was ratified by the TC39 standards committee, making it the largest single update to the JavaScript language. New features include [classes](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes), [arrow functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions), [promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), [iterators / generators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators), [proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), [well-known symbols](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol#Well-known_symbols), and additional syntactic sugar. TC39 has also increased the cadence of new specifications and released the [candidate draft for ES2016](https://tc39.es/ecma262/2016/) in February 2016, to be ratified this summer. While not as expansive as the ES2015 update due to the shorter release cycle, ES2016 notably introduces the [exponentiation operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Arithmetic_Operators#Exponentiation) and [`Array.prototype.includes`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
 
@@ -16,7 +17,7 @@ Given the nature of an evolving spec, the differences between various types of c
 When TC39 decided to publish more frequent updates to the JavaScript specification, the most up-to-date version of the language became the master, draft version. Although versions of the ECMAScript spec are still produced yearly and ratified, V8 implements a combination of the most recently ratified version (e.g. ES2015), certain features which are close enough to standardization that they are safe to implement (e.g. the exponentiation operator and `Array.prototype.includes()` from the ES2016 candidate draft), and a collection of bug fixes and web compatibility amendments from more recent drafts. Part of the rationale for such an approach is that language implementations in browsers should match the specification, even if the it’s the specification that needs to be updated. In fact, the process of implementing a ratified version of the spec often uncovers many of the fixes and clarifications that comprise the next version of the spec.
 
 <figure>
-  <img src="/_img/modern-javascript/shipped-features.png" intrinsicsize="652x241" alt="">
+  <img src="/_img/modern-javascript/shipped-features.png" width="652" height="241" alt="" loading="lazy">
   <figcaption>Currently shipping parts of the evolving ECMAScript specification</figcaption>
 </figure>
 

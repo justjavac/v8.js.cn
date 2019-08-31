@@ -1,6 +1,8 @@
 ---
 title: 'Background compilation'
 author: '[Ross McIlroy](https://twitter.com/rossmcilroy), main thread defender'
+avatars:
+  - 'ross-mcilroy'
 date: 2018-03-26 13:33:37
 tags:
   - internals
@@ -20,7 +22,7 @@ However, due to limitations in V8’s original baseline compiler, V8 still neede
 V8’s Ignition bytecode compiler takes the [abstract syntax tree (AST)](https://en.wikipedia.org/wiki/Abstract_syntax_tree) produced by the parser as input and produces a stream of bytecode (`BytecodeArray`) along with associated meta-data which enables the Ignition interpreter to execute the JavaScript source.
 
 <figure>
-  <img src="/_img/background-compilation/bytecode.png" intrinsicsize="1162x523" alt="">
+  <img src="/_img/background-compilation/bytecode.svg" width="1145" height="509" alt="" loading="lazy">
 </figure>
 
 Ignition’s bytecode compiler was built with multi-threading in mind, however a number of changes were required throughout the compilation pipeline to enable background compilation. One of the main changes was to prevent the compilation pipeline from accessing objects in V8’s JavaScript heap while running on the background thread. Objects in V8’s heap are not thread-safe, since Javascript is single-threaded, and might be modified by the main-thread or V8’s garbage collector during background compilation.
@@ -32,7 +34,7 @@ Bytecode finalization involves building the final `BytecodeArray` object, used t
 With these changes, almost all of the script’s compilation can be moved to a background thread, with only the short AST internalization and bytecode finalization steps happening on the main thread just before script execution.
 
 <figure>
-  <img src="/_img/background-compilation/threads.png" intrinsicsize="1211x307" alt="">
+  <img src="/_img/background-compilation/threads.svg" width="1185" height="296" alt="" loading="lazy">
 </figure>
 
 Currently, only top-level script code and immediately invoked function expressions (IIFEs) are compiled on a background thread — inner functions are still compiled lazily (when first executed) on the main thread. We are hoping to extend background compilation to more situations in the future. However, even with these restrictions, background compilation leaves the main thread free for longer, enabling it to do other work such as reacting to user-interaction, rendering animations or otherwise producing a smoother more responsive experience.
@@ -42,11 +44,11 @@ Currently, only top-level script code and immediately invoked function expressio
 We evaluated the performance of background compilation using our [real-world benchmarking framework](/blog/real-world-performance) across a set of popular webpages.
 
 <figure>
-  <img src="/_img/background-compilation/desktop.png" intrinsicsize="1424x880" alt="">
+  <img src="/_img/background-compilation/desktop.svg" width="712" height="440" alt="" loading="lazy">
 </figure>
 
 <figure>
-  <img src="/_img/background-compilation/mobile.png" intrinsicsize="1616x1290" alt="">
+  <img src="/_img/background-compilation/mobile.svg" width="548" height="442" alt="" loading="lazy">
 </figure>
 
 The proportion of compilation that can happen on a background thread varies depending on the proportion of bytecode compiled during top-level streaming-script compilation verses being lazy compiled as inner functions are invoked (which must still occur on the main thread). As such, the proportion of time saved on the main thread varies, with most pages seeing between 5% to 20% reduction in main-thread compilation time.

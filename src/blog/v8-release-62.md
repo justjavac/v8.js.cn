@@ -4,6 +4,7 @@ author: 'the V8 team'
 date: 2017-09-11 13:33:37
 tags:
   - release
+description: 'V8 v6.2 includes performance improvements, more JavaScript language features, an increased max string length, and more.'
 ---
 Every six weeks, we create a new branch of V8 as part of our [release process](/docs/release-process). Each version is branched from V8’s Git master immediately before a Chrome Beta milestone. Today we’re pleased to announce our newest branch, [V8 version 6.2](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/6.2), which is in beta until its release in coordination with Chrome 62 Stable in several weeks. V8 v6.2 is filled with all sorts of developer-facing goodies. This post provides a preview of some of the highlights in anticipation of the release.
 
@@ -14,25 +15,25 @@ The performance of [`Object#toString`](https://developer.mozilla.org/en-US/docs/
 With the advent of ES2015, `Object#toString` became monkey-patchable via the new [`Symbol.toStringTag`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag) symbol, which also made `Object#toString` more heavy-weight and more challenging to speed up. In this release we ported an optimization initially implemented in the [SpiderMonkey JavaScript engine](https://bugzilla.mozilla.org/show_bug.cgi?id=1369042#c0) to V8, speeding up throughput of `Object#toString` by a factor of **6.5×**.
 
 <figure>
-  <img src="/_img/v8-release-62/perf.png" intrinsicsize="1362x842" alt="">
+  <img src="/_img/v8-release-62/perf.svg" width="681" height="421" alt="" loading="lazy">
 </figure>
 
 It also impacts the Speedometer browser benchmark, specifically the AngularJS subtest, where we measured a solid 3% improvement. Read the [detailed blog post](https://ponyfoo.com/articles/investigating-performance-object-prototype-to-string-es2015) for additional information.
 
 <figure>
-  <img src="/_img/v8-release-62/speedometer.png" intrinsicsize="1466x906" alt="">
+  <img src="/_img/v8-release-62/speedometer.svg" width="733" height="453" alt="" loading="lazy">
 </figure>
 
 We’ve also significantly improved the performance of [ES2015 proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), speeding up calling a proxy object via `someProxy(params)` or `new SomeOtherProxy(params)` by up to **5×**:
 
 <figure>
-  <img src="/_img/v8-release-62/proxy-call-construct.png" intrinsicsize="1200x742" alt="">
+  <img src="/_img/v8-release-62/proxy-call-construct.svg" width="600" height="371" alt="" loading="lazy">
 </figure>
 
 And similarly, the performance of accessing a property on a proxy object via `someProxy.property` improved by almost **6.5×**:
 
 <figure>
-  <img src="/_img/v8-release-62/proxy-property.png" intrinsicsize="1200x742" alt="">
+  <img src="/_img/v8-release-62/proxy-property.svg" width="600" height="371" alt="" loading="lazy">
 </figure>
 
 This is part of an ongoing internship. Stay tuned for a more detailed blog post and final results.
@@ -42,7 +43,7 @@ We’re also excited to announce that thanks to [contributions](https://chromium
 Hashcode lookups for internal hash tables got much faster, resulting in improved performance for `Map`, `Set`, `WeakMap`, and `WeakSet`. An upcoming blog post will explain this optimization in detail.
 
 <figure>
-  <img src="/_img/v8-release-62/hashcode-lookups.png" intrinsicsize="1600x309" alt="">
+  <img src="/_img/v8-release-62/hashcode-lookups.png" width="1600" height="309" alt="" loading="lazy">
 </figure>
 
 The garbage collector now uses a [Parallel Scavenger](https://bugs.chromium.org/p/chromium/issues/detail?id=738865) for collecting the so-called young generation of the heap.
@@ -91,10 +92,10 @@ The maximum string length on 64-bit platforms increased from `2**28 - 16` to `2*
 
 ## Full-codegen is gone
 
-In v6.2, the final major pieces of the old pipeline are gone. More than 30k lines of code were deleted in this release — a clear win for reducing code complexity.
+In V8 v6.2, the final major pieces of the old pipeline are gone. More than 30K lines of code were deleted in this release — a clear win for reducing code complexity.
 
 ## V8 API
 
-Please check out our [summary of API changes](http://bit.ly/v8-api-changes). This document is regularly updated a few weeks after each major release.
+Please check out our [summary of API changes](https://docs.google.com/document/d/1g8JFi8T_oAE_7uAri7Njtig7fKaPDfotU6huOa1alds/edit). This document is regularly updated a few weeks after each major release.
 
 Developers with an [active V8 checkout](/docs/source-code#using-git) can use `git checkout -b 6.2 -t branch-heads/6.2` to experiment with the new features in V8 v6.2. Alternatively you can [subscribe to Chrome’s Beta channel](https://www.google.com/chrome/browser/beta.html) and try the new features out yourself soon.

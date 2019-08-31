@@ -1,5 +1,6 @@
 ---
 title: '发布流程'
+description: '这篇文档解释了 V8 的版本发布流程'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
   avatars:

@@ -6,6 +6,7 @@ avatars:
 date: 2018-10-31 15:44:37
 tags:
   - release
+description: 'V8 v7.1 features embedded bytecode handlers, improved TurboFan escape analysis, postMessage(wasmModule), Intl.RelativeTimeFormat, and globalThis!'
 tweet: '1057645773465235458'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
@@ -31,7 +32,7 @@ function mapAdd(a, x) {
 注意，这里的 `x` 是局部作用域闭包 `y => y + x` 的自由变量。V8 v7.1 现在可以完全忽略上下文中分配的 `x`，在某些情况下可以提高 40%。
 
 <figure>
-  <img src="/_img/v8-release-71/improved-escape-analysis.svg" intrinsicsize="705x371" alt="">
+  <img src="/_img/v8-release-71/improved-escape-analysis.svg" width="705" height="371" alt="" loading="lazy">
   <figcaption>通过新的逃逸分析提升性能（越低越好）</figcaption>
 </figure>
 

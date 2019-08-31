@@ -6,6 +6,7 @@ avatars:
 date: 2019-02-07 11:30:42
 tags:
   - release
+description: 'V8 v7.3 features WebAssembly and async performance improvements, async stack traces, Object.fromEntries, String#matchAll, and much more!'
 tweet: '1093457099441561611'
 ---
 Every six weeks, we create a new branch of V8 as part of our [release process](/docs/release-process). Each version is branched from V8’s Git master immediately before a Chrome Beta milestone. Today we’re pleased to announce our newest branch, [V8 version 7.3](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/7.3), which is in beta until its release in coordination with Chrome 73 Stable in several weeks. V8 v7.3 is filled with all sorts of developer-facing goodies. This post provides a preview of some of the highlights in anticipation of the release.
@@ -23,7 +24,7 @@ Related to the above-mentioned `--async-stack-traces` flag, we’re also enablin
 Via optimizations to the internals of Liftoff, we improved WebAssembly compilation speed significantly without regressing the quality of the generated code. For most workloads, compilation time reduced by 15–25%.
 
 <figure>
-  <img src="/_img/v8-release-73/liftoff-epic.svg" intrinsicsize="600x371" alt="">
+  <img src="/_img/v8-release-73/liftoff-epic.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>Liftoff compile time on <a href="https://s3.amazonaws.com/mozilla-games/ZenGarden/EpicZenGarden.html">the Epic ZenGarden demo</a></figcaption>
 </figure>
 

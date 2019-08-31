@@ -39,7 +39,7 @@ cn:
 主垃圾回收器从整个堆（heap）中收集垃圾。
 
 <figure>
-  <img src="/_img/trash-talk/01.svg" intrinsicsize="960x294" alt="">
+  <img src="/_img/trash-talk/01.svg" width="960" height="295" alt="" loading="lazy">
   <figcaption>主垃圾回收器主要有三个阶段：标记（marking），清除（sweeping）和整理（compacting）</figcaption>
 </figure>
 
@@ -64,7 +64,7 @@ cn:
 堆在 V8 中会分为两块不同的区域，我们将其称之为代（[generations](/blog/orinoco-parallel-scavenger)）；这两块区域分别称之为老生代（old generation）和新生代（young generation），新生代又进一步分为 ‘nursery’ 子代和 ‘intermediate’ 子代两块区域； 一个对象第一次分配内存时会被分配到新生代中的‘ nursery’ 子代；如果进过下一次垃圾回收这个对象还存在新生代中，这时候我们移动到 ‘intermediate’ 子代，再经过下一次垃圾回收这个对象还在新生代，这时候我们就会把这个对象移动到老生代。
 
 <figure>
-  <img src="/_img/trash-talk/02.svg" intrinsicsize="960x333" alt="">
+  <img src="/_img/trash-talk/02.svg" width="960" height="333" alt="" loading="lazy">
   <figcaption>V8中堆分成两代，如果经过垃圾回收对象还存活的话会从新生代移动到老生代</figcaption>
 </figure>
 
@@ -83,7 +83,7 @@ V8 有两个垃圾回收器，[**主垃圾回收器（Full Mark-Compact）**](#m
 疏散步骤将所有的活动对象移动到连续的一块内存中，这样做的好处就是完全移除内存碎片（清理非活动对象时留下的内存碎片）；然后我们把两块内存空间互换，即把 ‘To-Space’ 变成 ‘From-Space’，反之亦然。一旦垃圾回收完成，新分配的内存空间将从 ‘From-Space’ 下一个空闲内存地址开始。
 
 <figure>
-  <img src="/_img/trash-talk/03.svg" intrinsicsize="960x333" alt="">
+  <img src="/_img/trash-talk/03.svg" width="960" height="333" alt="" loading="lazy">
   <figcaption>副垃圾回收器移动活动对象到一个新的内存页</figcaption>
 </figure>
 
@@ -92,7 +92,7 @@ V8 有两个垃圾回收器，[**主垃圾回收器（Full Mark-Compact）**](#m
 清理的最后一步是把移动后的对象的指针地址更新，每一个被复制对象都会留下一个转发地址（forwarding-address），用于更新指针以指向新的地址。
 
 <figure>
-  <img src="/_img/trash-talk/04.svg" intrinsicsize="960x333" alt="">
+  <img src="/_img/trash-talk/04.svg" width="960" height="333" alt="" loading="lazy">
   <figcaption>副垃圾回收器移动 ‘intermediate’ 子代的活动对象到老生代</figcaption>
 </figure>
 
@@ -103,7 +103,7 @@ V8 有两个垃圾回收器，[**主垃圾回收器（Full Mark-Compact）**](#m
 这些算法和优化在很多垃圾回收相关的文献或着具有垃圾回收机制的编程语言中都是非常常见的，但是这些先进的垃圾回收机制已经经过了漫长发展。测量垃圾回收所花费时间的一个重要指标就是执行垃圾回收时主线程挂起的时间。对于传统的 ‘stop-the-world’ 垃圾回收器来说，垃圾回收所花费的时间可以直接简单相加。而这种垃圾回收的方式直接影响了用户体验，会直接导致页面卡顿，渲染延迟等一系列问题。
 
 <figure>
-  <img src="/_img/v8-orinoco.svg" width="256" height="256" intrinsicsize="192x192" alt="">
+  <img src="/_img/v8-orinoco.svg" width="256" height="256" alt="" loading="lazy">
   <figcaption>V8 垃圾回收器 Orinoco 的 LOGO</figcaption>
 </figure>
 
@@ -114,7 +114,7 @@ Orinoco 是 V8 垃圾回收器项目的代号，它利用最新的和最好的�
 并行是主线程和协助线程同时执行同样的工作，但是这仍然是一种 ‘stop-the-world’ 的垃圾回收方式，但是垃圾回收所耗费的时间等于总时间除以参与的线程数量（加上一些同步开销）。这是这三种技术中最简单的 JavaScript 垃圾回收方式；因为没有 JavaScript 的执行，因此只要确保同时只有一个协助线程在访问对象就好了。
 
 <figure>
-  <img src="/_img/trash-talk/05.svg" intrinsicsize="490x168" alt="">
+  <img src="/_img/trash-talk/05.svg" width="490" height="168" alt="" loading="lazy">
   <figcaption>主线程和协助线程同在一时间做同样的任务</figcaption>
 </figure>
 
@@ -123,7 +123,7 @@ Orinoco 是 V8 垃圾回收器项目的代号，它利用最新的和最好的�
 增量式垃圾回收是主线程间歇性的去做少量的垃圾回收的方式。我们不会在增量式垃圾回收的时候执行整个垃圾回收的过程，只是整个垃圾回收过程中的一小部分工作。做这样的工作是极其困难的，因为 JavaScript 也在做增量式垃圾回收的时候同时执行，这意味着堆的状态已经发生了变化，这有可能会导致之前的增量回收工作完全无效。从图中可以看出并没有减少主线程暂停的时间（事实上，通常会略微增加），只会随着时间的推移而增长。但这仍然是解决问题的的好方法，通过 JavaScript 间歇性的执行，同时也间歇性的去做垃圾回收工作，JavaScript 的执行仍然可以在用户输入或者执行动画的时候得到及时的响应。
 
 <figure>
-  <img src="/_img/trash-talk/06.svg" intrinsicsize="452x129" alt="">
+  <img src="/_img/trash-talk/06.svg" width="452" height="129" alt="" loading="lazy">
   <figcaption>垃圾回收任务交错的进入主线程执行</figcaption>
 </figure>
 
@@ -132,7 +132,7 @@ Orinoco 是 V8 垃圾回收器项目的代号，它利用最新的和最好的�
 并发是主线程一直执行 JavaScript，而辅助线程在后台完全的执行垃圾回收。这种方式是这三种技术中最难的一种，JavaScript 堆里面的内容随时都有可能发生变化，从而使之前做的工作完全无效。最重要的是，现在有读/写竞争（read/write races），主线程和辅助线程极有可能在同一时间去更改同一个对象。这种方式的优势也非常明显，主线程不会被挂起，JavaScript 可以自由地执行 ，尽管为了保证同一对象同一时间只有一个辅助线程在修改而带来的一些同步开销。
 
 <figure>
-  <img src="/_img/trash-talk/07.svg" intrinsicsize="443x168" alt="">
+  <img src="/_img/trash-talk/07.svg" width="444" height="168" alt="" loading="lazy">
   <figcaption>垃圾回收任务完全发生在后台，主线程可以自由的执行 JavaScript</figcaption>
 </figure>
 
@@ -143,7 +143,7 @@ Orinoco 是 V8 垃圾回收器项目的代号，它利用最新的和最好的�
 现今，V8 在新生代垃圾回收中使用并行清理，每个协助线程会将所有的活动对象都移动到 ‘To-Space’。在每一次尝试将活动对象移动到 ‘To-Space’ 的时候必须通确保原子化的读和写以及比较和交换操作。不同的协助线程都有可能通过不同的路径找到相同的对象，并尝试将这个对象移动到 ‘To-Space’；无论哪个协助线程成功移动对象到 ‘To-Space’，都必须更新这个对象的指针，并且去维护移动这个活动对象所留下的转发地址。以便于其他协助线程可以找到该活动对象更新后的指针。为了快速的给幸存下来的活动对象分配内存，清理任务会使用线程局部分配缓冲区。
 
 <figure>
-  <img src="/_img/trash-talk/08.svg" intrinsicsize="960x339" alt="">
+  <img src="/_img/trash-talk/08.svg" width="960" height="339" alt="" loading="lazy">
   <figcaption>并行清理在主线程和多个协助线程之间分配清理任务</figcaption>
 </figure>
 
@@ -152,7 +152,7 @@ Orinoco 是 V8 垃圾回收器项目的代号，它利用最新的和最好的�
 V8 中的主垃圾回收器主要使用并发标记，一旦堆的动态分配接近极限的时候，将启动并发标记任务。每个辅助线程都会去追踪每个标记到的对象的指针以及对这个对象的引用。在 JavaScript 执行的时候，并发标记在后台进行。[写入屏障（write barriers）](https://dl.acm.org/citation.cfm?id=2025255)技术在辅助线程在进行并发标记的时候会一直追踪每一个 JavaScript 对象的新引用。
 
 <figure>
-  <img src="/_img/trash-talk/09.svg" intrinsicsize="960x339" alt="">
+  <img src="/_img/trash-talk/09.svg" width="960" height="339" alt="" loading="lazy">
   <figcaption>主垃圾回收器并发的去标记和清除对象，并行的去整理内存和更新活动对象的指针</figcaption>
 </figure>
 
@@ -163,7 +163,7 @@ V8 中的主垃圾回收器主要使用并发标记，一旦堆的动态分配�
 JavaScript 是无法去直接访问垃圾回收器的，这些都是在V8的实现中已经定义好的。但是 V8 确实提供了一种机制让Embedders（嵌入V8的环境）去触发垃圾回收，即便 JavaScript 本身不能直接去触发垃圾回收。垃圾回收器会发布一些 “空闲时任务（Idle Tasks）”，虽然这些任务都是可选的，但最终这些任务会被触发。像 Chrome 这些嵌入了 V8 的环境会有一些空闲时间的概念。比如：在 Chrome 中，以每秒60帧的速度去执行一些动画，浏览器大约有16.6毫秒的时间去渲染动画的每一帧，如果动画提前完成，那么 Chrome 在下一帧之前的空闲时间去触发垃圾回收器发布的空闲时任务。
 
 <figure>
-  <img src="/_img/trash-talk/10.svg" intrinsicsize="424x252" alt="">
+  <img src="/_img/trash-talk/10.svg" width="424" height="253" alt="" loading="lazy">
   <figcaption>空闲时垃圾回收器，利用主线程上的空闲时间主动的去执行垃圾回收工作</figcaption>
 </figure>
 

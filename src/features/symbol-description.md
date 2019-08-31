@@ -7,6 +7,7 @@ date: 2019-06-25
 tags:
   - ECMAScript
   - ES2019
+description: 'Symbol.prototype.description provides an ergonomic way of accessing the description of a Symbol.'
 tweet: '1143432835665211394'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，[v8.js.cn](https://v8.js.cn) 站长'

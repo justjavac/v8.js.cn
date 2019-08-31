@@ -7,6 +7,7 @@ date: 2019-07-01 16:45:00
 tags:
   - WebAssembly
   - tooling
+description: 'Emscripten is switching to the LLVM WebAssembly backend, resulting in much faster link times️ and many other benefits.'
 tweet: '1145704863377981445'
 ---
 WebAssembly is normally compiled from a source language, which means that developers need *tools* to use it. Because of that, the V8 team works on relevant open-source projects like [LLVM](http://llvm.org/), [Emscripten](https://emscripten.org/), [Binaryen](https://github.com/WebAssembly/binaryen/), and [WABT](https://github.com/WebAssembly/wabt). This post describes some of the work we’ve been doing on Emscripten and LLVM, which will soon allow Emscripten to switch to the [LLVM WebAssembly backend](https://github.com/llvm/llvm-project/tree/master/llvm/lib/Target/WebAssembly) by default — please test it and report any issues!
@@ -45,7 +46,7 @@ It was also a relatively minor change in Emscripten. While Emscripten is a compi
 ### Code size
 
 <figure>
-  <img src="/_img/emscripten-llvm-wasm/size.svg" intrinsicsize="1133x638" alt="">
+  <img src="/_img/emscripten-llvm-wasm/size.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>Code size measurements (lower is better)</figcaption>
 </figure>
 
@@ -62,18 +63,18 @@ These size improvements (and the speed improvements we’ll discuss next) are du
 ### Speed
 
 <figure>
-  <img src="/_img/emscripten-llvm-wasm/speed.svg" intrinsicsize="1133x638" alt="">
+  <img src="/_img/emscripten-llvm-wasm/speed.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>Speed measurements (lower is better)</figcaption>
 </figure>
 
-(Measurements are on v8.) Among the microbenchmarks, speed is a mixed picture — which is not that surprising, since most of them are dominated by a single function or even loop, so any change to the code Emscripten emits can lead to a lucky or unlucky optimization choice by the VM. Overall, about an equal number of microbenchmarks stay the same as those that improve or those that regress. Looking at the more realistic macrobenchmarks, once more LZMA is an outlier, again because of an unlucky inlining decision as mentioned earlier, but otherwise every single macrobenchmark improves!
+(Measurements are on V8.) Among the microbenchmarks, speed is a mixed picture — which is not that surprising, since most of them are dominated by a single function or even loop, so any change to the code Emscripten emits can lead to a lucky or unlucky optimization choice by the VM. Overall, about an equal number of microbenchmarks stay the same as those that improve or those that regress. Looking at the more realistic macrobenchmarks, once more LZMA is an outlier, again because of an unlucky inlining decision as mentioned earlier, but otherwise every single macrobenchmark improves!
 
 The average change on the macrobenchmarks is a speedup of **3.2%**.
 
 ### Build time
 
 <figure>
-  <img src="/_img/emscripten-llvm-wasm/build.svg" intrinsicsize="1133x638" alt="">
+  <img src="/_img/emscripten-llvm-wasm/build.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>Compile and link time measurements on BananaBread (lower is better)</figcaption>
 </figure>
 

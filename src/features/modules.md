@@ -8,6 +8,7 @@ date: 2018-06-18
 tags:
   - ECMAScript
   - ES2015
+description: 'This article explains how to use JavaScript modules, how to deploy them responsibly, and how the Chrome team is working to make modules even better in the future.'
 tweet: '1008725884575109120'
 ---
 JavaScript modules are now [supported in all major browsers](https://caniuse.com/#feat=es6-module)!
@@ -128,8 +129,8 @@ You may have noticed we’re using the `.mjs` file extension for modules. On the
 
 Still, we recommend using the `.mjs` extension for modules, for two reasons:
 
-1. During development, it makes it crystal clear that the file is a module as opposed to a regular script. (It’s not always possible to tell just by looking at the code.) As mentioned before, modules are treated differently than regular scripts, so the difference is hugely important!
-1. It’s consistent with Node.js, where [the experimental modules implementation](https://nodejs.org/api/esm.html) only supports files with the `.mjs` extension by default.
+1. During development, the `.mjs` extension makes it crystal clear to you and anyone else looking at your project that the file is a module as opposed to a classic script. (It’s not always possible to tell just by looking at the code.) As mentioned before, modules are treated differently than classic scripts, so the difference is hugely important!
+1. It ensures that your file is parsed as a module by runtimes such as [Node.js](https://nodejs.org/api/esm.html#esm_enabling) and [`d8`](/docs/d8), and build tools such as [Babel](https://babeljs.io/docs/en/options#sourcetype). While these environments and tools each have proprietary ways via configuration to interpret files with other extensions as modules, the `.mjs` extension is the cross-compatible way to ensure that files are treated as modules.
 
 :::note
 **Note:** To deploy `.mjs` on the web, your web server needs to be configured to serve files with this extension using the appropriate `Content-Type: text/javascript` header, as mentioned above. Additionally, you may want to configure your editor to treat `.mjs` files as `.js` files to get syntax highlighting. Most modern editors already do this by default.
@@ -170,7 +171,7 @@ For now, module specifiers must be full URLs, or relative URLs starting with `/`
 Classic `<script>`s block the HTML parser by default. You can work around it by adding [the `defer` attribute](https://html.spec.whatwg.org/multipage/scripting.html#attr-script-defer), which ensures that the script download happens in parallel with HTML parsing.
 
 <figure>
-  <img src="/_img/modules/async-defer.svg" intrinsicsize="820x200" alt="">
+  <img src="/_img/modules/async-defer.svg" width="820" height="200" alt="" loading="lazy">
 </figure>
 
 Module scripts are deferred by default. As such, there is no need to add `defer` to your `<script type="module">` tags! Not only does the download for the main module happen in parallel with HTML parsing, the same goes for all the dependency modules!
@@ -231,7 +232,7 @@ However, as we learned during [our bottleneck analysis of Chrome’s loading pip
 
 <figure>
   <a href="https://docs.google.com/document/d/1ovo4PurT_1K4WFwN2MYmmgbLcr7v6DRQN67ESVA-wq0/pub">
-    <img src="/_img/modules/renderer-main-thread-time-breakdown.svg" intrinsicsize="830x311" alt="">
+    <img src="/_img/modules/renderer-main-thread-time-breakdown.svg" width="830" height="311" alt="" loading="lazy">
   </a>
 </figure>
 

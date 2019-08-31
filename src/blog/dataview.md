@@ -86,7 +86,7 @@ LittleEndian.prototype.getUint32 = function(byteOffset) {
 在 V8 中，我们已经对 `TypedArray` 进行了大量的优化，因此它们的性能就是了我们想要追赶的目标。
 
 <figure>
-  <img src="/_img/dataview/dataview-original.svg" intrinsicsize="600x371" alt="">
+  <img src="/_img/dataview/dataview-original.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>原始 <code>DataView</code> 性能</figcaption>
 </figure>
 
@@ -127,7 +127,7 @@ macro LoadDataViewUint32(buffer: JSArrayBuffer, offset: intptr,
 将 `DataView` 的方法实现转移到 Torque 上已经在性能上有了**3倍**的提升，但还是无法与基于 `Uint8Array` 的包装函数相媲美。
 
 <figure>
-  <img src="/_img/dataview/dataview-torque.svg" intrinsicsize="600x371" alt="">
+  <img src="/_img/dataview/dataview-torque.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption>Torque 编写的 <code>DataView</code> 性能 </figcaption>
 </figure>
 
@@ -142,7 +142,7 @@ TurboFan 的工作原理是将传入的 JavaScript 代码转换为内部的图�
 但是，TurboFan 允许我们检查 `JSCall` 节点是否是对已知函数的调用，例如调用内置函数就是其中一种情况。如果是的话，我们可以在 IR 中内联该函数调用。这意味着复杂的 `JSCall` 在编译时被可以被内联展开， 从而使 TurboFan 可以在之后的流程中在更广泛的上下文中直接优化这个函数内部的代码。最重要的是，我们可以借此避免昂贵的函数调用开销。
 
 <figure>
-  <img src="/_img/dataview/dataview-turbofan-initial.svg" intrinsicsize="600x371" alt="">
+  <img src="/_img/dataview/dataview-turbofan-initial.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption> 最初的 TurboFan <code>DataView</code> 性能 </figcaption>
 </figure>
 
@@ -159,7 +159,7 @@ TurboFan 的工作原理是将传入的 JavaScript 代码转换为内部的图�
 与最初的 TurboFan 实现相比，这项优化使得 `DataView` 基准测试分数翻了一倍还多。`DataView` 目前的性能是 `Uint8Array` 包装函数的 3 倍，更比原始 `DataView` 运行速度的快了 **16 倍**之多！
 
 <figure>
-  <img src="/_img/dataview/dataview-turbofan-final.svg" intrinsicsize="600x371" alt="">
+  <img src="/_img/dataview/dataview-turbofan-final.svg" width="600" height="371" alt="" loading="lazy">
   <figcaption> 最终的 TurboFan <code>DataView</code> 性能 </figcaption>
 </figure>
 
@@ -172,7 +172,7 @@ TurboFan 的工作原理是将传入的 JavaScript 代码转换为内部的图�
 我们将 `DataView` 的整体性能与 `TypedArray` 进行了比较，结果发现新的 `DataView` 实现与 `TypedArray` 在性能方面不分伯仲。尤其在访问以原生字节顺序排列的数据（英特尔处理器上的小端）时，新实现弥补上了大多数的性能差距，并使`DataView`成为了 V8 上的实用之选。
 
 <figure>
-  <img src="/_img/dataview/dataview-vs-typedarray.svg" intrinsicsize="586x362" alt="">
+  <img src="/_img/dataview/dataview-vs-typedarray.svg" width="586" height="362" alt="" loading="lazy">
   <figcaption><code>DataView</code> vs. <code>TypedArray</code> 峰值性能</figcaption>
 </figure>
 

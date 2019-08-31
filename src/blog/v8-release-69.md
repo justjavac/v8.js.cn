@@ -4,6 +4,7 @@ author: 'the V8 team'
 date: 2018-08-07 13:33:37
 tags:
   - release
+description: 'V8 v6.9 features reduced memory usage through embedded built-ins, faster WebAssembly startup through Liftoff, better DataView and WeakMap performance, and much more!'
 tweet: '1026825606003150848'
 ---
 Every six weeks, we create a new branch of V8 as part of our [release process](/docs/release-process). Each version is branched from V8’s Git master immediately before a Chrome Beta milestone. Today we’re pleased to announce our newest branch, [V8 version 6.9](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/6.9), which is in beta until its release in coordination with Chrome 69 Stable in several weeks. V8 v6.9 is filled with all sorts of developer-facing goodies. This post provides a preview of some of the highlights in anticipation of the release.
@@ -25,7 +26,7 @@ V8 v6.9 ships with support for embedded built-ins on x64 platforms. Other platfo
 WebAssembly got a new baseline compiler for much faster startup of complex websites with big WebAssembly modules (such as Google Earth and AutoCAD). Depending on the hardware we are seeing speedups of more than 10×. For more details, refer to [the detailed Liftoff blog post](/blog/liftoff).
 
 <figure>
-  <img src="/_img/v8-liftoff.svg" width="256" height="256" intrinsicsize="187x187" alt="">
+  <img src="/_img/v8-liftoff.svg" width="256" height="256" alt="" loading="lazy">
   <figcaption>Logo for Liftoff, V8’s baseline compiler for WebAssembly</figcaption>
 </figure>
 

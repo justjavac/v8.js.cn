@@ -1,5 +1,6 @@
 ---
 title: '改进代码缓存'
+description: '从 Chrome 66 开始，V8 可以把执行过的代码缓存起来'
 author: 'Mythri Alle, Chief Code Cacher'
 date: 2018-04-24 13:33:37
 tags:
@@ -27,7 +28,7 @@ Chrome 将序列化的生成代码（generated code）存储到磁盘缓存中�
 嵌入者可以请求 V8 序列化它在顶级编译新的 JavaScript 源文件时生成的代码。编译脚本后，V8 返回序列化代码。当 Chrome 再次请求相同的脚本时，V8 会从缓存中获取序列化的代码并对其进行反序列化。V8 完全避免了重新编译已经在缓存中的函数。下图显示了这些场景：
 
 <figure>
-  <img src="/_img/improved-code-caching/warm-hot-run-1.png" intrinsicsize="624x195" alt="">
+  <img src="/_img/improved-code-caching/warm-hot-run-1.png" width="624" height="195" alt="" loading="lazy">
 </figure>
 
 V8 仅编译在顶层编译期间的立即执行的函数（IIFE），并标记用于延迟编译的其他函数。这样可以避免编译不需要的函数，从而提高页面加载时间，但这也意味着序列化数据仅包含需要迫切编译的函数的代码。
@@ -39,7 +40,7 @@ V8 仅编译在顶层编译期间的立即执行的函数（IIFE），并标记�
 V8 公开了一个新 API，`ScriptCompiler::CreateCodeCache`，可以让代码缓存请求不再依赖于编译请求。在编译请求的过程中请求代码缓存已被弃用，并且不适用于 V8 v6.6 及更高版本。从版本 66 开始，Chrome 使用此 API 在顶层执行后请求代码缓存。下图显示了请求代码缓存的新场景。代码缓存在顶层执行之后被请求，并因此包含在脚本执行期间稍后被编译的函数的代码。在后面的运行中（在下图中显示为热运行），它避免了在顶层执行期间编译函数。
 
 <figure>
-  <img src="/_img/improved-code-caching/warm-hot-run-2.png" intrinsicsize="624x191" alt="">
+  <img src="/_img/improved-code-caching/warm-hot-run-2.png" width="624" height="191" alt="" loading="lazy">
 </figure>
 
 ## 结果 {#results}
@@ -47,11 +48,11 @@ V8 公开了一个新 API，`ScriptCompiler::CreateCodeCache`，可以让代码�
 使用我们内部的 [real-world benchmarks](https://cs.chromium.org/chromium/src/tools/perf/page_sets/v8_top_25.py?q=v8.top&sq=package:chromium&l=1) 测试此功能的性能。下图显示了早期高速缓存方案中分析和编译时间的缩短。在大多数页面上，解析和编译时间都会减少 20-40% 左右。
 
 <figure>
-  <img src="/_img/improved-code-caching/parse.png" intrinsicsize="1530x946" alt="">
+  <img src="/_img/improved-code-caching/parse.png" width="1530" height="946" alt="" loading="lazy">
 </figure>
 
 <figure>
-  <img src="/_img/improved-code-caching/compile.png" intrinsicsize="1532x946" alt="">
+  <img src="/_img/improved-code-caching/compile.png" width="1532" height="946" alt="" loading="lazy">
 </figure>
 
 来自其它数据也显示了和我们相似的结果，在桌面和移动设备上编译 JavaScript 代码的时间减少了 20-40%。在 Android 上，这种优化还可以转化为顶级页面加载指标减少 1-2%，例如网页可以被用户操作时所需的时间。我们还监测了 Chrome 的内存和磁盘使用情况，但没有看到任何明显的回归。

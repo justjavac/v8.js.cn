@@ -7,6 +7,7 @@ date: 2017-09-12 13:33:37
 tags:
   - internals
   - presentations
+description: 'This technical deep-dive explains how V8 optimizes operations on arrays behind the scenes, and what that means for JavaScript developers.'
 tweet: '907608362191376384'
 cn:
   author: '迷渡 ([@justjavac](https://github.com/justjavac))，V8.js.cn 站长'
@@ -106,7 +107,7 @@ V8 之所以做这个区别是因为 `PACKED` 数组的操作比在 `HOLEY` 数�
 V8 将这个变换系统实现为[格 lattice](https://en.wikipedia.org/wiki/Lattice_%28order%29)(数学概念)。这是一个简化的可视化，仅显示最常见的元素种类：
 
 <figure>
-  <img src="/_img/elements-kinds/lattice.svg" intrinsicsize="960x540" alt="">
+  <img src="/_img/elements-kinds/lattice.svg" width="960" height="540" alt="" loading="lazy">
 </figure>
 
 只能通过格子向下过渡。一旦将单精度浮点数添加到 Smi 数组中，即使稍后用 Smi 覆盖浮点数，它也会被标记为 DOUBLE。类似地，一旦在数组中创建了一个洞，它将被永久标记为有洞 HOLEY，即使稍后填充它也是如此。

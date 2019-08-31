@@ -4,6 +4,7 @@ author: 'Seth Thompson, WebAssembly Wrangler'
 date: 2016-03-15 13:33:37
 tags:
   - WebAssembly
+description: 'Starting today, experimental support for WebAssembly is available in V8 and Chromium behind a flag.'
 ---
 _For a comprehensive overview of WebAssembly and a roadmap for future community collaboration, see [A WebAssembly Milestone](https://hacks.mozilla.org/2016/03/a-webassembly-milestone/) on the Mozilla Hacks blog._
 
@@ -14,7 +15,7 @@ Starting today, experimental support for WebAssembly is available in V8 and Chro
 The WebAssembly project website has a [demo](https://webassembly.github.io/demo/) showcasing the runtime’s usage in a 3D game. In browsers that support WebAssembly, the demo page will load and instantiate a wasm module that uses WebGL and other web platform APIs to render an interactive game. In other browsers, the demo page falls back to an asm.js version of the same game.
 
 <figure>
-  <img src="/_img/webassembly-experimental/tanks.jpg" intrinsicsize="1116x681" alt="">
+  <img src="/_img/webassembly-experimental/tanks.jpg" width="1116" height="681" alt="" loading="lazy">
   <figcaption><a href="https://webassembly.github.io/demo/">WebAssembly demo</a></figcaption>
 </figure>
 

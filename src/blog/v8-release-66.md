@@ -4,6 +4,7 @@ author: 'the V8 team'
 date: 2018-03-27 13:33:37
 tags:
   - release
+description: 'V8 v6.6 includes optional catch binding, extended string trimming, several parse/compile/runtime performance improvements, and much more!'
 tweet: '978534399938584576'
 ---
 Every six weeks, we create a new branch of V8 as part of our [release process](/docs/release-process). Each version is branched from V8’s Git master immediately before a Chrome Beta milestone. Today we’re pleased to announce our newest branch, [V8 version 6.6](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/6.6), which is in beta until its release in coordination with Chrome 66 Stable in several weeks. V8 v6.6 is filled with all sorts of developer-facing goodies. This post provides a preview of some of the highlights in anticipation of the release.
@@ -12,7 +13,7 @@ Every six weeks, we create a new branch of V8 as part of our [release process](/
 
 ### `Function.prototype.toString` revision { #function-tostring }
 
-[`Function.prototype.toString()`](https://tc39.es/Function-prototype-toString-revision/) now returns exact slices of source code text, including whitespace and comments. Here’s an example comparing the old and the new behavior:
+[`Function.prototype.toString()`](/features/function-tostring) now returns exact slices of source code text, including whitespace and comments. Here’s an example comparing the old and the new behavior:
 
 ```js
 // Note the comment between the `function` keyword
@@ -33,11 +34,11 @@ foo.toString();
 
 ### JSON ⊂ ECMAScript { #json-ecmascript }
 
-Line separator (U+2028) and paragraph separator (U+2029) symbols are now allowed in string literals, [matching JSON](https://github.com/tc39/proposal-json-superset). Previously, these symbols were treated as line terminators within string literals, and so using them resulted in a `SyntaxError` exception.
+Line separator (U+2028) and paragraph separator (U+2029) symbols are now allowed in string literals, [matching JSON](/features/subsume-json). Previously, these symbols were treated as line terminators within string literals, and so using them resulted in a `SyntaxError` exception.
 
 ### Optional `catch` binding { #optional-catch-binding }
 
-The `catch` clause of `try` statements can now be [used without a parameter](https://tc39.es/proposal-optional-catch-binding/). This is useful if you don’t have a need for the `exception` object in the code that handles the exception.
+The `catch` clause of `try` statements can now be [used without a parameter](/features/optional-catch-binding). This is useful if you don’t have a need for the `exception` object in the code that handles the exception.
 
 ```js
 try {
@@ -49,7 +50,7 @@ try {
 
 ### One-sided string trimming { #string-trimming }
 
-In addition to `String.prototype.trim()`, V8 now implements [`String.prototype.trimStart()` and `String.prototype.trimEnd()`](https://github.com/tc39/proposal-string-left-right-trim). This functionality was previously available through the non-standard `trimLeft()` and `trimRight()` methods, which remain as aliases of the new methods for backward compatibility.
+In addition to `String.prototype.trim()`, V8 now implements [`String.prototype.trimStart()` and `String.prototype.trimEnd()`](/features/string-trimming). This functionality was previously available through the non-standard `trimLeft()` and `trimRight()` methods, which remain as aliases of the new methods for backward compatibility.
 
 ```js
 const string = '  hello world  ';
@@ -96,7 +97,8 @@ In V8 v6.6, we finally managed to [move out or deprecate this remaining function
 We managed to squeeze out some nice performance improvements for promises and async functions, and especially managed to close the gap between async functions and desugared promise chains.
 
 <figure>
-  <img src="/_img/v8-release-66/promise.png" intrinsicsize="1508x1028" alt="">
+  <img src="/_img/v8-release-66/promise.svg" width="754" height="457" alt="" loading="lazy">
+  <figcaption>Promise performance improvements</figcaption>
 </figure>
 
 In addition, the performance of async generators and async iteration was improved significantly, making them a viable option for the upcoming Node 10 LTS, which is scheduled to include V8 v6.6. As an example, consider the following Fibonacci sequence implementation:
@@ -121,7 +123,8 @@ async function fibonacci(id, n) {
 We’ve measured the following improvements for this pattern, before and after Babel transpilation:
 
 <figure>
-  <img src="/_img/v8-release-66/async-generator.png" intrinsicsize="1508x1028" alt="">
+  <img src="/_img/v8-release-66/async-generator.svg" width="767" height="483" alt="" loading="lazy">
+  <figcaption>Async generator performance improvements</figcaption>
 </figure>
 
 Finally, [bytecode improvements](https://chromium-review.googlesource.com/c/v8/v8/+/866734) to “suspendable functions” such as generators, async functions, and modules, have improved the performance of these functions while running in the interpreter, and decreased their compiled size. We’re planning on improving the performance of async functions and async generators even further with upcoming releases, so stay tuned.
@@ -131,7 +134,8 @@ Finally, [bytecode improvements](https://chromium-review.googlesource.com/c/v8/v
 The throughput performance of `Array#reduce` was increased by more than 10× for holey double arrays ([see our blog post for an explanation what holey and packed arrays are](/blog/elements-kinds)). This widens the fast-path for cases where `Array#reduce` is applied to holey and packed double arrays.
 
 <figure>
-  <img src="/_img/v8-release-66/array-reduce.png" intrinsicsize="1300x742" alt="">
+  <img src="/_img/v8-release-66/array-reduce.svg" width="650" height="371" alt="" loading="lazy">
+  <figcaption><code>Array.prototype.reduce</code> performance improvements</figcaption>
 </figure>
 
 ## Untrusted code mitigations

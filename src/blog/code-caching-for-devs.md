@@ -1,5 +1,6 @@
 ---
 title: "给 JavaScript 开发者的代码缓存指南"
+description: '(Byte)code caching reduces the start-up time of commonly visited websites by caching the result of JavaScript parsing + compilation.'
 author: "[Leszek Swirski](https://twitter.com/leszekswirski), cache smasher"
 avatars:
   - leszek-swirski
@@ -37,7 +38,7 @@ Isolate 缓存是快速且高效的，目前我们检测到在真实情况中它
 综上，
 
 <figure>
-  <img src="/_img/code-caching-for-devs/overview.svg" intrinsicsize="487x280" alt="">
+  <img src="/_img/code-caching-for-devs/overview.svg" width="487" height="280" alt="" loading="lazy">
   <figcaption>代码缓存被分为冷运行、暖运行和热运行，在内存缓存发生在暖运行，硬盘缓存发生在热运行</figcaption>
 </figure>
 
@@ -56,7 +57,7 @@ Isolate 缓存是快速且高效的，目前我们检测到在真实情况中它
 这也许是显而易见的事情，但是仍然值得明确说明———当你上线一份新的代码的时候，代码还没有被缓存。当浏览器通过 HTTP 请求一个脚本 URL 的时候，它包含了上次请求 URL 的时间，如果服务器知道文件没有改变，它返回 304 Not Modified 响应，维持我们的代码缓存热运行状态。否则，返回 200 OK 响应更新缓存资源，并且清除代码缓存，恢复到冷运行状态。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/http-200-vs-304.jpg" intrinsicsize="600x515" alt="" title="Drake 更加喜欢 HTTP 响应状态码为 304，而不是 HTTP 200">
+  <img src="/_img/code-caching-for-devs/http-200-vs-304.jpg" width="600" height="515" alt="" title="Drake 更加喜欢 HTTP 响应状态码为 304，而不是 HTTP 200" loading="lazy">
 </figure>
 
 它总是立即推送你最新的代码更改，特使是如果你想要衡量某次更改的影响的时候，但是对于缓存来说，最好是保留代码或尽可能地减少更新。可以考虑限制每周的上限次数 `≤ x`，`x` 是你调整权衡缓存与陈旧性的滑块。
@@ -88,7 +89,7 @@ if (Math.random() > 0.5) {
 当然无论是被动还是主动“什么都不做”的建议都不能让人满意。因此除了“什么都不做”，鉴于我们目前的启发式和实现，你可以做一些事情。请记住，启发式和建议都可能改变，且没有一个代替分析。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/with-great-power.jpg" intrinsicsize="500x209" alt="" title="Uncle Ben suggests that Peter Parker should be cautious when optimizing his web app’s cache behavior.">
+  <img src="/_img/code-caching-for-devs/with-great-power.jpg" width="500" height="209" alt="" title="Uncle Ben suggests that Peter Parker should be cautious when optimizing his web app’s cache behavior." loading="lazy">
 </figure>
 
 ### 将库从使用代码中分离 { #split }
@@ -194,7 +195,7 @@ self.addEventListener("fetch", event => {
 `chrome://tracing` 记录了一段时间内的 Chrome 追踪信息，它生成的追踪结果可视化如下：
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-visualization.png" srcset="/_img/code-caching-for-devs/chrome-tracing-visualization@2x.png 2x" intrinsicsize="722x672" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-visualization.png" srcset="/_img/code-caching-for-devs/chrome-tracing-visualization@2x.png 2x" width="722" height="672" alt="" loading="lazy">
   <figcaption><code>chrome://tracing</code> UI 记录了一次 warm cache 执行情况</figcaption>
 </figure>
 
@@ -208,11 +209,11 @@ google-chrome --user-data-dir="$(mktemp -d)" --disable-extensions
 当收集追踪信息时，你需要选中追踪类别。在大多数情况下，你可以简单的选中 "web developer" 这个类别，但你也可以手动选择类别。代码追踪的重要类别是 `v8`。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-categories-1.png" srcset="/_img/code-caching-for-devs/chrome-tracing-categories-1@2x.png 2x" intrinsicsize="721x607" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-categories-1.png" srcset="/_img/code-caching-for-devs/chrome-tracing-categories-1@2x.png 2x" width="721" height="607" alt="" loading="lazy">
 </figure>
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-categories-2.png" srcset="/_img/code-caching-for-devs/chrome-tracing-categories-2@2x.png 2x" intrinsicsize="721x607" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-categories-2.png" srcset="/_img/code-caching-for-devs/chrome-tracing-categories-2@2x.png 2x" width="721" height="607" alt="" loading="lazy">
 </figure>
 
 当记录了一次 `v8` 类别的追踪时，在追踪结果中查看 `v8.compile` 片段（或者你可以都搜索框中输入 `v8.compile`）。它会列出编译后的文件，已经编译的元数据。
@@ -220,19 +221,19 @@ google-chrome --user-data-dir="$(mktemp -d)" --disable-extensions
 在脚本 cold run 时，是没有代码缓存是信息的，这就意味着脚本不参与生成或使用缓存数据。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-cold-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-cold-run@2x.png 2x" intrinsicsize="405x318" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-cold-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-cold-run@2x.png 2x" width="405" height="318" alt="" loading="lazy">
 </figure>
 
 在 warm run 时，每个脚本有两个 `v8.compile` 入口：一个是实际编译，另一个（在执行后）是为了产生缓存。你可以通过它是否有 `cacheProduceOptions` 和 `producedCacheSize` 两个元数据字段来判断。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-warm-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-warm-run@2x.png 2x" intrinsicsize="404x386" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-warm-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-warm-run@2x.png 2x" width="404" height="386" alt="" loading="lazy">
 </figure>
 
 在 hot run 时，你将看到一个用于消费缓存的 `v8.compile` 入口，有 `cacheConsumeOptions` 和 `consumedCacheSize` 两个元数据字段。所有大小都以字节表示。
 
 <figure>
-  <img src="/_img/code-caching-for-devs/chrome-tracing-hot-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-hot-run@2x.png 2x" intrinsicsize="406x363" alt="">
+  <img src="/_img/code-caching-for-devs/chrome-tracing-hot-run.png" srcset="/_img/code-caching-for-devs/chrome-tracing-hot-run@2x.png 2x" width="406" height="363" alt="" loading="lazy">
 </figure>
 
 ## 总结 { #conclusion }

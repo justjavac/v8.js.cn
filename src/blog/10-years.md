@@ -6,6 +6,7 @@ avatars:
 date: 2018-09-11 19:00:00
 tags:
   - benchmarks
+description: 'An overview of major milestones for the V8 project in the past 10 years as well as the years before, when the project was still secret.'
 tweet: '1039559389324238850'
 ---
 This month marks the 10-year anniversary of shipping not just Google Chrome, but also the V8 project. This post gives an overview of major milestones for the V8 project in the past 10 years as well as the years before, when the project was still secret.
@@ -54,7 +55,7 @@ Recently, we shipped a baseline compiler for WebAssembly named [Liftoff](/blog/l
 Chrome’s V8 Bench score over the years shows the performance impact of V8’s changes. (We’re using the V8 Bench because it’s one of the few benchmarks that can still run in the original Chrome beta.)
 
 <figure>
-  <img src="/_img/10-years/v8-bench.png" srcset="/_img/10-years/v8-bench@2x.png 2x" intrinsicsize="1247x572" alt="">
+  <img src="/_img/10-years/v8-bench.svg" width="693" height="318" alt="" loading="lazy">
   <figcaption>Chrome’s <a href="http://www.netchain.com/Tools/v8/">V8 Bench</a> score from 2008 to 2018</figcaption>
 </figure>
 
@@ -65,7 +66,7 @@ However, you might notice two performance dips over the years. Both are interest
 Another take-away from this chart is that it starts to level off around 2013. Does that mean V8 gave up and stopped investing in performance? Quite the opposite! The flattening of the graphs represents the V8 team’s pivot from synthetic micro-benchmarks (such as V8 Bench and Octane) to optimizing for [real-world performance](/blog/real-world-performance). V8 Bench is an old benchmark that doesn’t use any modern JavaScript features, nor does it approximate actual real-world production code. Contrast this with the more recent Speedometer benchmark suite:
 
 <figure>
-  <img src="/_img/10-years/speedometer-1.png" srcset="/_img/10-years/speedometer-1@2x.png 2x" intrinsicsize="1247x572" alt="">
+  <img src="/_img/10-years/speedometer-1.svg" width="693" height="318" alt="" loading="lazy">
   <figcaption>Chrome’s <a href="https://browserbench.org/Speedometer/">Speedometer 1</a> score from 2013 to 2018</figcaption>
 </figure>
 
