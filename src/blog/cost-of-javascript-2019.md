@@ -157,7 +157,7 @@ Chrome 76 的表现大不相同：
 
 <figure>
   <img src="/_img/cost-of-javascript-2019/reddit-main-thread.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>在 MacBook Pro 上，主线程和 workder 线程解析编译 Reddit 的 JS 所花的时间。</figcaption>
+  <figcaption>在 MacBook Pro 上，主线程和 worker 线程解析编译 Reddit 的 JS 所花的时间。</figcaption>
 </figure>
 
 Reddit.com 有多个 100 KB+ 的代码包，这些包被包装在引起主线程大量[懒编译](/blog/preparser)的外部函数中。在上图中，由于主线程忙碌会延迟可交互时间，其运行时间至关重要。Reddit 花了多数时间在主线程上，Work/Background 线程的利用率很低。
