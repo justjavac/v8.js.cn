@@ -24,7 +24,7 @@ description: 'This document explains the JavaScript and WebAssembly language fea
 
 对于非常新的特性，一般是不同环境有不同的支持度，想这样：
 
-<feature-support chrome="no"
+<feature-support chrome="partial"
                  firefox="yes"
                  safari="yes"
                  nodejs="no"

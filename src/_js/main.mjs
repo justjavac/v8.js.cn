@@ -11,12 +11,63 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import '/_js/dark-mode-toggle.mjs';
+
+const darkModeToggle = document.querySelector('dark-mode-toggle');
+
+// Only load the Twitter script when we need it.
+const twitterLink = document.querySelector('.twitter-link');
+let twitterLoaded = null;
+if (twitterLink) {
+  twitterLoaded = import('https://platform.twitter.com/widgets.js')
+    .then(() => twitterLink.remove());
+}
+
+// Dynamically either insert the dark- or the light-themed Twitter widget.
+let twitterTimelineContainer = document.querySelector('.twitter-widget');
+const updateTwitterTimeline = async () => {
+  if (twitterTimelineContainer) {
+    await twitterLoaded;
+    const newContainer = twitterTimelineContainer.cloneNode();
+    newContainer.style.display = 'none';
+    twitterTimelineContainer.insertAdjacentElement('afterend', newContainer);
+    await twttr.widgets.createTimeline({
+      screenName: 'v8js',
+      sourceType: 'profile',
+    },
+    newContainer,
+    {
+      dnt: true,
+      height: 1000,
+      chrome: 'noheader nofooter',
+      theme: darkModeToggle.mode,
+    });
+    twitterTimelineContainer.remove();
+    newContainer.style.display = 'block';
+    twitterTimelineContainer = newContainer;
+  }
+};
+
+// Toggles the `dark` class based on the dark mode toggle's mode
+const root = document.documentElement;
+const updateThemeClass = () => {
+  root.classList.toggle('dark', darkModeToggle.mode === 'dark');
+  updateTwitterTimeline();
+};
+
+// Set or remove the `dark` class the first time.
+updateThemeClass();
+
+// Listen for toggle changes (which includes `prefers-color-scheme` changes)
+// and toggle the `dark` class accordingly.
+darkModeToggle.addEventListener('colorschemechange', updateThemeClass);
+
 // Navigation toggle.
-const toggle = document.querySelector('#nav-toggle');
-toggle.addEventListener('click', (event) => {
+const navToggle = document.querySelector('#nav-toggle');
+navToggle.addEventListener('click', (event) => {
   event.preventDefault();
   document.querySelector('header nav').classList.add('show');
-  toggle.classList.add('hide');
+  navToggle.classList.add('hide');
 });
 
 // A user right-clicking the logo probably wants to download it.

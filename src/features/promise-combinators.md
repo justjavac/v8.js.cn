@@ -20,7 +20,7 @@ Here’s an overview of the four combinators:
 :::table-wrapper
 | name                                        | description                                     | status                                                          |
 | ------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------- |
-| [`Promise.allSettled`](#promise.allsettled) | does not short-circuit                          | [proposal](https://github.com/tc39/proposal-promise-allSettled) |
+| [`Promise.allSettled`](#promise.allsettled) | does not short-circuit                          | [added in ES2020 ✅](https://github.com/tc39/proposal-promise-allSettled) |
 | [`Promise.all`](#promise.all)               | short-circuits when an input value is rejected  | added in ES2015 ✅                                              |
 | [`Promise.race`](#promise.race)             | short-circuits when an input value is settled   | added in ES2015 ✅                                              |
 | [`Promise.any`](#promise.any)               | short-circuits when an input value is fulfilled | [proposal](https://github.com/tc39/proposal-promise-any)        |
@@ -91,9 +91,9 @@ We kick off a computationally expensive task that might take a long time, but we
 ## `Promise.allSettled`
 
 <feature-support chrome="76"
-                 firefox="68"
+                 firefox="71 https://bugzilla.mozilla.org/show_bug.cgi?id=1549176"
                  safari="13"
-                 nodejs="no"
+                 nodejs="12.9.0 https://nodejs.org/en/blog/release/v12.9.0/"
                  babel="yes"></feature-support>
 
 `Promise.allSettled` gives you a signal when all the input promises are _settled_, which means they’re either _fulfilled_ or _rejected_. This is useful in cases where you don’t care about the state of the promise, you just want to know when the work is done, regardless of whether it was successful.

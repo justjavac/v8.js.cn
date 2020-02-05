@@ -2,7 +2,7 @@
   display: grid;
   grid-gap: 0.5em;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  background: #FFF;
+  background: var(--main-background-color);
   padding-left: 0;
   margin-bottom: 0.5em;
 }
@@ -30,9 +30,12 @@
 .environment.no-support {
   background: #CCC;
 }
+.environment.partial-support {
+  background: var(--orange);
+}
 .environment.no-support .icon {
   opacity: 0.4;
-  filter: grayscale(100%);
+  filter: var(--icon-no-support-filter);
 }
 .environment .support {
   text-indent: -5000px;

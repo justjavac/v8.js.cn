@@ -13,12 +13,16 @@
 */
 
 :root {
+  color-scheme: dark light;
   /* Colors used in the V8 logos. */
   --blue: #4285F4;
   --darkgray: #464646;
   --lightgray: #A6A6A6;
   --white: #FFF;
   /* Derived colors. */
+  --black: #000;
+  --darkestgray: #232323;
+  --nearwhite: #FEFEFE;
   --darkblue: #0A50C2;
   --lightestgray: #D6D6D6;
   --lightyellow: #FDEEB5;
@@ -27,6 +31,49 @@
 
   /* Body padding offset. */
   --offset: 2em;
+
+  /* Light mode */
+  --html-color: var(--black);
+  --html-background: var(--darkgray);
+  --main-color: var(--black);
+  --main-background: var(--white);
+  --footer-background: var(--lightestgray);
+  --main-and-footer-link-color: var(--darkblue);
+  --avatar-img-filter: none;
+  --icon-no-support-filter: grayscale(100%);
+  --note-color: var(--main-color);
+  --note-background: var(--lightyellow);
+  --tag-color: var(--black);
+  --tag-background: var(--lightestgray);
+  --table-border: var(--lightestgray);
+  --logo-hover-background: var(--lightestgray);
+  --alt-table-row-background: #EEE;
+}
+
+:root.dark {
+  --html-color: var(--nearwhite);
+  --html-background: var(--black);
+  --main-color:var(--nearwhite);
+  --main-background: var(--darkestgray);
+  --footer-color: var(--nearwhite);
+  --footer-background: var(--darkgray);
+  --main-and-footer-link-color: var(--yellow);
+  --avatar-img-filter: grayscale(50%);
+  --icon-no-support-filter: brightness(0.5) grayscale(100%);
+  --note-color: var(--darkestgray);
+  --note-background: var(--yellow);
+  --tag-color: var(--nearwhite);
+  --tag-background: var(--darkgray);
+  --table-border: var(--lightgray);
+  --logo-hover-background: var(--darkgray);
+  --alt-table-row-background: #111;
+
+  -webkit-font-smoothing: antialiased;
+}
+
+:root.dark figure img[src*=".png"]:not(.no-darkening),
+:root.dark figure img[src*=".svg"]:not(.no-darkening) {
+  filter: invert(0.862745) hue-rotate(180deg);
 }
 
 * {
@@ -39,8 +86,8 @@ html, body, fieldset, nav ul, nav ul li, h1, h2, h3 {
 }
 html {
   font: 16px/1.6 -apple-system,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Helvetica Neue,Arial,sans-serif;
-  color: #000;
-  background: var(--darkgray);
+  color: var(--html-color);
+  background: var(--html-background);
 }
 body {
   max-width: 928px;
@@ -65,9 +112,8 @@ body {
   right: 1em;
 }
 #header h1 a {
-  color: #FFF;
   padding: 1em;
-  font-size: 16px;
+  font-size: 1rem;
   position: absolute;
   bottom: 0;
   background: url(/_img/v8-outline.svg) no-repeat center center;
@@ -79,10 +125,10 @@ body {
 }
 #header nav a, #nav-toggle {
   padding: 1em;
-  color: #000;
+  color: var(--black);
   font-weight: bold;
   background: rgba(255, 255, 255, .8);
-  font-size: 16px;
+  font-size: 1em;
   margin-right: 1em;
   display: block;
 }
@@ -116,7 +162,7 @@ a {
   height: 600px;
 }
 main, #footer {
-  background: #FFF;
+  background: var(--main-background);
   padding: 1em var(--offset);
 }
 article footer {
@@ -124,6 +170,7 @@ article footer {
   background: var(--yellow);
 }
 article footer p {
+  color: var(--black);
   margin: 0 0 1em;
 }
 article footer p:only-child {
@@ -132,6 +179,7 @@ article footer p:only-child {
 article footer img {
   float: left;
   margin-right: 1em;
+  filter: var(--avatar-img-filter);
 }
 hr {
   padding: 0;
@@ -153,25 +201,29 @@ hr {
   font-weight: bold;
 }
 .retweet:hover, .retweet:focus {
+  color: var(--nearwhite);
   background-color: var(--darkgray);
   border-color: var(--darkgray);
 }
 #footer {
-  background: var(--lightestgray) url(/_img/v8-outline.svg) no-repeat 95.5% center;
+  color: var(--footer-color);
+  background: var(--footer-background) url(/_img/v8-outline.svg) no-repeat 95.5% center;
   padding-right: 12em;
   background-size: 10em;
 }
-#footer nav {
+#footer div {
   padding-top: 1em;
+  display: flex;
+  align-items: flex-end;
 }
+
 pre, code, var, kbd, samp {
   font-family: Source Code Pro, Monaco, Lucida Console, monospace;
   font-size: 1em;
 }
 pre {
-  background: #000;
+  background: #171717;
   color: #E6E1DC;
-  overflow: auto;
   white-space: pre;
   overflow: auto;
 }
@@ -192,6 +244,7 @@ code {
   padding: 1px 2px;
   tab-size: 2;
   background: rgba(0, 0, 0, 0.07);
+  overflow-wrap: break-word;
 }
 pre code {
   border: 0;
@@ -220,17 +273,36 @@ ins {
 ins, del:hover {
   text-decoration: none;
 }
-main a, footer a {
+article footer a {
   color: var(--darkblue);
   border-bottom: 1px solid var(--darkblue);
+}
+article footer a:hover {
+  color: var(--nearwhite);
+  background-color: var(--darkblue);
+}
+main a, footer a {
+  color: var(--main-and-footer-link-color);
+  border-bottom: 1px solid var(--main-and-footer-link-color);
   padding: 2px 2px 1px 2px;
 }
 main a:hover, main a:focus, footer a:hover, footer a:focus {
-  background-color: var(--darkblue);
-  color: #FFF;
+  background-color: var(--main-and-footer-link-color);
+  color: var(--main-background);
 }
 main a:hover code, main a:focus code {
   background-color: inherit;
+}
+.note a {
+  color: var(--darkblue);
+  border-bottom: 1px solid var(--darkblue);
+}
+.note a:hover, .note a:focus {
+  color: var(--white);
+  background-color: var(--darkblue);
+}
+.note pre {
+  width: calc(100% + 1.5 * var(--offset));
 }
 a.bookmark {
   display: none;
@@ -264,8 +336,8 @@ blockquote {
 }
 .logo-download:hover,
 .logo-download:focus {
-  background: var(--lightestgray);
-  color: #000;
+  background: var(--logo-hover-background);
+  color: var(--main-color);
 }
 .logo-download + h2 {
   margin-top: 1em;
@@ -275,29 +347,9 @@ figcaption {
 }
 iframe {
   border: 0;
-  width: 100%;
 }
 iframe + h2, iframe + h3 {
   margin-top: 1em;
-}
-/* https://alistapart.com/article/creating-intrinsic-ratios-for-video */
-.video {
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 */
-  padding-top: 25px;
-  margin-bottom: 0.5em;
-  height: 0;
-}
-/* If we ever need other ratios, add them like so:
-.video-16\:9 {
-  padding-bottom: 56.25%;
-}
-*/
-.video iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
 }
 .table-wrapper {
   overflow-x: auto;
@@ -312,14 +364,15 @@ thead th {
   color: #FFF;
 }
 th, td {
-  border: 1px solid #DEDEDE;
+  border: 1px solid var(--table-border);
   padding: .5em 1em;
 }
 tbody tr:nth-child(odd) {
-  background-color: #EEE;
+  background-color: var(--alt-table-row-background);
 }
 .note {
-  background: var(--lightyellow);
+  color: var(--note-color);
+  background: var(--note-background);
   margin-bottom: 1em;
 }
 main nav {
@@ -333,17 +386,48 @@ main nav a {
   border-bottom: 0;
 }
 main .meta {
-  font-size: 14px;
+  font-size: 0.875em;
   margin-top: -0.2em;
 }
 .tag:not(.token) {
   border: 0;
-  background: #EEE;
-  color: #000;
+  background: var(--tag-background);
+  color: var(--tag-color);
 }
-img {
-  max-width: 100%;
+img,
+video {
   height: auto;
+  max-width: 100%;
+}
+@supports (aspect-ratio: attr(width) / 1) {
+  /* https://drafts.csswg.org/css-sizing-4/#example-2476aa5b */
+  iframe {
+    aspect-ratio: attr(width) / attr(height);
+    max-width: 100%;
+    height: auto;
+  }
+}
+@supports not (aspect-ratio: attr(width) / 1) {
+  /* https://alistapart.com/article/creating-intrinsic-ratios-for-video */
+  .video {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    padding-top: 25px;
+    margin-bottom: 0.5em;
+    height: 0;
+  }
+  /* If we ever need other ratios, add them like so:
+  .video-16\:9 {
+    padding-bottom: 56.25%;
+  }
+  */
+  .video iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+  }
 }
 
 .language-grammar {
@@ -352,6 +436,16 @@ img {
 
 .language-grammar b {
   font-style: normal;
+}
+
+dark-mode-toggle {
+  --dark-mode-toggle-light-icon: url(/_css/img/moon.svg);
+  --dark-mode-toggle-dark-icon: url(/_css/img/sun.svg);
+  --dark-mode-toggle-color: var(--main-and-footer-link-color);
+  --dark-mode-toggle-icon-filter: invert(80%);
+  margin-left: 1em;
+  position: relative;
+  top: 0.4rem;
 }
 
 @media (max-width: 770px) {
@@ -371,6 +465,9 @@ img {
   li pre {
     width: calc(100% + 4 * var(--offset));
     left: calc(-2 * var(--offset));
+  }
+  .note pre {
+    width: calc(100% + 2.5 * var(--offset) + 1px);
   }
 }
 

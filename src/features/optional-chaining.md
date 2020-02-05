@@ -79,7 +79,7 @@ const userIndex = 42;
 const userName = usersArray?.[userIndex].name;
 ```
 
-The optional chaining operator can be combined with the [nullish coalescing `??` operator](https://github.com/tc39/proposal-nullish-coalescing) when a non-`undefined` default value is needed. This enables safe deep property access with a specified default value, addressing a common use case that previously required userland libraries such as [lodash’s `_.get`](https://lodash.dev/docs/4.17.15#get):
+The optional chaining operator can be combined with the [nullish coalescing `??` operator](/features/nullish-coalescing) when a non-`undefined` default value is needed. This enables safe deep property access with a specified default value, addressing a common use case that previously required userland libraries such as [lodash’s `_.get`](https://lodash.dev/docs/4.17.15#get):
 
 ```js
 const object = { id: 123, names: { first: 'Alice', last: 'Smith' }};
@@ -132,7 +132,7 @@ More details can be found in [the _Semantics_ section of the proposal](https://g
 
 ## Support for optional chaining { #support }
 
-<feature-support chrome="no https://bugs.chromium.org/p/v8/issues/detail?id=9553"
+<feature-support chrome="80 https://bugs.chromium.org/p/v8/issues/detail?id=9553"
                  firefox="no https://bugzilla.mozilla.org/show_bug.cgi?id=1566143"
                  safari="no https://bugs.webkit.org/show_bug.cgi?id=200199"
                  nodejs="no"

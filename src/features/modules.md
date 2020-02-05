@@ -16,7 +16,7 @@ JavaScript modules are now [supported in all major browsers](https://caniuse.com
 <feature-support chrome="61"
                  firefox="60"
                  safari="11"
-                 nodejs="no"
+                 nodejs="13.2.0 https://nodejs.org/en/blog/release/v13.2.0/#notable-changes"
                  babel="yes"></feature-support>
 
 This article explains how to use JS modules, how to deploy them responsibly, and how the Chrome team is working to make modules even better in the future.
@@ -81,6 +81,8 @@ Modules are a little different from classic scripts:
 - Similarly, the `this` within modules does not refer to the global `this`, and instead is `undefined`. (Use [`globalThis`](/features/globalthis) if you need access to the global `this`.)
 
 - The new static `import` and `export` syntax is only available within modules — it doesn’t work in classic scripts.
+
+- [Top-level `await`](/features/top-level-await) is available in modules, but not in classic scripts. Relatedly, `await` cannot be used as a variable name anywhere in a module, although variables in classic scripts _can_ be named `await` outside of async functions.
 
 Because of these differences, *the same JavaScript code might behave differently when treated as a module vs. a classic script*. As such, the JavaScript runtime needs to know which scripts are modules.
 

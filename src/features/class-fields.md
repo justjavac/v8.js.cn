@@ -112,7 +112,7 @@ counter.#count = 42;
 // → SyntaxError
 ```
 
-## Public and static properties
+## Public and private static properties
 
 Class fields syntax can be used to create public and private static properties and methods as well:
 
@@ -190,7 +190,7 @@ class Cat extends Animal {
 ### Support for public class fields { #support-public-fields }
 
 <feature-support chrome="72 /blog/v8-release-72#public-class-fields"
-                 firefox="no"
+                 firefox="partial https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/69#JavaScript"
                  safari="no"
                  nodejs="12 https://twitter.com/mathias/status/1120700101637353473"
                  babel="no"></feature-support>

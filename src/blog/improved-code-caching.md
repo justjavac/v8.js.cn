@@ -3,6 +3,8 @@ title: '改进代码缓存'
 description: '从 Chrome 66 开始，V8 可以把执行过的代码缓存起来'
 author: 'Mythri Alle, Chief Code Cacher'
 date: 2018-04-24 13:33:37
+avatars:
+  - 'mythri-alle'
 tags:
   - internals
 tweet: '988728000677142528'

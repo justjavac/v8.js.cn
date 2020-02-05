@@ -1,8 +1,9 @@
 ---
 title: 'JavaScript 的性能开销(2019版)'
-author: 'Addy Osmani ([@addyosmani](https://twitter.com/addyosmani)), JavaScript Janitor'
+author: 'Addy Osmani ([@addyosmani](https://twitter.com/addyosmani)), JavaScript Janitor, and Mathias Bynens ([@mathias](https://twitter.com/mathias)), Main Thread Liberator'
 avatars:
   - 'addy-osmani'
+  - 'mathias-bynens'
 date: 2019-06-25
 tags:
   - internals
@@ -202,6 +203,19 @@ const data = JSON.parse('{"foo":42,"bar":1337}'); // 🚀
 
 在大型数据上使用普通对象字面量还有个风险：它们可能被解析**两次**！
 
+The following video goes into more detail on where the performance difference comes from, starting at the 02:10 mark.
+
+<figure>
+  <div class="video video-16:9">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/ff4fgQxPaO0?start=130" allow="picture-in-picture" allowfullscreen loading="lazy"></iframe>
+  </div>
+  <figcaption><a href="https://www.youtube.com/watch?v=ff4fgQxPaO0">“Faster apps with <code>JSON.parse</code>”</a> as presented by Mathias Bynens at #ChromeDevSummit 2019.</figcaption>
+</figure>
+
+See [our _JSON ⊂ ECMAScript_ feature explainer](/features/subsume-json#embedding-json-parse) for an example implementation that, given an arbitrary object, generates a valid JavaScript program that `JSON.parse`s it.
+
+There’s an additional risk when using plain object literals for large amounts of data: they could be parsed _twice_!
+
 1. 第一次发生于字面量预解析阶段。
 2. 第二次发生于字面量懒解析阶段。
 
@@ -212,7 +226,7 @@ const data = JSON.parse('{"foo":42,"bar":1337}'); // 🚀
 V8 的字节码缓存优化大有帮助。当首次请求 JavaScript，Chrome 下载然后将其交给 V8 编译。Chrome 也会将文件存进浏览器的磁盘缓存中。当 JS 文件再次请求，Chrome 从浏览器缓存中将其取出，并再次将其交给 V8 编译。这个时候，编译后代码是序列化后的，会作为元数据被添加到缓存的脚本文件上。
 
 <figure>
-  <img src="/_img/cost-of-javascript-2019/code-caching.png" srcset="/_img/cost-of-javascript-2019/code-caching@2x.png 2x" width="1431" height="774" alt="" loading="lazy">
+  <img src="/_img/cost-of-javascript-2019/code-caching.png" srcset="/_img/cost-of-javascript-2019/code-caching@2x.png 2x" width="1431" height="774" alt="" loading="lazy" class="no-darkening">
   <figcaption>V8 中的字节码缓存工作示意图</figcaption>
 </figure>
 
