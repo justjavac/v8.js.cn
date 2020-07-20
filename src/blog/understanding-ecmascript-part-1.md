@@ -73,7 +73,7 @@ o.hasOwnProperty('bar'); // false
 
 内部插槽是 JavaScript 对象或规范类型的数据成员。它们用于存储对象的状态。内部方法是 JavaScript 对象的成员函数。
 
-例如，每个JavaScript对象都有一个内部插槽 `[[Prototype]]` `和一个内部方法 `[[GetOwnProperty]]`.
+例如，每个JavaScript对象都有一个内部插槽 `[[Prototype]]` 和一个内部方法 `[[GetOwnProperty]]`.
 
 我们无法从 JavaScript 中访问内部插槽和方法。例如，您无法访问 `o.[[Prototype]]` 或者调用 `o.[[GetOwnProperty]]()`。JavaScript 引擎可以实现它们以供内部使用，但不是必须的。
 
