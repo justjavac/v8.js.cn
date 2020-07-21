@@ -6,6 +6,7 @@ avatars:
 date: 2019-11-11
 tags:
   - ECMAScript
+  - ES2021
 description: 'JavaScript now has first-class support for global substring replacement through the new `String.prototype.replaceAll` API.'
 tweet: '1193917549060280320'
 ---
@@ -101,10 +102,8 @@ The important piece of new functionality lies in that first item. `String.protot
 
 ## `String.prototype.replaceAll` support { #support }
 
-An experimental implementation of `String.prototype.replaceAll` is available in V8 v8.0 behind the `--harmony-string-replaceall` flag.
-
-<feature-support chrome="no https://bugs.chromium.org/p/v8/issues/detail?id=9801"
-                 firefox="no https://bugzilla.mozilla.org/show_bug.cgi?id=1540021"
-                 safari="no https://bugs.webkit.org/show_bug.cgi?id=202471"
+<feature-support chrome="85 https://bugs.chromium.org/p/v8/issues/detail?id=9801"
+                 firefox="77 https://bugzilla.mozilla.org/show_bug.cgi?id=1608168#c8"
+                 safari="13.1 https://webkit.org/blog/10247/new-webkit-features-in-safari-13-1/"
                  nodejs="no"
                  babel="yes"></feature-support>

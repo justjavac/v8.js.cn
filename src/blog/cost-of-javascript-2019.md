@@ -48,17 +48,11 @@ JavaScript 执行时间在使用低端 CPU 的手机上很重要。由于 CPU、
 
 实际上，像 Chrome 这样的浏览器上的页面加载总时间，有多达 30% 的时间花在 JavaScript 执行上。下面是一个任务负载（Reddit.com）很典型的网站在高端桌面设备上的页面加载，
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/reddit-js-processing.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>V8 中的 JavaScript 处理占用了页面加载时间的 10-30%。</figcaption>
-</figure>
+![V8 中的 JavaScript 处理占用了页面加载时间的 10-30%。](/_img/cost-of-javascript-2019/reddit-js-processing.svg)
 
 移动设备上，中端机（Moto G4）的 JavaScript 执行时间是高端机（Pixel 3）的 3 到 4 倍，低端机（不到 100 刀的 Alcatel 1X）上有超过 6 倍的性能差异：
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/reddit-js-processing-devices.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>Reddit 在不同设备类型上（低端、中端和高端）的 JavaScript 性能损耗</figcaption>
-</figure>
+![Reddit 在不同设备类型上（低端、中端和高端）的 JavaScript 性能损耗](/_img/cost-of-javascript-2019/reddit-js-processing-devices.svg)
 
 :::note
 **注意：** Reddit 在桌面端和移动端的体验完全不同，因此 MacBook Pro 上的结果并不能和其他设备上的结果直接做比较。
@@ -66,10 +60,7 @@ JavaScript 执行时间在使用低端 CPU 的手机上很重要。由于 CPU、
 
 当你尝试优化 JavaScript 执行时间，注意关注[长任务](https://web.dev/long-tasks-devtools/)，它可能长期独占 UI 线程。这些任务会阻塞执行关键任务，即便页面看起来已经加载完成。把长任务拆分成多个小任务。通过代码分割和指定加载优先级，可以提升页面可交互速度，并且有希望降低输入延迟。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/long-tasks.png" srcset="/_img/cost-of-javascript-2019/long-tasks@2x.png 2x" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>长任务独占主线程，应该拆分它们。</figcaption>
-</figure>
+![长任务独占主线程，应该拆分它们。](/_img/cost-of-javascript-2019/long-tasks.png)
 
 ## V8 在提升解析编译速度上做了什么？ { #v8-improvements }
 
@@ -77,17 +68,11 @@ Chrome 60+ 上，V8 对于初始 JavaScript 的解析速度提升了 2 倍。与
 
 V8 减少了主线程上的解析编译任务，平均减少了 40%（比如 Facebook 上是 46%，Pinterest 上是 62%）,最高减少了 81%（YouTube），这得益于将解析编译任务搬到了 worker 线程上。这对于流式解析/编译是一个补充。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/chrome-js-parse-times.svg" width="1280" height="836" alt="" loading="lazy">
-  <figcaption>不同 V8 版本上的解析时间</figcaption>
-</figure>
+![不同 V8 版本上的解析时间](/_img/cost-of-javascript-2019/chrome-js-parse-times.svg)
 
 下图形象呈现了不同 Chrome V8 版本上 CPU 解析时间。Chrome 61 解析 Facebook 的 JS 花了相同的时间，Chrome 75 现在解析 Facebook 的时间是 Twitter 的 6 倍。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/js-parse-times-websites.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>Chrome 61 解析 Facebook 的 JS 时间，Chrome 75 可以同时解析 Facebook 和 6次 Twitter 的 JS。</figcaption>
-</figure>
+![Chrome 61 解析 Facebook 的 JS 时间，Chrome 75 可以同时解析 Facebook 和 6次 Twitter 的 JS。](/_img/cost-of-javascript-2019/js-parse-times-websites.svg)
 
 我们来研究下这些释放出来的改变。长话短说，流式解析和 worker 线程编译脚本，这意味着：
 
@@ -97,19 +82,13 @@ V8 减少了主线程上的解析编译任务，平均减少了 40%（比如 Fac
 
 稍微解释下...很老的 Chrome 上会在完整下载完脚本后才开始解析，这很直接但并没有完全利用好 CPU。Chrome 41 和 68 之间的版本上，Chrome 在下载一开始就在一个独立线程上解析 async 和 defer 的脚本。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/script-streaming-1.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>页面上的脚本被分割成多个块。只要代码块超过 30KB，V8 就会开始流式解析。</figcaption>
-</figure>
+![页面上的脚本被分割成多个块。只要代码块超过 30KB，V8 就会开始流式解析。](/_img/cost-of-javascript-2019/script-streaming-1.svg)
 
 Chrome 71 上，我们开始做一个基于任务的调整，调度器可以一次解析多个 async/defer 脚本。这一改变的影响是，主线程解析时间减少 20%，在真实网站上，带来超过 2% 的 TTI/FID 提升。
 
 > 译者注：FID(First Input Delay)，第一输入延迟（FID）测量用户首次与您的站点交互时的时间（即，当他们单击链接，点击按钮或使用自定义的 JavaScript 驱动控件时）到浏览器实际能够的时间回应这种互动。交互时间（TTI）是衡量应用加载所需时间并能够快速响应用户交互的指标。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/script-streaming-2.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>Chrome 71 moved to a task-based setup where the scheduler could parse multiple async/deferred scripts at once.</figcaption>
-</figure>
+![Chrome 71 moved to a task-based setup where the scheduler could parse multiple async/deferred scripts at once.](/_img/cost-of-javascript-2019/script-streaming-2.svg)
 
 Chrome 72 上，我们转向使用流式解析作为主要解析方式：现在一般异步的脚本都以这种方式解析（内联脚本除外）。我们也停止了废除基于任务的解析，如果主线程需要的话，因为那样只是在做不必要的重复工作。
 
@@ -132,43 +111,29 @@ Leszek Swirski 的 BlinkOn 演示呈现了更多细节：
 
 除了上述之外，[DevTools 有个问题](https://bugs.chromium.org/p/chromium/issues/detail?id=939275)，它暗中使用了 CPU，这会影响到整个解析任务的呈现。然而，解析器解析数据时就会阻塞（它需要在主线程上运行）。自从我们从一个单一的流处理线程中移动到流任务中，这一点就变成更为明显了。下面是你在 Chrome 69 中经常会看到的：
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/devtools-69.png" srcset="/_img/cost-of-javascript-2019/devtools-69@2x.png 2x" width="931" height="98" alt="" loading="lazy">
-  <figcaption>The DevTools issue that rendered the entire parser task in a way that hints that it’s using CPU (full block)</figcaption>
-</figure>
+![The DevTools issue that rendered the entire parser task in a way that hints that it’s using CPU (full block)](/_img/cost-of-javascript-2019/devtools-69.png)
 
 上图中的“解析脚本”任务花了 1.08 秒。而解析 JavaScript 其实并不慢！多数时间里除了等待数据通过主线程之外什么都不做。
 
 Chrome 76 的表现大不相同：
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/devtools-76.png" srcset="/_img/cost-of-javascript-2019/devtools-76@2x.png 2x" width="922" height="441" alt="" loading="lazy">
-  <figcaption>Chrome 76 上，解析脚本被拆分成多个更小的流式任务。</figcaption>
-</figure>
+![Chrome 76 上，解析脚本被拆分成多个更小的流式任务。](/_img/cost-of-javascript-2019/devtools-76.png)
 
 通常，DevTools 性能面板很适合用来查看页面上发生的行为。对于更详细的 V8 特定指标，比如 JavaScript 解析编译时间，我们推荐[使用带有运行时调用统计(RCS)的 Chrome Tracing](/docs/rcs)。RCS 结果中，`Parse-Background` 和 `Compile-Background` 代表主线程之外解析和编译 JavaScript 花费的时间，然而 `Parse` 和 `Compile` 记录了主线程的指标。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/rcs.png" srcset="/_img/cost-of-javascript-2019/rcs@2x.png 2x" width="848" height="526" alt="" loading="lazy">
-</figure>
+![](/_img/cost-of-javascript-2019/rcs.png)
 
 ## 这些改变的真实影响？ { #impact }
 
 来看一些真实网站的例子和脚本流式解析如何应用。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/reddit-main-thread.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>在 MacBook Pro 上，主线程和 worker 线程解析编译 Reddit 的 JS 所花的时间。</figcaption>
-</figure>
+![在 MacBook Pro 上，主线程和 worker 线程解析编译 Reddit 的 JS 所花的时间。](/_img/cost-of-javascript-2019/reddit-main-thread.svg)
 
 Reddit.com 有多个 100 KB+ 的代码包，这些包被包装在引起主线程大量[懒编译](/blog/preparser)的外部函数中。在上图中，由于主线程忙碌会延迟可交互时间，其运行时间至关重要。Reddit 花了多数时间在主线程上，Work/Background 线程的利用率很低。
 
 这得益于将大包分割成多个小包（比如每个 50KB），以达到最大并行化，从而每个包都可以被独立地流式解析编译，减轻主线程在启动阶段的压力。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/facebook-main-thread.svg" width="1280" height="774" alt="" loading="lazy">
-  <figcaption>Facebook 在 Macbook Pro 上的主线程和 worker 线程解析编译时间对比</figcaption>
-</figure>
+![Facebook 在 Macbook Pro 上的主线程和 worker 线程解析编译时间对比](/_img/cost-of-javascript-2019/facebook-main-thread.svg)
 
 再来看看 Facebook.com。Facebook通过 292 个请求加载了 6MB 压缩后的 JS，其中有些是异步的，有些是预加载的，还有些的加载优先级较低。它们很多 JavaScript 的粒度都非常小 - 这对 Background/Worker 线程上的整体并行化很有用，因为这些小的 JavaScript 可以同时被流式解析编译。
 
@@ -196,10 +161,7 @@ const data = JSON.parse('{"foo":42,"bar":1337}'); // 🚀
 
 若 JSON 字符串只被执行一次，尤其是在冷启动阶段，`JSON.parse` 方法相比 JavaScript 对象字面量会快得多。在大于 10 KB 的对象上使用这个技巧的效果更佳 - 但在实际应用前，还是先要测试下真实效果。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/json.svg" width="842" height="520" alt="" loading="lazy">
-  <figcaption><code>JSON.parse('…')</code> is <a href="https://github.com/GoogleChromeLabs/json-parse-benchmark">much faster</a> to parse, compile, and execute compared to an equivalent JavaScript literal — not just in V8 (1.7× as fast), but in all major JavaScript engines.</figcaption>
-</figure>
+![`JSON.parse('…')` is [much faster](https://github.com/GoogleChromeLabs/json-parse-benchmark) to parse, compile, and execute compared to an equivalent JavaScript literal — not just in V8 (1.7× as fast), but in all major JavaScript engines.](/_img/cost-of-javascript-2019/json.svg)
 
 在大型数据上使用普通对象字面量还有个风险：它们可能被解析**两次**！
 
@@ -225,10 +187,7 @@ There’s an additional risk when using plain object literals for large amounts 
 
 V8 的字节码缓存优化大有帮助。当首次请求 JavaScript，Chrome 下载然后将其交给 V8 编译。Chrome 也会将文件存进浏览器的磁盘缓存中。当 JS 文件再次请求，Chrome 从浏览器缓存中将其取出，并再次将其交给 V8 编译。这个时候，编译后代码是序列化后的，会作为元数据被添加到缓存的脚本文件上。
 
-<figure>
-  <img src="/_img/cost-of-javascript-2019/code-caching.png" srcset="/_img/cost-of-javascript-2019/code-caching@2x.png 2x" width="1431" height="774" alt="" loading="lazy" class="no-darkening">
-  <figcaption>V8 中的字节码缓存工作示意图</figcaption>
-</figure>
+![V8 中的字节码缓存工作示意图](/_img/cost-of-javascript-2019/code-caching.png){ .no-darkening }
 
 第三次，Chrome 将文件和文件元数据从缓存中取出，一起交给 V8 处理。V8 对元数据作反序列化，这样可以跳过编译。字节码缓存会在 72 小时内的前两次访问生效。配合使用 service worker 来缓存 JavaScript 代码，Chrome 的字节码缓存效果更佳。你可以在给开发者讲的[字节码缓存](/blog/code-caching-for-devs)这篇文章中了解到更多细节。
 

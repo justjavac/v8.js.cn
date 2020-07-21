@@ -25,17 +25,11 @@ cn:
 
 平均而言，网页在启动时 V8 用来解析 JavaScript 所花费的时间占了 9.5%。因此，我们在 v7.2 版本中更加专注于为 V8 提供更快的 JavaScript 解析器。我们全面提高了解析速度。从 v7.0 开始，用于桌面的解析速度提高了大约 30%。过去几个月我们对 Facebook 加载网页进行了基准测试，下图显示了解析时间的显着改进。
 
-<figure>
-  <img src="/_img/v8-release-72/facebook-parse-time.png" srcset="/_img/v8-release-72/facebook-parse-time@2x.png 2x" width="1060" height="223" alt="" loading="lazy">
-  <figcaption>V8 在 facebook.com 的解析时间(越低表示越好)</figcaption>
-</figure>
+![V8 在 facebook.com 的解析时间(越低表示越好)](/_img/v8-release-72/facebook-parse-time.png)
 
 我们不仅针对 Facebook，我们的解析器可以用在各种不同的场景下，都有显著的性能提升。下图显示了几个热门网站上最新 v7.2 版本的改进。
 
-<figure>
-  <img src="/_img/v8-release-72/relative-parse-times.svg" width="861" height="354" alt="" loading="lazy">
-  <figcaption>V8 v7.2 解析时间的提升(越低表示越好)</figcaption>
-</figure>
+![V8 v7.2 解析时间的提升(越低表示越好)](/_img/v8-release-72/relative-parse-times.svg)
 
 总而言之，这次改进将平均解析占比从 9.5% 降低到了 7.5%，从而缩短了加载时间，并提高了响应速度。
 
@@ -146,7 +140,7 @@ V8 现在实现了一个 [stage 3 提案](/features/well-formed-json-stringify)�
 import * as utils from './utils.mjs';
 ```
 
-但是，之前没有对应的 `export`语法...... [直到现在](https://github.com/tc39/proposal-export-ns-from)：
+但是，之前没有对应的 `export`语法...... [直到现在](/features/module-namespace-exports)：
 
 ```js
 export * as utils from './utils.mjs';

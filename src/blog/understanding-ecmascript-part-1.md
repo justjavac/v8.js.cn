@@ -31,6 +31,7 @@ o.hasOwnProperty('bar'); // false
 
 为了描述 `Object.prototype.hasOwnProperty` 是如何工作的，规范使用类似伪代码的描述:
 
+:::ecmascript-algorithm
 > **[`Object.prototype.hasOwnProperty(V)`](https://tc39.es/ecma262#sec-object.prototype.hasownproperty)**
 >
 > 当使用参数 `V` 调用 `hasOwnProperty` 方法时，会采取以下步骤：
@@ -38,9 +39,11 @@ o.hasOwnProperty('bar'); // false
 > 1. Let `P` be `? ToPropertyKey(V)`.
 > 2. Let `O` be `? ToObject(this value)`.
 > 3. Return `? HasOwnProperty(O, P)`.
+:::
 
 然后。。。
 
+:::ecmascript-algorithm
 > **[`HasOwnProperty(O, P)`](https://tc39.es/ecma262#sec-hasownproperty)**
 >
 > 抽象操作 `HasOwnProperty` 用于确定对象是否具有带有指定属性的自己的属性。返回一个布尔值。该操作使用参数 `O` 和 `P` 进行调用，其中 `O` 是对象，`P` 是属性。此抽象操作执行以下步骤：
@@ -50,6 +53,7 @@ o.hasOwnProperty('bar'); // false
 > 3. Let `desc` be `? O.[[GetOwnProperty]](P)`.
 > 4. If `desc` is `undefined`, return `false`.
 > 5. Return `true`.
+:::
 
 但是什么是 “抽象操作” ？`[[]]` 里有什么东西？为什么在函数前有一个问号？断言是什么意思？
 
@@ -79,11 +83,13 @@ o.hasOwnProperty('bar'); // false
 
 有时内部方法委托给相似名称的抽象操作，例如在普通对象的 `[[GetOwnProperty]]` 中：
 
+:::ecmascript-algorithm
 > **[`[[GetOwnProperty]](P)`](https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p)**
 >
 > 使用属性 `P` 调用 `O` 的 `[[GetOwnProperty]]` 的内部方法时，将执行以下步骤：
 >
-> Return `! OrdinaryGetOwnProperty(O, P)`.
+> 1. Return `! OrdinaryGetOwnProperty(O, P)`.
+:::
 
 （我们将在下一章中找出感叹号的含义）
 
@@ -121,8 +127,12 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 
 [`ReturnIfAbrupt(argument)`](https://tc39.es/ecma262/#sec-returnifabrupt) 意味着采取以下步骤：
 
+:::ecmascript-algorithm
+<!-- markdownlint-disable blanks-around-lists -->
 > 1. If `argument` is abrupt, return `argument`
-> 2. Set `argument` to `argument.[[Value]]`
+> 2. Set `argument` to `argument.[[Value]]`.
+<!-- markdownlint-enable blanks-around-lists -->
+:::
 
 也就是说，我们检查 Completion Record；如果是突然终止的类型，我们会立即返回。否则，我们从完成记录中提取值。
 
@@ -130,21 +140,30 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 
 `ReturnIfAbrupt` 可以这样使用：
 
+:::ecmascript-algorithm
+<!-- markdownlint-disable blanks-around-lists -->
 > 1. Let `obj` be `Foo()`. (`obj` 是一个 Completion Record。)
 > 2. `ReturnIfAbrupt(obj)`
 > 3. `Bar(obj)`. (如果程序能走到这，则 `obj` 是从 Completion Record 提取出的值。)
+<!-- markdownlint-enable blanks-around-lists -->
+:::
 
 [问号](https://tc39.es/ecma262/#sec-returnifabrupt-shorthands) 的含义：`? Foo()` 等同于 `ReturnIfAbrupt(Foo())`.
 
 同样，`Let val be ! Foo()` 等同于：
 
-> 1. Let `val` be `Foo()`
-> 2. Assert: `val` is not an abrupt completion
+:::ecmascript-algorithm
+<!-- markdownlint-disable blanks-around-lists -->
+> 1. Let `val` be `Foo()`.
+> 2. Assert: `val` is not an abrupt completion.
 > 3. Set `val` to `val.[[Value]]`.
+<!-- markdownlint-enable blanks-around-lists -->
+:::
 
 利用这些知识，我们可以像这样重写 `Object.prototype.hasOwnProperty`：
 
-> **`Object.prototype.hasOwnProperty(P)`**
+:::ecmascript-algorithm
+> **`Object.prototype.hasOwnProperty(V)`**
 >
 > 1. Let `P` be `ToPropertyKey(V)`.
 > 2. If `P` is an abrupt completion, return `P`
@@ -156,9 +175,11 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 > 8. If `temp` is an abrupt completion, return `temp`
 > 9. Let `temp` be `temp.[[Value]]`
 > 10. Return `NormalCompletion(temp)`
+:::
 
 我们可以这样重写 `HasOwnProperty`：
 
+:::ecmascript-algorithm
 > **`HasOwnProperty(O, P)`**
 >
 > 1. Assert: `Type(O)` is `Object`.
@@ -168,15 +189,20 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 > 5. Set `desc` to `desc.[[Value]]`
 > 6. If `desc` is `undefined`, return `NormalCompletion(false)`.
 > 7. Return `NormalCompletion(true)`.
+:::
 
 我们也可以重写不带感叹号的的内部方法 `[[GetOwnProperty]]`：
 
+:::ecmascript-algorithm
+<!-- markdownlint-disable blanks-around-lists -->
 > **`O.[[GetOwnProperty]]`**
 >
-> 1. Let `temp` be `OrdinaryGetOwnProperty(O, P)`
-> 2. Assert: `temp` is not an abrupt completion
-> 3. Let `temp` be `temp.[[Value]]`
-> 4. Return `NormalCompletion(temp)`
+> 1. Let `temp` be `OrdinaryGetOwnProperty(O, P)`.
+> 2. Assert: `temp` is not an abrupt completion.
+> 3. Let `temp` be `temp.[[Value]]`.
+> 4. Return `NormalCompletion(temp)`.
+<!-- markdownlint-enable blanks-around-lists -->
+:::
 
 在这里，我们假设 `temp` 是一个全新的临时变量，不会与其他任何冲突。
 
@@ -188,14 +214,18 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 
 `Return ? Foo()` 展开如下：
 
-> 1. Let `temp` be `Foo()`
-> 2. If `temp` is an abrupt completion, return `temp`
-> 3. Set `temp` to `temp.[[Value]]`
-> 4. Return `NormalCompletion(temp)`
-
-与 `Return Foo()` 相同；无论是突然终止还是正常终止，其行为方式都相同。
+:::ecmascript-algorithm
+<!-- markdownlint-disable blanks-around-lists -->
+> 1. Let `temp` be `Foo()`.
+> 2. If `temp` is an abrupt completion, return `temp`.
+> 3. Set `temp` to `temp.[[Value]]`.
+> 4. Return `NormalCompletion(temp)`.
+<!-- markdownlint-enable blanks-around-lists -->
+:::
 
 ## 断言 {#asserts}
+
+与 `Return Foo()` 相同；无论是突然终止还是正常终止，其行为方式都相同。
 
 规范中断言了算法的不变条件。为了清楚起见，添加了它们，但没有对实现添加任何要求 —— 实现中不必检查它们。
 
@@ -203,9 +233,7 @@ Completion Record 是一种 “记录” —— 一种具有一组固定的命�
 
 我们已经建立了阅读规范所需的知识，如 `Object.prototype.hasOwnProperty` 之类的简单方法和诸如 `HasOwnProperty` 之类的抽象操作。它们仍然会委托到其他抽象操作，但是基于此博客文章，我们应该能够弄清楚它们的作用。我们还将会遇到属性描述符，这是另一种规范类型。
 
-<figure>
-  <img src="/_img/understanding-ecmascript-part-1/call-graph.svg" width="1082" height="306" alt="Function call graph starting from Object.prototype.hasOwnProperty">
-</figure>
+![Function call graph starting from `Object.prototype.hasOwnProperty`](/_img/understanding-ecmascript-part-1/call-graph.svg)
 
 ## 有用的链接 {#usful-links}
 

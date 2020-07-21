@@ -6,6 +6,7 @@ avatars:
 date: 2019-09-17
 tags:
   - ECMAScript
+  - ES2020
 description: 'The JavaScript nullish coalescing operator enables safer default expressions.'
 tweet: '1173971116865523714'
 ---
@@ -153,6 +154,6 @@ document.all ?? true; // => HTMLAllCollection[]
 
 <feature-support chrome="80 https://bugs.chromium.org/p/v8/issues/detail?id=9547"
                  firefox="72 https://bugzilla.mozilla.org/show_bug.cgi?id=1566141"
-                 safari="no https://bugs.webkit.org/show_bug.cgi?id=200072"
-                 nodejs="no"
+                 safari="13.1 https://webkit.org/blog/10247/new-webkit-features-in-safari-13-1/"
+                 nodejs="14 https://medium.com/@nodejs/node-js-version-14-available-now-8170d384567e"
                  babel="yes https://babeljs.io/docs/en/babel-plugin-proposal-nullish-coalescing-operator"></feature-support>

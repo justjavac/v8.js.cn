@@ -24,9 +24,7 @@ description: 'This technical deep-dive explains how V8 handles JavaScript proper
 
 下图展示了一个基本 JavaScript 对象在内存中是什么样的。
 
-<figure>
-  <img src="/_img/fast-properties/jsobject.png" width="1600" height="467" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/jsobject.png)
 
 元素和属性被保存在两个独立的数据结构中。两者的使用方式通常不一样，故这能让添加和访问属性或元素更加高效。
 
@@ -47,29 +45,21 @@ description: 'This technical deep-dive explains how V8 handles JavaScript proper
 
 我们来看看隐藏类的重要部分。
 
-<figure>
-  <img src="/_img/fast-properties/hidden-class.png" width="1600" height="480" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/hidden-class.png)
 
 在 V8 中，JavaScript 对象的第一个字段指向隐藏类（事实上，任何在 V8 堆上且由垃圾收集器管理的对象都是这种情况）。在属性中，最重要的信息是第三位字段，它保存了属性数以及描述符数组的指针。描述符数组包含了有关命名属性的信息，例如名称本身以及值保存的位置。注意我们不会在此处跟踪整数索引属性，故描述符数组中没有相关条目。
 
 对于隐藏类的基本判断标准是，具有相同结构的对象（如属性命名相同且顺序相同）共享相同的隐藏类。为了实现这一点，对象在添加属性后我们将使用不同的隐藏类。在下面的示例中，我们从一个空对象开始并添加三个命名属性。
 
-<figure>
-  <img src="/_img/fast-properties/adding-properties.png" width="1600" height="707" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/adding-properties.png)
 
 每次添加新属性时，对象的隐藏类都会被更改。在引擎的底层，V8 创建了一个将隐藏类链接在一起的转换树（transiton tree）。当你向一个空对象添加属性（如“a”）时，V8 会知道要采用哪个隐藏类。如果以相同的顺序添加相同的属性，此转换树会确保最后得到的是相同的最终隐藏类。以下示例显示，即使我们在其间添加了简单的索引属性，我们还是得到了相同的转换树。
 
-<figure>
-  <img src="/_img/fast-properties/transitions.png" width="1600" height="116" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/transitions.png)
 
 然而，如果我们创建一个添加了不同属性的新对象，如属性 `"d"`，则 V8 会为新的隐藏类创建一个单独的分支。
 
-<figure>
-  <img src="/_img/fast-properties/transition-trees.png" width="1600" height="291" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/transition-trees.png)
 
 **本节要点:**
 
@@ -85,15 +75,11 @@ description: 'This technical deep-dive explains how V8 handles JavaScript proper
 
 **对象与普通属性：** V8 支持所谓的对象内属性（in-object properties），指这些属性直接存储在对象本身上。它们在 V8 可用的属性中是最快的，因为它们不需要间接层就可以访问。对象内属性的数量由对象的初始大小预先确定。如果添加的属性超出了对象分配的空间，则它们将被保存在属性存储中。属性存储多了一层间接层，但可以自由地扩容。
 
-<figure>
-  <img src="/_img/fast-properties/in-object-properties.png" width="1600" height="479" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/in-object-properties.png)
 
 **快属性与慢属性：** 下一个重要区别是快属性和慢属性。通常，我们将保存在线性属性存储中的属性定义为“快”。只需通过属性存储中的索引即可访问快属性。要从属性名称获取属性存储中的实际位置，我们必须查看隐藏类上的描述符数组，如前面所述。
 
-<figure>
-  <img src="/_img/fast-properties/fast-vs-slow-properties.png" width="1600" height="636" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/fast-vs-slow-properties.png)
 
 但是，如果从对象中添加和删除大量属性，则可能会产生大量时间和内存开销来维护描述符数组和隐藏类。因此 V8 还支持所谓的慢属性。带慢属性的对象内部会有独立的词典作为属性存储。所有的属性元信息不再保存在隐藏类的描述符数组中，而是直接保存在属性字典中。因此无需更新隐藏类即可添加和删除属性。由于内联缓存不适用于字典属性，故后者通常比快属性慢。
 
@@ -125,9 +111,7 @@ console.log(o[2]);          // 打印 'c'.
 console.log(o[3]);          // 打印 undefined
 ```
 
-<figure>
-  <img src="/_img/fast-properties/hole.png" width="1116" height="555" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/hole.png)
 
 简而言之，如果接收方（receiver）上没有发现属性，我们就必须沿着原型链继续查找。鉴于元素是内部独立的（比如，我们不会在隐藏类上保存有关当前索引属性的信息），我们需要一个特殊值，称为 \_hole，来标记不存在的属性。这对于数组函数的性能是至关重要的。如果我们知道没有空隙，即元素存储是挤满的，我们就可以直接在当前域执行操作而无需沿着原型链做昂贵的查找。
 
@@ -163,9 +147,7 @@ const b2 = [1.1,  , 3];  // 带空隙双浮点，b2[1] 从原型中读取
 
 **元素访问器：** 正如你所想的，我们并不太热衷于在 C++ 中给[元素种类](/blog/elements-kinds)一个个对应地写 20 多遍数组函数。这里就需要一些 C++ 魔术。我们不是一遍又一遍地实现数组函数，而是构建了元素访问器 `ElementsAccessor`，这样我们大多情况下只需要实现简单的函数来从后备存储中访问元素。`ElementsAccessor` 依赖于 [CRTP](https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern) 来创建每个数组函数的专用版本。因此，如果在数组上调用类似 `slice` 的方法，V8 内部会调用 C++ 编写的内置函数，并通过 `ElementsAccessor` 调度到函数的专用版本：
 
-<figure>
-  <img src="/_img/fast-properties/elements-accessor.png" width="640" height="225" alt="" loading="lazy">
-</figure>
+![](/_img/fast-properties/elements-accessor.png)
 
 **本节要点:**
 

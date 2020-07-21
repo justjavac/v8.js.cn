@@ -1,11 +1,12 @@
 ---
 title: 'Optional chaining'
-author: 'Maya Lekova ([@MayaLekova](https://twitter.com/MayaLekova)), breaker of optional chains'
+author: 'Maya Lekova ([@Zmayski](https://twitter.com/Zmayski)), breaker of optional chains'
 avatars:
   - 'maya-lekova'
 date: 2019-08-27
 tags:
   - ECMAScript
+  - ES2020
 description: 'Optional chaining enables readable and concise expression of property accesses with built-in nullish checking.'
 tweet: '1166360971914481669'
 ---
@@ -133,7 +134,7 @@ More details can be found in [the _Semantics_ section of the proposal](https://g
 ## Support for optional chaining { #support }
 
 <feature-support chrome="80 https://bugs.chromium.org/p/v8/issues/detail?id=9553"
-                 firefox="no https://bugzilla.mozilla.org/show_bug.cgi?id=1566143"
-                 safari="no https://bugs.webkit.org/show_bug.cgi?id=200199"
-                 nodejs="no"
+                 firefox="74 https://bugzilla.mozilla.org/show_bug.cgi?id=1566143"
+                 safari="13.1 https://bugs.webkit.org/show_bug.cgi?id=200199"
+                 nodejs="14 https://medium.com/@nodejs/node-js-version-14-available-now-8170d384567e"
                  babel="yes https://babeljs.io/docs/en/babel-plugin-proposal-optional-chaining"></feature-support>

@@ -21,6 +21,14 @@ cn:
 
 3. 下载所有构建需要的依赖:
 
+   For Googlers - If you see Failed to fetch file or Login required errors when running the hooks, try authenticating with Google Storage first by running:
+
+   ```bash
+   gsutil.py config
+   ```
+
+   Login with your @google.com account, and enter `0` when asked for a project ID.
+
    ```bash
    gclient sync
    ```

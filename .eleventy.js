@@ -17,6 +17,8 @@ const markdownIt = require('markdown-it');
 const markdownItAnchor = require('markdown-it-anchor');
 const markdownItAttrs = require('markdown-it-attrs');
 const markdownItContainer = require('markdown-it-container');
+const markdownItEmbedImage = require('./md-embed-image.js');
+const markdownItImplicitFigures = require('markdown-it-implicit-figures');
 const markdownItFootnote = require('markdown-it-footnote');
 const markdownItMultiMdTable = require('markdown-it-multimd-table');
 const pluginRss = require('@11ty/eleventy-plugin-rss');
@@ -41,10 +43,30 @@ const md = markdownIt(markdownItConfig)
   .use(markdownItAttrs)
   .use(markdownItContainer, 'note')
   .use(markdownItContainer, 'table-wrapper')
+  .use(markdownItContainer, 'ecmascript-algorithm')
   .use(markdownItMultiMdTable, {
     rowspan: true,
+    multiline: true,
   })
-  .use(markdownItAnchor, markdownItAnchorConfig);
+  .use(markdownItAnchor, markdownItAnchorConfig)
+  .use(markdownItImplicitFigures, {
+    figcaption: true
+  })
+  .use(markdownItEmbedImage);
+
+// Simulating `td:has(>pre:only-child)` with a markdown-it render rule.
+// Can be removed when (if?) CSS4 is actually implemented in browsers.
+const prevTdRenderer = md.renderer.rules.table_column_open;
+md.renderer.rules.table_column_open = (tokens, idx, options, env, self) => {
+  if (tokens[idx + 1].type === 'fence' && tokens[idx + 2].type === 'table_column_close') {
+    tokens[idx].attrJoin('class', 'td-with-just-pre');
+  }
+  if (prevTdRenderer) {
+    return prevTdRenderer(tokens, idx, options, env, self);
+  } else {
+    return self.renderToken(tokens, idx, options);
+  }
+};
 
 module.exports = (eleventyConfig) => {
   eleventyConfig.addPlugin(pluginRss);

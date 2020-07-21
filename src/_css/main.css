@@ -235,6 +235,12 @@ pre, article footer, .note {
 ol, ul {
   padding-inline-start: var(--offset);
 }
+.ecmascript-algorithm ol > li > ol {
+  list-style-type: lower-alpha;
+}
+.ecmascript-algorithm ol > li > ol > li > ol {
+  list-style-type: lower-roman;
+}
 li pre {
   width: calc(100% + 3 * var(--offset));
   left: calc(-1 * var(--offset));
@@ -245,6 +251,8 @@ code {
   tab-size: 2;
   background: rgba(0, 0, 0, 0.07);
   overflow-wrap: break-word;
+  /* The below is still required for Safari */
+  word-wrap: break-word;
 }
 pre code {
   border: 0;
@@ -370,6 +378,13 @@ th, td {
 tbody tr:nth-child(odd) {
   background-color: var(--alt-table-row-background);
 }
+td > pre {
+  margin: 0;
+  width: 100%;
+}
+.td-with-just-pre {
+  padding: 0;
+}
 .note {
   color: var(--note-color);
   background: var(--note-background);
@@ -430,12 +445,22 @@ video {
   }
 }
 
-.language-grammar {
+.language-grammar .production-name {
   font-style: italic;
 }
-
-.language-grammar b {
-  font-style: normal;
+.language-grammar .production-params,
+.language-grammar .keyword {
+  font-size: smaller;
+  vertical-align: sub;
+}
+.language-grammar .production-params {
+  padding-left: 2px;
+}
+.language-grammar .keyword {
+  margin-left: -1ch;
+}
+.language-grammar .literal {
+  font-weight: bold;
 }
 
 dark-mode-toggle {
@@ -566,10 +591,6 @@ pre mark .token.punctuation {
   color: #333;
 }
 
-.token.regex {
-  color: #9B71C6;
-}
-
 .token.function,
 .token.constant {
   color: #E5A638;
@@ -579,11 +600,16 @@ pre mark .token.punctuation {
   color: #FDFBA8;
 }
 
-.token.number {
+.token.number,
+.token.regex {
   color: #FCC934;
 }
 
 .token.important,
 .token.deliminator {
   color: #E45734;
+}
+
+.highlight-line {
+  display: inline-block;
 }

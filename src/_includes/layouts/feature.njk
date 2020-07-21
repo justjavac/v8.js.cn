@@ -5,7 +5,10 @@ layout: layouts/base.njk
   <header>
     <h1 itemprop="headline">{{ title | markdown | safe }}</h1>
     <p class="meta">
-      发布时间：<time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
+      发布时间 <time datetime="{{ date | htmlDateString }}" itemprop="datePublished">{{ date | readableDate }}</time>
+      {% if updated %}
+        · 更新时间 <time datetime="{{ updated | htmlDateString }}" itemprop="dateModified">{{ updated | readableDate }}</time>
+      {% endif %}
       {% if tags %}
         · 标签：{% for tag in tags %}{% if not 'io' in tag and not 'Node.js' in tag %}
           <a href="/features/tags/{{ tag | slug }}" class="tag">{{ tag }}</a>

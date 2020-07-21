@@ -8,13 +8,13 @@ Each test log provides a pre-filled command line for triggering an automated fla
 
 ```
 Trigger flake bisect on command line:
-echo '{"bisect_buildername": "V8 Linux64 - verify csa", "bisect_mastername": "client.v8", "build_config": "Release", "extra_args": [], "isolated_name": "bot_default", "swarming_dimensions": ["cpu:x86-64", "gpu:none", "os:Ubuntu-14.04", "pool:Chrome"], "test_name": "inspector/runtime/command-line-api-without-side-effects", "timeout_sec": 60, "to_revision": "7f51fdac5bc8bf28b30904e1601819b356187b43", "total_timeout_sec": 120, "variant": "nooptimization"}' | buildbucket.py put -b luci.v8.try -n v8_flako -p -
+bb add v8/try.triggered/v8_flako -p 'to_revision="deadbeef"' -p 'test_name="MyTest"' ...
 ```
 
 Before triggering flake bisects for the first time, users must log in with a google.com account:
 
 ```bash
-depot-tools-auth login https://cr-buildbucket.appspot.com
+bb auth-login
 ```
 
 Then execute the provided command, which returns a build URL running flake bisect ([example](https://ci.chromium.org/p/v8/builders/luci.v8.try/v8_flako/b8935497223724984544)).
@@ -63,9 +63,9 @@ If a failing run times out, while a pass is running very fast, it is useful to t
 
 In some runs, confidence is very low. E.g. calibration is satisfied if four flakes are seen in one run. During bisection, every run with one or more flakes is counted as bad. In such cases it might be useful to restart the bisect job setting to_revision to the culprit and using a higher number of repetitions or total timeout than the original job and confirm that the same conclusion is reached again.
 
-### Working around [known timeout issues on Windows](https://crbug.com/v8/8170)
+### Working around timeout issues
 
-Sometimes the overall timeout option doesn’t work on Windows. In this case it’s best to estimate a fitting number of repetitions and set `total_timeout_sec` to `0`.
+In case the overall timeout option causes builds to hang, it’s best to estimate a fitting number of repetitions and set `total_timeout_sec` to `0`.
 
 ### Test behavior depending on random seed
 
