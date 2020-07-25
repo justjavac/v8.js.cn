@@ -20,7 +20,6 @@ cn:
 
 ## 反汇编还是..反编译？ {#disassemble-or-decompile}
 
-
 您可以使用 `wasm2wat`（[WABT](https://github.com/WebAssembly/wabt) 工具包的一部分）之类的工具，将 `.wasm` 转换为 Wasm 的标准文本格式 `.wat`，是非常忠实但不是特别可读的表示形式。
 
 例如，一个简单的计算点积的 C 函数：
