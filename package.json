@@ -21,7 +21,7 @@
     "ci": "npm run lint && npm run build"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^0.11.0",
+    "@11ty/eleventy": "^0.11.1",
     "@11ty/eleventy-plugin-rss": "^1.0.7",
     "@11ty/eleventy-plugin-syntaxhighlight": "^3.0.1",
     "@browser-logos/chrome": "^1.0.17",
@@ -29,7 +29,7 @@
     "@browser-logos/safari": "^1.0.7",
     "autoprefixer": "^9.8.2",
     "cssnano": "^4.1.10",
-    "dark-mode-toggle": "^0.6.0",
+    "dark-mode-toggle": "^0.7.2",
     "get-video-dimensions": "^1.0.0",
     "glob": "^7.1.6",
     "he": "^1.2.0",
@@ -52,7 +52,7 @@
     "postcss-cli": "^7.1.1",
     "postcss-custom-properties": "^9.1.1",
     "shx": "^0.3.2",
-    "superstatic": "^6.0.4",
+    "superstatic": "^7.0.0",
     "terser": "^4.8.0",
     "workbox-cli": "^4.3.1"
   }

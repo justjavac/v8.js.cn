@@ -6,14 +6,17 @@ avatars:
 date: 2020-02-03 13:33:37
 tags:
   - ECMAScript
+  - Understanding ECMAScript
 description: 'Tutorial on reading the ECMAScript specification'
 tweet: '1224363301146189824'
 cn:
   author: 'Vincent Wang ([@Vincent0700](https://github.com/Vincent0700))。<br/>Blog：[https://vincentstudio.info](https://vincentstudio.info)'
-  avatars: 
+  avatars:
     - vincent-wang
 ---
 在这篇文章里，我们取规范中一个简单的函数并尝试理解他的符号。让我们开始吧！
+
+[All episodes](/blog/tags/understanding-ecmascript)
 
 ## 前言 {#preface}
 

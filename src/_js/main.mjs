@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import '/_js/dark-mode-toggle.mjs';
-
 const darkModeToggle = document.querySelector('dark-mode-toggle');
 
 // Only load the Twitter script when we need it.
@@ -91,4 +89,11 @@ if (location.search.includes('utm_source')) {
   // This site doesn’t use query string parameters anyway, so we can just
   // set the location to `location.pathname` directly.
   history.replaceState({}, '', location.pathname);
+}
+
+// On Apple mobile devices add the proprietary app icon and splashscreen markup.
+// No one should have to do this manually, and eventually this annoyance will
+// go away once https://bugs.webkit.org/show_bug.cgi?id=183937 is fixed.
+if (/\b(iPad|iPhone|iPod|Safari)\b/.test(navigator.userAgent)) {
+  import('https://unpkg.com/pwacompat');
 }

@@ -10,7 +10,7 @@ V8 是 Google 基于 C++ 编写的开源高性能 Javascript 与 WebAssembly 引
 
 ## 关于 V8 {#about-v8}
 
-V8 实现了 <a href="https://tc39.github.io/ecma262/">ECMAScript</a> 与 <a href="https://webassembly.github.io/spec/core/">WebAssembly</a>，能够运行在 Windows 7+、macOS 10.12+ 以及使用 x64、IA-32、ARM、MIPS 处理器的 Linux 系统。V8 能独立运行，也能嵌入到任何 C++ 应用当中。
+V8 实现了 <a href="https://tc39.es/ecma262/">ECMAScript</a> 与 <a href="https://webassembly.github.io/spec/core/">WebAssembly</a>，能够运行在 Windows 7+、macOS 10.12+ 以及使用 x64、IA-32、ARM、MIPS 处理器的 Linux 系统，参看 [ports](/docs/ports)。V8 能独立运行，也能嵌入到任何 C++ 应用当中。
 
 V8 编译并执行 JavaScript 源代码，处理对象的内存分配，垃圾回收不再使用的对象。高效的垃圾收集器是 V8 高性能的关键之一。
 
@@ -27,6 +27,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [iOS 跨平台编译](/docs/cross-compile-ios)
     - [GUI 与 IDE 安装](/docs/ide-setup/)
 - [贡献](/docs/contribute/)
+    - [Respectful code](/docs/respectful-code)
     - [V8 的公共 API 与稳定性](/docs/api/)
     - [成为 V8 提交者](/docs/become-committer/)
     - [提交者职责](/docs/committer-responsibility/)
@@ -53,6 +54,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [调查内存泄漏](/docs/memory-leaks/)
     - [栈追踪 API](/docs/stack-trace-api/)
     - [使用 D8](/docs/d8/)
+    - [V8 Tools](https://v8.dev/tools)
 - 嵌入 V8
     - [嵌入 V8 向导](/docs/embed/)
     - [版本号](/docs/version-numbers/)
@@ -66,6 +68,8 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [编写 Torque 内置函数](/docs/torque-builtins/)
     - [编写 CSA  内置函数](/docs/csa-builtins/)
     - [Adding a new WebAssembly opcode](/docs/webassembly-opcode)
+    - [Slack Tracking - what is it?](/blog/slack-tracking)
+    - [WebAssembly compilation pipeline](/docs/wasm-compilation-pipeline)
 - 优化 JavaScript
     - [使用 V8 基本示例分析](/docs/profile/)
     - [分析 Chromium](/docs/profile-chromium/)

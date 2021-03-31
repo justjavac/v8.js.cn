@@ -1,8 +1,8 @@
 ---
 title: '更快的异步函数和 Promise'
-author: 'Maya Lekova ([@MayaLekova](https://twitter.com/MayaLekova)), always-awaiting anticipator, and Benedikt Meurer ([@bmeurer](https://twitter.com/bmeurer)), professional performance promiser'
+author: 'Maya Lekova ([@MayaLekova](https://twitter.com/Zmayski)), always-awaiting anticipator, and Benedikt Meurer ([@bmeurer](https://twitter.com/bmeurer)), professional performance promiser'
 avatars:
-  - 'maya-lekova'
+  - 'maya-armyanova'
   - 'benedikt-meurer'
 date: 2018-11-12 16:45:07
 tags:

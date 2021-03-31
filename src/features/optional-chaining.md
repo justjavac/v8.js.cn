@@ -1,8 +1,8 @@
 ---
 title: 'Optional chaining'
-author: 'Maya Lekova ([@Zmayski](https://twitter.com/Zmayski)), breaker of optional chains'
+author: 'Maya Armyanova ([@Zmayski](https://twitter.com/Zmayski)), breaker of optional chains'
 avatars:
-  - 'maya-lekova'
+  - 'maya-armyanova'
 date: 2019-08-27
 tags:
   - ECMAScript

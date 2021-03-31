@@ -182,6 +182,6 @@ rtf.formatToParts(3, 'week');
 
 <feature-support chrome="71 /blog/v8-release-71#javascript-language-features"
                  firefox="65"
-                 safari="no"
+                 safari="14"
                  nodejs="12 https://twitter.com/mathias/status/1120700101637353473"
                  babel="no"></feature-support>
