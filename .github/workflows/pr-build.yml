@@ -10,9 +10,3 @@ jobs:
       - run: npm install
       - run: npm run lint
       - run: npm run build
-      - uses: actions/upload-artifact@v2
-        with:
-          name: preview
-          path: |
-            firebase.json
-            dist
