@@ -2,7 +2,7 @@
 title: '文档'
 description: 'V8 项目文档'
 cn:
-  author: 'who who who ([@fsx950223](https://github.com/fsx950223))，good at javascript'
+  author: 'who who who ([@fsx950223](https://github.com/fsx950223))，good at javascript；不如怀念 ([@wang1212](https://github.com/wang1212))'
 ---
 V8 是 Google 基于 C++ 编写的开源高性能 Javascript 与 WebAssembly 引擎。用于 Google Chrome（Google 的开源浏览器） 以及 Node.js 等。
 
@@ -64,7 +64,7 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
 - 引擎之下
     - [Ignition](/docs/ignition/)
     - [TurboFan](/docs/turbofan/)
-    - [Torque](/docs/torque/)
+    - [V8 Torque 用户手册](/docs/torque/)
     - [编写 Torque 内置函数](/docs/torque-builtins/)
     - [编写 CSA  内置函数](/docs/csa-builtins/)
     - [Adding a new WebAssembly opcode](/docs/webassembly-opcode)
