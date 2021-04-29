@@ -70,8 +70,8 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
     - [Adding a new WebAssembly opcode](/docs/webassembly-opcode)
     - [Slack Tracking - what is it?](/blog/slack-tracking)
     - [WebAssembly compilation pipeline](/docs/wasm-compilation-pipeline)
-- 优化 JavaScript
-    - [使用 V8 基本示例分析](/docs/profile/)
+- 编写可优化的 JavaScript
+    - [使用 V8 的基于样本的分析器](/docs/profile/)
     - [分析 Chromium](/docs/profile-chromium/)
     - [使用 Linux `perf`](/docs/linux-perf/)
     - [追踪 V8](/docs/trace/)
