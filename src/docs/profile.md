@@ -1,16 +1,18 @@
 ---
-title: 'Using V8’s sample-based profiler'
-description: 'This document explains how to use V8’s sample-based profiler.'
+title: '使用 V8 的基于样本的分析器'
+description: '本文档说明了如何使用 V8 的基于样本的分析器。'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-V8 has built-in sample-based profiling. Profiling is turned off by default, but can be enabled via the `--prof` command-line option. The sampler records stacks of both JavaScript and C/C++ code.
+V8 具有内置的基于样本的性能分析器。 默认情况下，性能分析是关闭的，但可以通过 `--prof` 命令行选项启用。 采样器记录 JavaScript 和 C/C++ 代码的堆栈。
 
-## Build
+## 构建 { #build }
 
-Build the `d8` shell following the instructions at [Building with GN](/docs/build-gn).
+按照 [用 GN 构建](/docs/build-gn) 中的说明构建 `d8` shell。
 
-## Command line
+## 命令行 { #command-line }
 
-To start profiling, use the `--prof` option.  When profiling, V8 generates a `v8.log` file which contains profiling data.
+要开始分析，请使用 `--prof` 选项。分析时，V8 会生成一个 `v8.log` 文件，其中包含分析数据。
 
 Windows:
 
@@ -18,17 +20,17 @@ Windows:
 build\Release\d8 --prof script.js
 ```
 
-Other platforms (replace `ia32` with `x64` if you want to profile the `x64` build):
+其它平台（如果要分析 `x64` 构建，请用 `x64` 替换 `ia32`）：
 
 ```bash
 out/ia32.release/d8 --prof script.js
 ```
 
-## Process the generated output
+## 处理生成的输出 { #process-the-generated-output }
 
-Log file processing is done using JS scripts running by the d8 shell. For this to work, a `d8` binary (or symlink, or `d8.exe` on Windows) must be in the root of your V8 checkout, or in the path specified by the environment variable `D8_PATH`. Note: this binary is just used to process the log, but not for the actual profiling, so it doesn’t matter which version etc. it is.
+日志文件的处理是使用 d8 shell 运行的 JS 脚本完成的。为此，`d8` 二进制文件（或在 Windows 上为 symlink 或 `d8.exe`）必须位于 V8 检出的根目录中，或位于环境变量 `D8_PATH` 指定的路径中。注意：此二进制文件仅用于处理日志，而不用于实际的性能分析，因此它的版本无关紧要。
 
-**Make sure `d8` used for analysis was not built with `is_component_build`!**
+**确保用于分析的 `d8` 不是使用 `is_component_build` 构建的！**
 
 Windows:
 
@@ -48,17 +50,17 @@ macOS:
 tools/mac-tick-processor v8.log
 ```
 
-## Web UI for `--prof`
+## `--prof`的 Web UI  { #web-ui-for---prof }
 
-Preprocess the log with `--preprocess` (to resolve C++ symbols, etc).
+用 `--preprocess` 预处理日志（以解析 C++ 符号等）。
 
 ```bash
 $V8_PATH/tools/linux-tick-processor --preprocess > v8.json
 ```
 
-Open [`tools/profview/index.html`](https://v8.dev/tools/head/profview) in your browser and select the `v8.json` file there.
+在浏览器中打开 [`tools/profview/index.html`](https://v8.dev/tools/head/profview)，然后在其中选择 `v8.json` 文件。
 
-## Example output
+## 输出示例 { #example-output }
 
 ```
 Statistical profiling result from benchmarks\v8.log, (4192 ticks, 0 unaccounted, 0 excluded).
@@ -107,27 +109,27 @@ Statistical profiling result from benchmarks\v8.log, (4192 ticks, 0 unaccounted,
     ...
 ```
 
-## Profiling web applications
+## 分析 Web 应用程序 { #profiling-web-applications }
 
-Today’s highly optimized virtual machines can run web apps at blazing speed. But one shouldn’t rely only on them to achieve great performance: a carefully optimized algorithm or a less expensive function can often reach many-fold speed improvements on all browsers. [Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/)’ [CPU Profiler](https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/reference) helps you analyze your code’s bottlenecks. But sometimes, you need to go deeper and more granular: this is where V8’s internal profiler comes in handy.
+当今高度优化的虚拟机可以以惊人的速度运行 Web 应用程序。但是，一个人不应该仅仅依靠它们来获得出色的性能：精心优化的算法或较低开销的函数通常可以在所有浏览器上实现许多倍的速度提升。[Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools/) 的 [CPU Profiler](https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/reference) 可帮助你分析代码的瓶颈。但是有时候，你需要更深入、更细致：这就是 V8 的内部分析器派上用场的地方。
 
-Let’s use that profiler to examine the [Mandelbrot explorer demo](https://web.archive.org/web/20130313064141/http://ie.microsoft.com/testdrive/performance/mandelbrotexplorer/) that Microsoft [released](https://blogs.msdn.microsoft.com/ie/2012/11/13/ie10-fast-fluid-perfect-for-touch-and-available-now-for-windows-7/) together with IE10. After the demo release, V8 has fixed a bug that slowed down the computation unnecessarily (hence the poor performance of Chrome in the demo’s blog post) and further optimized the engine, implementing a faster `exp()` approximation than what the standard system libraries provide. Following these changes, **the demo ran 8× faster than previously measured** in Chrome.
+让我们使用该分析器检查 Microsoft 与 IE10 一起[发布](https://blogs.msdn.microsoft.com/ie/2012/11/13/ie10-fast-fluid-perfect-for-touch-and-available-now-for-windows-7/)的 [Mandelbrot explorer 演示程序](https://web.archive.org/web/20130313064141/http://ie.microsoft.com/testdrive/performance/mandelbrotexplorer/)。演示版本发布后，V8 修复了一个错误，该错误会不必要地减慢计算速度（因此，该演示博客中的 Chrome 性能不佳），并进一步优化了引擎，实现了比标准系统库提供的更快的 `exp()` 近似值。进行了这些更改之后，**该演示程序的运行速度比以前在 Chrome 中测得的快 8 倍**。
 
-But what if you want the code to run faster on all browsers? You should first **understand what keeps your CPU busy**. Run Chrome (Windows and Linux [Canary](https://tools.google.com/dlpage/chromesxs)) with the following command line switches, which causes it to output profiler tick information (in the `v8.log` file) for the URL you specify, which in our case was a local version of the Mandelbrot demo without web workers:
+但是，如果你希望代码在所有浏览器上运行得更快呢？ 首先，你应该要**分析导致 CPU 繁忙的原因**。使用以下命令行参数运行 Chrome（Windows 和 Linux [Canary](https://tools.google.com/dlpage/chromesxs)），这将让它输出指定 URL 的分析器的 tick 信息（在 `v8.log` 文件中），在我们的示例中，是没有 web workers 的 Mandelbrot 演示程序的本地版本：
 
 ```bash
 ./chrome --js-flags='--prof' --no-sandbox 'http://localhost:8080/'
 ```
 
-When preparing the test case, make sure it begins its work immediately upon load, and close Chrome when the computation is done (hit Alt+F4), so that you only have the ticks you care about in the log file. Also note that web workers aren’t yet profiled correctly with this technique.
+在准备测试用例时，请确保它在加载后立即开始工作，并在计算完成后关闭 Chrome（按 Alt+F4 键），以便在日志文件中仅保留你关心的 ticks。另请注意，使用此技术尚未正确配置 web workers。
 
-Then, process the `v8.log` file with the `tick-processor` script that ships with V8 (or the new practical web version):
+然后，使用 V8（或新的实用 Web 版本）附带的 `tick-processor` 脚本处理 `v8.log` 文件：
 
 ```bash
 v8/tools/linux-tick-processor v8.log
 ```
 
-Here’s an interesting snippet of the processed output that should catch your attention:
+以下是经过处理的输出的有趣片段，应引起你的注意：
 
 ```
 Statistical profiling result from null, (14306 ticks, 0 unaccounted, 0 excluded).
@@ -139,7 +141,7 @@ Statistical profiling result from null, (14306 ticks, 0 unaccounted, 0 excluded)
      27    0.2%    0.0%  /.../chrome/src/out/Release/lib/libwebkit.so
 ```
 
-The top section shows that V8 is spending more time inside an OS-specific system library than in its own code. Let’s look at what’s responsible for it by examining the “bottom up” output section, where you can read indented lines as “was called by” (and lines starting with a `*` mean that the function has been optimized by TurboFan):
+顶部显示 V8 在特定于 OS 的系统库中花费的时间比在其自己的代码中花费的时间更多。让我们通过检查 "bottom up" 的输出部分来了解其原因，在该部分中，你可以理解缩进的行是“被...所调用”（以 `*` 开头的行表示该函数已被 TurboFan 优化）：
 
 ```
 [Bottom up (heavy) profile]:
@@ -153,20 +155,20 @@ The top section shows that V8 is spending more time inside an OS-specific system
    6314   99.8%      LazyCompile: *calculateMandelbrot http://localhost:8080/Demo.js:215
 ```
 
-More than **44% of the total time is spent executing the `exp()` function inside a system library**! Adding some overhead for calling system libraries, that means about two thirds of the overall time are spent evaluating `Math.exp()`.
+**在系统库中执行 `exp()` 函数花费的总时间超过了44％**！为调用系统库增加了一些开销，这意味着约有三分之二的总时间花费在评估 `Math.exp()` 上。
 
-If you look at the JavaScript code, you’ll see that `exp()` is used solely to produce a smooth grayscale palette. There are countless ways to produce a smooth grayscale palette, but let’s suppose you really really like exponential gradients. Here is where algorithmic optimization comes into play.
+如果你查看 JavaScript 代码，将会看到  `exp()` 仅用于生成平滑的灰度调色板。产生平滑灰度调色板的方法有很多，但让我们假设你真的很喜欢指数渐变。这是算法优化发挥作用的地方。
 
-You’ll notice that `exp()` is called with an argument in the range `-4 < x < 0`, so we can safely replace it with its [Taylor approximation](https://en.wikipedia.org/wiki/Taylor_series) for that range, which delivers the same smooth gradient with only a multiplication and a couple of divisions:
+你会注意到，调用 `exp()` 的范围是 `-4 < x < 0`，因此我们可以用该范围的[泰勒近似值](https://en.wikipedia.org/wiki/Taylor_series)安全地替换它，从而提供相同的平滑梯度，并且只需要一次乘法和几次除法：
 
 ```
 exp(x) ≈ 1 / ( 1 - x + x * x / 2) for -4 < x < 0
 ```
 
-Tweaking the algorithm this way boosts the performance by an extra 30% compared to latest Canary and 5× to the system library based `Math.exp()` on Chrome Canary.
+以这种方式对算法进行调整，与最新的 Canary 版本相比可将性能提高 30％，与 Chrome Canary 上基于 `Math.exp()` 的系统库相比，性能提高了 5 倍。
 
 ![](/_img/docs/profile/mandelbrot.png)
 
-This example shows how V8’s internal profiler can help you go deeper into understanding your code bottlenecks, and that a smarter algorithm can push performance even further.
+此示例说明了 V8 的内部分析器如何帮助你更深入地了解代码瓶颈，以及更智能的算法可以进一步提高性能。
 
-To find out more about how benchmark that represent today’s complex and demanding web applications, read [How V8 measures real-world performance](/blog/real-world-performance).
+要了解有关什么样的基准代表当今复杂而苛刻的 Web 应用程序的更多信息，请阅读 [V8 如何衡量实际性能](/blog/real-world-performance)。
