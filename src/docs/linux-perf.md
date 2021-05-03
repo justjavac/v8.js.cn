@@ -1,30 +1,32 @@
 ---
-title: 'V8’s Linux `perf` integration'
-description: 'This document explains how to analyze the performance of V8’s JITted code with the Linux `perf` tool.'
+title: 'V8 的 Linux `perf` 集成'
+description: '本文档说明了如何使用 Linux `perf` 工具分析 V8 的 JITted 代码的性能。'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-V8 has built-in support for the Linux `perf` tool. By default, this support is disabled, but by using the `--perf-prof` and `--perf-prof-debug-info` command-line options, V8 writes out performance data during execution into a file that can be used to analyze the performance of V8’s JITted code with the Linux `perf` tool.
+V8 内置了对 Linux `perf` 工具的支持。默认情况下，此支持处于禁用状态，但是通过使用 `--perf-prof` 和 `--perf-prof-debug-info` 命令行选项，V8 在执行期间会将性能数据写到一个文件中，该文件可用于使用 Linux `perf` 工具分析 V8 的 JITted 代码的性能。
 
-## Optional: Get recent kernel and `perf`
+## 可选：获取最新内核和 `perf` { #optional:-get-recent-kernel-and-perf }
 
-In order to analyze V8 JIT code with the Linux `perf` tool, you need to:
+为了使用 Linux `perf` 工具分析 V8 JIT 代码，你需要：
 
-- Use a recent Linux kernel that provides high-resolution timing information to the `perf` tool and to V8’s `perf` integration in order to synchronize JIT code performance samples with the standard performance data collected by the Linux `perf` tool.
-- Use a recent version of the Linux `perf` tool or apply the patch that supports JIT code to `perf` and build it yourself.
+- 使用最新的 Linux 内核为 `perf` 工具和 V8 的 `perf` 集成提供高分辨率的时序信息，以使 JIT 代码性能样本与 Linux `perf` 工具收集的标准性能数据同步。
+- 使用最新版本的 Linux `perf` 工具或将支持 JIT 代码的补丁应用到 `perf` 并自行构建。
 
-Install a new Linux kernel, and then reboot your machine:
+安装新的 Linux 内核，然后重新启动计算机：
 
 ```bash
 sudo apt-get install linux-generic-lts-wily
 ```
 
-Install dependencies:
+安装依赖：
 
 ```bash
 sudo apt-get install libdw-dev libunwind8-dev systemtap-sdt-dev libaudit-dev \
     libslang2-dev binutils-dev liblzma-dev
 ```
 
-Download kernel sources that include the latest `perf` tool source:
+下载包含最新的 `perf` 工具源的内核源：
 
 ```bash
 cd <path_to_kernel_checkout>
@@ -33,18 +35,18 @@ cd tip/tools/perf
 make
 ```
 
-In the following steps, invoke `perf` as `<path_to_kernel_checkout>/tip/tools/perf/perf`.
+在以下步骤中，以 `<path_to_kernel_checkout>/tip/tools/perf/perf` 调用 `perf`。
 
-## Build V8
+## 构建 V8 { #build-v8 }
 
-To use V8’s integration with Linux perf you need to build it with the appropriate GN build flag activated. You can set `enable_profiling = true` in an existing GN build configuration.
+要将 V8 与 Linux perf 集成使用，你需要在激活了适当的 GN build 标志的情况下进行构建。你可以在现有的 GN 构建配置中设置 `enable_profiling = true`。
 
 ```bash
 echo 'enable_profiling = true' >> out/x64.release/args.gn
 ninja -C out/x64.release
 ```
 
-Alternatively, you create a new clean build configuration with only the single build flag set to enable `perf` support:
+或者，你创建一个新的纯净的构建配置，仅设置单个构建标志以启用 `perf` 支持：
 
 ```bash
 cd <path_to_your_v8_checkout>
@@ -53,9 +55,9 @@ gn gen out/x64.release \
 ninja -C out/x64.release
 ```
 
-## Running `d8` with perf flags
+## 使用 perf 标志运行 `d8` { #running-d8-with-perf-flags }
 
-Once you have the right kernel, perf tool and build of V8, you can start using linux perf:
+一旦有了正确的内核，perf 工具和 V8 的构建，就可以开始使用 linux perf 了：
 
 ```bash
 cd <path_to_your_v8_checkout>
@@ -66,48 +68,48 @@ perf record --call-graph -k mono out/x64.release/d8 \
     --perf-prof --no-write-protect-code-memory test.js
 ```
 
-### Flags description
+### 标志说明 { #flags-description }
 
-[`--perf-prof`](https://source.chromium.org/search?q=FLAG_perf_prof) is used to the V8 command-line to record performance samples in JIT code.
+[`--perf-prof`](https://source.chromium.org/search?q=FLAG_perf_prof) 用于 V8 命令行，以记录 JIT 代码性能样本。
 
-[`--nowrite-protect-code-memory`](https://source.chromium.org/search?q=FLAG_nowrite_protect_code_memory) is requried to disable write protection for code memory. This is necessary because `perf` discards information about code pages when it sees the event corresponding to removing the write bit from the code page. Here’s an example that records samples from a test JavaScript file:
+[`--nowrite-protect-code-memory`](https://source.chromium.org/search?q=FLAG_nowrite_protect_code_memory) 被要求禁用对代码存储器的写保护。这是必要的，因为当 `perf` 看到与从代码页中删除写位相对应的事件时，它会丢弃有关代码页的信息。这是一个记录来自一个测试 JavaScript 文件的样本的示例：
 
-[`--interpreted-frames-native-stack`](https://source.chromium.org/search?q=FLAG_interpreted_frames_native_stack) is used to create different entry points (copied versions of InterpreterEntryTrampoline) for interpreted functions so they can be distinguished by `perf` based on the address alone.
+[`--interpreted-frames-native-stack`](https://source.chromium.org/search?q=FLAG_interpreted_frames_native_stack) 用于为解释函数创建不同的入口点（InterpreterEntryTrampoline 的复制版本），以便可以仅基于地址通过 `perf` 对其进行区分。
 
-## Running `chrome` with perf flags
+## 使用 perf 标志运行 `chrome` { #running-chrome-with-perf-flags }
 
-1. You can use the same V8 flags to profile chrome itself. Follow the instructions above for the correct V8 flags and add the [required chrome gn flags](https://chromium.googlesource.com/chromium/src/+/master/docs/profiling.md#preparing-your-checkout) to your chrome build.
+1. 你可以使用相同的 V8 标志来分析 chrome 本身。请按照上述说明获取正确的 V8 标志，然后将[所需的 chrome gn 标志](https://chromium.googlesource.com/chromium/src/+/master/docs/profiling.md#preparing-your-checkout)添加到 chrome 构建中。
 
-1. Once your build is ready, you can profile a website with both, full symbols for C++ and JS code.
+1. 构建完成后，你就可以使用 C++ 和 JS 代码的完整符号对网站进行分析。
 
     ```
     out/x64.release/chrome --user-data-dir=`mktemp -d` --no-sandbox --incognito \
         --js-flags='--perf-prof --no-write-protect-code-memory --interpreted-frames-native-stack'
     ```
 
-1. After starting up chrome, find the renderer process id using the Task Manager and use it to start profiling:
+1. 启动 chrome 后，使用“任务管理器”（Task Manager）找到渲染器（renderer）进程 ID，并使用它开始分析：
 
     ```
     perf record --call-graph -p $RENDERER_PID -k 1 -o perf.data
     ```
 
-1. Navigate to your website and then continue with the next section on how to evaluate the perf output.
+1. 导航到你的网站，然后继续有关如何评估性能输出的下一部分。
 
-## Evaluating perf output
+## 评估 perf 输出 { #evaluating-perf-output }
 
-After execution finishes, you must combine the static information gathered from the `perf` tool with the performance samples output by V8 for JIT code:
+执行完成后，必须将从 `perf` 工具收集的静态信息与 V8 针对 JIT 代码输出的性能样本结合起来：
 
 ```bash
 perf inject -j -i perf.data -o perf.data.jitted
 ```
 
-Finally you can use the Linux `perf` tool to explore the performance bottlenecks in your JITted code:
+最后，你可以使用 Linux `perf` 工具来探索你的 JITted 代码中的性能瓶颈：
 
 ```bash
 perf report -i perf.data.jitted
 ```
 
-You can also convert `perf.data.jitted` file with [perf_to_profile](https://github.com/google/perf_data_converter) to work with [pprof](https://github.com/google/pprof) to generate more visualizations:
+你还可以将 `perf.data.jitted` 文件与 [perf_to_profile](https://github.com/google/perf_data_converter) 转换为与 [pprof](https://github.com/google/pprof) 一起使用，以生成更多可视化效果：
 
 ```
 ~/Documents/perf_data_converter/bazel-bin/src/perf_to_profile -j -i perf.data.jitted -o out.prof;
