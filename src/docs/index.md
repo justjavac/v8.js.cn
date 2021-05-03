@@ -73,6 +73,6 @@ V8 允许 C++ 应用程序将自己的对象和函数公开给 JavaScript 代码
 - 编写可优化的 JavaScript
     - [使用 V8 的基于样本的分析器](/docs/profile/)
     - [使用 V8 分析 Chromium](/docs/profile-chromium/)
-    - [使用 Linux `perf`](/docs/linux-perf/)
+    - [在 V8 上使用 Linux `perf`](/docs/linux-perf/)
     - [追踪 V8](/docs/trace/)
-    - [使用运行时调用分析](/docs/rcs)
+    - [使用运行时调用统计（Runtime Call Stats）](/docs/rcs)
