@@ -1,0 +1,17 @@
+<!doctype html><html lang=zh-CN><meta charset=utf-8><title>Debugging builtins with GDB · V8</title><meta content="width=device-width,initial-scale=1" name=viewport><meta content="dark light" name=color-scheme><link href=/_css/main.css rel=stylesheet><link href=/.webmanifest rel=manifest><meta content=#4285F4 name=theme-color><link href=/blog.atom rel=alternate title="V8 Atom feed" type=application/atom+xml><link href=/features.atom rel=alternate title="V8 JS/Wasm features Atom feed" type=application/atom+xml><script>document.documentElement.className+=' js'</script><meta content="As of V8 v6.9, it’s possible to create breakpoints in GDB to debug CSA / ASM / Torque builtins." name=description><header id=header><h1><a href=/ >V8</a></h1><a href=#navigation-toggle id=nav-toggle>显示导肮</a><nav><ul><li><a href=/ >主页</a><li><a href=/blog/ >博客</a><li class=active><a href=/docs/ >文档</a><li><a href=/features title="JavaScript 和 WebAssembly 的新特性">JS/Wasm 新特性</a><li><a href=/grant>Research</a></ul></nav></header><main id=main><h1>Debugging builtins with GDB</h1><p>As of V8 v6.9, it’s possible to create breakpoints in GDB (and possibly other debuggers) to debug CSA / ASM / Torque builtins.<pre><code>(gdb) tb i::Isolate::Init
+Temporary breakpoint 1 at 0x7ffff706742b: i::Isolate::Init. (2 locations)
+(gdb) r
+Thread 1 "d8" hit Temporary breakpoint 1, 0x00007ffff7c55bc0 in Isolate::Init
+(gdb) br Builtins_RegExpPrototypeExec
+Breakpoint 2 at 0x7ffff7ac8784
+(gdb) c
+Thread 1 "d8" hit Breakpoint 2, 0x00007ffff7ac8784 in Builtins_RegExpPrototypeExec ()
+</code></pre><p>Note that it works well to use a temporary breakpoint (shortcut <code>tb</code> in GDB) instead of a regular breakpoint (<code>br</code>) for this, since you only need it at process start.<p>Builtins are also visible in stack traces:<pre><code>(gdb) bt
+#0  0x00007ffff7ac8784 in Builtins_RegExpPrototypeExec ()
+#1  0x00007ffff78f5066 in Builtins_ArgumentsAdaptorTrampoline ()
+#2  0x000039751d2825b1 in ?? ()
+#3  0x000037ef23a0fa59 in ?? ()
+#4  0x0000000000000000 in ?? ()
+</code></pre><p>Caveats:<ul><li><p>Only works with embedded builtins.<li><p>Breakpoints can only be set at the start of the builtin.<li><p>The initial breakpoint in <code>Isolate::Init</code> is needed prior to setting the builtin breakpoint, since GDB modifies the binary and we verify a hash of the builtins section in the binary at startup. Otherwise, V8 complains about a hash mismatch:<pre><code># Fatal error in ../../src/isolate.cc, line 117
+# Check failed: d.Hash() == d.CreateHash() (11095509419988753467 vs. 3539781814546519144).
+</code></pre></ul></main><footer id=footer><div><nav><a href=https://v8.dev/docs/gdb>原文</a> · <a href=/logo/ >商标</a> · <a href=/terms/ >条款</a> · <a href=https://policies.google.com/privacy/ >隐私</a> · <a href=https://twitter.com/v8js rel="me nofollow">Twitter</a> · <a href=https://github.com/justjavac/v8.js.cn/tree/master/./src/docs/gdb.md rel=nofollow>在 GitHub 编辑此页面</a></nav><dark-mode-toggle dark="Light Theme" light="Dark Theme" permanent></dark-mode-toggle></div><p><small>如无特殊说明，此 V8 项目中使用到的所有示例代码均基于 <a href=https://chromium.googlesource.com/v8/v8.git/+/master/LICENSE>V8's BSD-style license</a> 发布。页面中的文字内容采用 <a href=https://creativecommons.org/licenses/by/3.0/ >the Creative Commons Attribution 3.0 License</a> 进行许可。更详细的信息可以在 <a href=/terms#site-policies>站点策略</a> 中找到。</small></footer><script src=/_js/dark-mode-toggle.mjs type=module></script><script src=/_js/main.mjs type=module></script><script src=/_js/legacy.js nomodule></script>

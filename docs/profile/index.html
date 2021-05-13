@@ -1,0 +1,62 @@
+<!doctype html><html lang=zh-CN><meta charset=utf-8><title>使用 V8 的基于样本的分析器 · V8</title><meta content="width=device-width,initial-scale=1" name=viewport><meta content="dark light" name=color-scheme><link href=/_css/main.css rel=stylesheet><link href=/.webmanifest rel=manifest><meta content=#4285F4 name=theme-color><link href=/blog.atom rel=alternate title="V8 Atom feed" type=application/atom+xml><link href=/features.atom rel=alternate title="V8 JS/Wasm features Atom feed" type=application/atom+xml><script>document.documentElement.className+=' js'</script><meta content="本文档说明了如何使用 V8 的基于样本的分析器。" name=description><header id=header><h1><a href=/ >V8</a></h1><a href=#navigation-toggle id=nav-toggle>显示导肮</a><nav><ul><li><a href=/ >主页</a><li><a href=/blog/ >博客</a><li class=active><a href=/docs/ >文档</a><li><a href=/features title="JavaScript 和 WebAssembly 的新特性">JS/Wasm 新特性</a><li><a href=/grant>Research</a></ul></nav></header><main id=main><h1>使用 V8 的基于样本的分析器</h1><p>V8 具有内置的基于样本的性能分析器。 默认情况下，性能分析是关闭的，但可以通过 <code>--prof</code> 命令行选项启用。 采样器记录 JavaScript 和 C/C++ 代码的堆栈。<h2 id=build>构建 <a href=#build class=bookmark>#</a></h2><p>按照 <a href=/docs/build-gn>用 GN 构建</a> 中的说明构建 <code>d8</code> shell。<h2 id=command-line>命令行 <a href=#command-line class=bookmark>#</a></h2><p>要开始分析，请使用 <code>--prof</code> 选项。分析时，V8 会生成一个 <code>v8.log</code> 文件，其中包含分析数据。<p>Windows:<pre class=language-bash><code class=language-bash>build<span class="token punctuation">\</span>Release<span class="token punctuation">\</span>d8 --prof script.js</code></pre><p>其它平台（如果要分析 <code>x64</code> 构建，请用 <code>x64</code> 替换 <code>ia32</code>）：<pre class=language-bash><code class=language-bash>out/ia32.release/d8 --prof script.js</code></pre><h2 id=process-the-generated-output>处理生成的输出 <a href=#process-the-generated-output class=bookmark>#</a></h2><p>日志文件的处理是使用 d8 shell 运行的 JS 脚本完成的。为此，<code>d8</code> 二进制文件（或在 Windows 上为 symlink 或 <code>d8.exe</code>）必须位于 V8 检出的根目录中，或位于环境变量 <code>D8_PATH</code> 指定的路径中。注意：此二进制文件仅用于处理日志，而不用于实际的性能分析，因此它的版本无关紧要。<p><strong>确保用于分析的 <code>d8</code> 不是使用 <code>is_component_build</code> 构建的！</strong><p>Windows:<pre class=language-bash><code class=language-bash>tools<span class="token punctuation">\</span>windows-tick-processor.bat v8.log</code></pre><p>Linux:<pre class=language-bash><code class=language-bash>tools/linux-tick-processor v8.log</code></pre><p>macOS:<pre class=language-bash><code class=language-bash>tools/mac-tick-processor v8.log</code></pre><h2 id=web-ui-for---prof><code>--prof</code>的 Web UI <a href=#web-ui-for---prof class=bookmark>#</a></h2><p>用 <code>--preprocess</code> 预处理日志（以解析 C++ 符号等）。<pre class=language-bash><code class=language-bash><span class="token variable">$V8_PATH</span>/tools/linux-tick-processor --preprocess <span class="token operator">></span> v8.json</code></pre><p>在浏览器中打开 <a href=https://v8.dev/tools/head/profview><code>tools/profview/index.html</code></a>，然后在其中选择 <code>v8.json</code> 文件。<h2 id=example-output>输出示例 <a href=#example-output class=bookmark>#</a></h2><pre><code>Statistical profiling result from benchmarks\v8.log, (4192 ticks, 0 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+      9    0.2%    0.0%  C:\WINDOWS\system32\ntdll.dll
+      2    0.0%    0.0%  C:\WINDOWS\system32\kernel32.dll
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+    741   17.7%   17.7%  LazyCompile: am3 crypto.js:108
+    113    2.7%    2.7%  LazyCompile: Scheduler.schedule richards.js:188
+    103    2.5%    2.5%  LazyCompile: rewrite_nboyer earley-boyer.js:3604
+    103    2.5%    2.5%  LazyCompile: TaskControlBlock.run richards.js:324
+     96    2.3%    2.3%  Builtin: JSConstructCall
+    ...
+
+ [C++]:
+   ticks  total  nonlib   name
+     94    2.2%    2.2%  v8::internal::ScavengeVisitor::VisitPointers
+     33    0.8%    0.8%  v8::internal::SweepSpace
+     32    0.8%    0.8%  v8::internal::Heap::MigrateObject
+     30    0.7%    0.7%  v8::internal::Heap::AllocateArgumentsObject
+    ...
+
+
+ [GC]:
+   ticks  total  nonlib   name
+    458   10.9%
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 2.0% are not shown.
+
+   ticks parent  name
+    741   17.7%  LazyCompile: am3 crypto.js:108
+    449   60.6%    LazyCompile: montReduce crypto.js:583
+    393   87.5%      LazyCompile: montSqrTo crypto.js:603
+    212   53.9%        LazyCompile: bnpExp crypto.js:621
+    212  100.0%          LazyCompile: bnModPowInt crypto.js:634
+    212  100.0%            LazyCompile: RSADoPublic crypto.js:1521
+    181   46.1%        LazyCompile: bnModPow crypto.js:1098
+    181  100.0%          LazyCompile: RSADoPrivate crypto.js:1628
+    ...
+</code></pre><h2 id=profiling-web-applications>分析 Web 应用程序 <a href=#profiling-web-applications class=bookmark>#</a></h2><p>当今高度优化的虚拟机可以以惊人的速度运行 Web 应用程序。但是，一个人不应该仅仅依靠它们来获得出色的性能：精心优化的算法或较低开销的函数通常可以在所有浏览器上实现许多倍的速度提升。<a href=https://developers.google.com/web/tools/chrome-devtools/ >Chrome DevTools</a> 的 <a href=https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/reference>CPU Profiler</a> 可帮助你分析代码的瓶颈。但是有时候，你需要更深入、更细致：这就是 V8 的内部分析器派上用场的地方。<p>让我们使用该分析器检查 Microsoft 与 IE10 一起<a href=https://blogs.msdn.microsoft.com/ie/2012/11/13/ie10-fast-fluid-perfect-for-touch-and-available-now-for-windows-7/ >发布</a>的 <a href=https://web.archive.org/web/20130313064141/http://ie.microsoft.com/testdrive/performance/mandelbrotexplorer/ >Mandelbrot explorer 演示程序</a>。演示版本发布后，V8 修复了一个错误，该错误会不必要地减慢计算速度（因此，该演示博客中的 Chrome 性能不佳），并进一步优化了引擎，实现了比标准系统库提供的更快的 <code>exp()</code> 近似值。进行了这些更改之后，<strong>该演示程序的运行速度比以前在 Chrome 中测得的快 8 倍</strong>。<p>但是，如果你希望代码在所有浏览器上运行得更快呢？ 首先，你应该要<strong>分析导致 CPU 繁忙的原因</strong>。使用以下命令行参数运行 Chrome（Windows 和 Linux <a href=https://tools.google.com/dlpage/chromesxs>Canary</a>），这将让它输出指定 URL 的分析器的 tick 信息（在 <code>v8.log</code> 文件中），在我们的示例中，是没有 web workers 的 Mandelbrot 演示程序的本地版本：<pre class=language-bash><code class=language-bash>./chrome --js-flags<span class="token operator">=</span><span class="token string">'--prof'</span> --no-sandbox <span class="token string">'http://localhost:8080/'</span></code></pre><p>在准备测试用例时，请确保它在加载后立即开始工作，并在计算完成后关闭 Chrome（按 Alt+F4 键），以便在日志文件中仅保留你关心的 ticks。另请注意，使用此技术尚未正确配置 web workers。<p>然后，使用 V8（或新的实用 Web 版本）附带的 <code>tick-processor</code> 脚本处理 <code>v8.log</code> 文件：<pre class=language-bash><code class=language-bash>v8/tools/linux-tick-processor v8.log</code></pre><p>以下是经过处理的输出的有趣片段，应引起你的注意：<pre><code>Statistical profiling result from null, (14306 ticks, 0 unaccounted, 0 excluded).
+ [Shared libraries]:
+   ticks  total  nonlib   name
+   6326   44.2%    0.0%  /lib/x86_64-linux-gnu/libm-2.15.so
+   3258   22.8%    0.0%  /.../chrome/src/out/Release/lib/libv8.so
+   1411    9.9%    0.0%  /lib/x86_64-linux-gnu/libpthread-2.15.so
+     27    0.2%    0.0%  /.../chrome/src/out/Release/lib/libwebkit.so
+</code></pre><p>顶部显示 V8 在特定于 OS 的系统库中花费的时间比在其自己的代码中花费的时间更多。让我们通过检查 "bottom up" 的输出部分来了解其原因，在该部分中，你可以理解缩进的行是“被...所调用”（以 <code>*</code> 开头的行表示该函数已被 TurboFan 优化）：<pre><code>[Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 2.0% are not shown.
+
+   ticks parent  name
+   6326   44.2%  /lib/x86_64-linux-gnu/libm-2.15.so
+   6325  100.0%    LazyCompile: *exp native math.js:91
+   6314   99.8%      LazyCompile: *calculateMandelbrot http://localhost:8080/Demo.js:215
+</code></pre><p><strong>在系统库中执行 <code>exp()</code> 函数花费的总时间超过了44％</strong>！为调用系统库增加了一些开销，这意味着约有三分之二的总时间花费在评估 <code>Math.exp()</code> 上。<p>如果你查看 JavaScript 代码，将会看到 <code>exp()</code> 仅用于生成平滑的灰度调色板。产生平滑灰度调色板的方法有很多，但让我们假设你真的很喜欢指数渐变。这是算法优化发挥作用的地方。<p>你会注意到，调用 <code>exp()</code> 的范围是 <code>-4 &lt; x &lt; 0</code>，因此我们可以用该范围的<a href=https://en.wikipedia.org/wiki/Taylor_series>泰勒近似值</a>安全地替换它，从而提供相同的平滑梯度，并且只需要一次乘法和几次除法：<pre><code>exp(x) ≈ 1 / ( 1 - x + x * x / 2) for -4 &lt; x &lt; 0
+</code></pre><p>以这种方式对算法进行调整，与最新的 Canary 版本相比可将性能提高 30％，与 Chrome Canary 上基于 <code>Math.exp()</code> 的系统库相比，性能提高了 5 倍。<figure><img alt="" height=355 loading=lazy src=/_img/docs/profile/mandelbrot.png width=592></figure><p>此示例说明了 V8 的内部分析器如何帮助你更深入地了解代码瓶颈，以及更智能的算法可以进一步提高性能。<p>要了解有关什么样的基准代表当今复杂而苛刻的 Web 应用程序的更多信息，请阅读 <a href=/blog/real-world-performance>V8 如何衡量实际性能</a>。<article><footer><div><p>译者：不如怀念 (<a href=https://github.com/wang1212>@wang1212</a>).</div></footer></article></main><footer id=footer><div><nav><a href=https://v8.dev/docs/profile>原文</a> · <a href=/logo/ >商标</a> · <a href=/terms/ >条款</a> · <a href=https://policies.google.com/privacy/ >隐私</a> · <a href=https://twitter.com/v8js rel="me nofollow">Twitter</a> · <a href=https://github.com/justjavac/v8.js.cn/tree/master/./src/docs/profile.md rel=nofollow>在 GitHub 编辑此页面</a></nav><dark-mode-toggle dark="Light Theme" light="Dark Theme" permanent></dark-mode-toggle></div><p><small>如无特殊说明，此 V8 项目中使用到的所有示例代码均基于 <a href=https://chromium.googlesource.com/v8/v8.git/+/master/LICENSE>V8's BSD-style license</a> 发布。页面中的文字内容采用 <a href=https://creativecommons.org/licenses/by/3.0/ >the Creative Commons Attribution 3.0 License</a> 进行许可。更详细的信息可以在 <a href=/terms#site-policies>站点策略</a> 中找到。</small></footer><script src=/_js/dark-mode-toggle.mjs type=module></script><script src=/_js/main.mjs type=module></script><script src=/_js/legacy.js nomodule></script>
