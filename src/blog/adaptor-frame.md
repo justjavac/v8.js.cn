@@ -1,22 +1,24 @@
 ---
-title: 'Faster JavaScript calls'
+title: '更快的 JavaScript 调用'
 author: 'Victor Gomes, the frame shredder'
 avatars:
   - 'victor-gomes'
 date: 2021-02-15
 tags:
   - internals
-description: 'Faster JavaScript calls by removing the arguments adaptor frame'
+description: '通过删除参数 adaptor frame 来加快 JavaScript 调用'
 tweet: '1361337569057865735'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
 
-JavaScript allows calling a function with a different number of arguments than the expected number of parameters, i.e., one can pass fewer or more arguments than the declared formal parameters. The former case is called under-application and the latter is called over-application.
+JavaScript 允许使用与预期的参数数量不同的参数数量来调用函数，即，与所声明的形式参数相比，可以传递更少或更多的参数。前者称为 under-application，后者称为 over-application。
 
-In the under-application case, the remaining parameters get assigned the undefined value. In the over-application case, the remaining arguments can be accessed by using the rest parameter and the `arguments` property, or they are simply superfluous and they can be ignored. Many Web/Node.js frameworks nowadays use this JS feature to accept optional parameters and create a more flexible API.
+在 under-application 的情况下，将为其余参数分配未定义（undefined）的值。在 over-application 的情况下，可以使用剩余（rest）参数和 `arguments` 属性访问其余参数，或者它们只是多余的，可以忽略。如今，许多 Web/Node.js 框架都使用此 JS 特性来接受可选参数并创建更灵活的 API。
 
-Until recently, V8 had a special machinery to deal with arguments size mismatch: the arguments adaptor frame. Unfortunately, argument adaption comes at a performance cost, but is commonly needed in modern front-end and middleware frameworks. It turns out that, with a clever trick, we can remove this extra frame, simplify the V8 codebase and get rid of almost the entire overhead.
+直到最近，V8 都有一种特殊的机制来处理参数大小不匹配的情况：arguments adaptor frame。不幸的是，参数自适应（argument adaption）是以性能为代价的，但是在现代的前端和中间件框架中通常是必需的。事实证明，通过一个巧妙的技巧，我们可以删除此多余的帧（frame），简化 V8 代码库，并消除几乎所有的开销。
 
-We can calculate the performance impact of removing the arguments adaptor frame through a micro-benchmark.
+我们可以通过微基准测试（micro-benchmark）计算删除 arguments adaptor frame 对性能的影响。
 
 ```js
 console.time();
@@ -27,23 +29,23 @@ for (let i = 0; i <  N; i++) {
 console.timeEnd();
 ```
 
-![Performance impact of removing the arguments adaptor frame, as measured through a micro-benchmark.](/_img/v8-release-89/perf.svg)
+![通过微基准测试，测量删除 arguments adaptor frame 的性能影响。](/_img/v8-release-89/perf.svg)
 
-The graph shows that there is no overhead anymore when running on [JIT-less mode](https://v8.dev/blog/jitless) (Ignition) with a 11.2% performance improvement. When using [TurboFan](https://v8.dev/docs/turbofan), we get up to 40% speedup.
+该图显示，在 [JIT-less 模式](https://v8.dev/blog/jitless)（Ignition）下运行时，不再有开销，并且性能提高了 11.2％。使用 [TurboFan](https://v8.dev/docs/turbofan) 时，我们的速度提高了 40％。
 
-This microbenchmark was naturally designed to maximise the impact of the arguments adaptor frame. We have however seen a considerable improvement in many benchmarks, such as in [our internal JSTests/Array benchmark](https://chromium.googlesource.com/v8/v8/+/b7aa85fe00c521a704ca83cc8789354e86482a60/test/js-perf-test/JSTests.json) (7%) and in [Octane2](https://github.com/chromium/octane) (4.6% in Richards and 6.1% in EarleyBoyer).
+这个微基准测试自然是为了最大程度地提高 arguments adaptor frame 的影响而设计的。但是，我们已经看到许多基准测试都有相当大的改进，例如[我们的 内部 JSTests/Array 基准测试](https://chromium.googlesource.com/v8/v8/+/b7aa85fe00c521a704ca83cc8789354e86482a60/test/js-perf-test/JSTests.json)（7％）和 [Octane2](https://github.com/chromium/octane)（Richards 为 4.6％，EarleyBoyer 为 6.1％）中。
 
-## TL;DR: Reverse the arguments
+## TL;DR: 颠倒参数顺序 { #tl;dr:-reverse-the-arguments }
 
-The whole point of this project was to remove the arguments adaptor frame, which offers a consistent interface to the callee when accessing its arguments in the stack. In order to do that, we needed to reverse the arguments in the stack and added a new slot in the callee frame containing the actual argument count. The figure below shows the example of a typical frame before and after the change.
+该项目的重点是删除 arguments adaptor frame，该帧为被调用者（callee）在访问堆栈中的参数时提供了一致的接口。为此，我们需要颠倒堆栈中的参数顺序，并在被调用者帧（callee frame）中添加一个包含实际参数数量的新插槽（slot）。下图显示了更改前后的典型帧（typical frame）示例。
 
-![A typical JavaScript stack frame before and after removing the arguments adaptor frame.](/_img/adaptor-frame/frame-diff.svg)
+![删除  arguments adaptor frame 之前和之后的典型 JavaScript 栈帧（stack frame）。](/_img/adaptor-frame/frame-diff.svg)
 
-## Making JavaScript calls faster
+## 使 JavaScript 调用更快 { #making-javascript-calls-faster }
 
-To appreciate what we have done to make calls faster, let’s see how V8 performs a call and how the arguments adaptor frame works.
+为了理解为加快调用速度所做的工作，我们来看看 V8 如何执行调用以及 arguments adaptor frame 如何工作。
 
-What happens inside V8 when we invoke a function call in JS? Let’s suppose the following JS script:
+当我们在 JS 中执行函数调用时，在 V8 内部会发生什么？让我们假设有以下 JS 脚本：
 
 ```js
 function add42(x) {
@@ -52,11 +54,11 @@ function add42(x) {
 add42(3);
 ```
 
-![Flow of execution inside V8 during a function call.](/_img/adaptor-frame/flow.svg)
+![V8 内部在函数调用期间的执行流程。](/_img/adaptor-frame/flow.svg)
 
-## Ignition
+## Ignition { #ignition }
 
-V8 is a multi-tier VM. Its first tier is called [Ignition](https://v8.dev/docs/ignition), it is a bytecode stack machine with an accumulator register. V8 starts by compiling the code to [Ignition bytecodes](https://medium.com/dailyjs/understanding-v8s-bytecode-317d46c94775). The above call is compiled to the following:
+V8 是多层 VM。它的第一层称为 [Ignition](https://v8.dev/docs/ignition)，它是一个带有累加器寄存器（register）的字节码（bytecode）堆栈机。V8 首先将代码编译为 [Ignition 字节码](https://medium.com/dailyjs/understanding-v8s-bytecode-317d46c94775)。上面的调用被编译为以下内容：
 
 ```
 0d              LdaUndefined              ;; Load undefined into the accumulator
@@ -68,33 +70,33 @@ V8 is a multi-tier VM. Its first tier is called [Ignition](https://v8.dev/docs/i
 5f fa f9 02     CallNoFeedback r1, r2-r3  ;; Invoke call
 ```
 
-The first argument of a call is usually referred to as the receiver. The receiver is the `this` object inside a JSFunction, and every JS function call must have one. The bytecode handler of `CallNoFeedback` needs to call the object `r1` with the arguments in the register list `r2-r3`.
+调用的第一个参数通常称为接收者（receiver）。接收者是 JS 函数（JSFunction）中的 `this` 对象，并且每个 JS 函数调用都必须有一个。`CallNoFeedback` 的字节码处理程序需要使用寄存器列表 `r2-r3` 中的参数调用对象 `r1`。
 
-Before we dive into the bytecode handler, note how registers are encoded in the bytecode. They are negative single byte integers: `r1` is encoded as `fa`, `r2` as `f9` and `r3` as `f8`. We can refer to any register ri as `fb - i`, actually as we will see, the correct encoding is `- 2 - kFixedFrameHeaderSize - i`. Register lists are encoded using the first register and the size of the list, so `r2-r3` is `f9 02`.
+在深入字节码处理程序之前，请注意寄存器是如何在字节码中编码的。它们是负的单字节整数：`r1` 编码为 `fa`，`r2` 编码为 `f9`，`r3` 编码为 `f8`。我们可以将任何寄存器 ri 称为 `fb - i`，实际上，正如我们将看到的，正确的编码是 `- 2 - kFixedFrameHeaderSize - i`。寄存器列表使用第一个寄存器和列表的大小进行编码，因此 `r2-r3` 为 `f9 02`。
 
-There are many bytecode call handlers in Ignition. You can see a list of them [here](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/interpreter/bytecodes.h;drc=3965dcd5cb1141c90f32706ac7c965dc5c1c55b3;l=184). They vary slightly from each other. There are bytecodes optimized for calls with an `undefined` receiver, for property calls, for calls with a fixed number of parameters or for generic calls. Here we analyze `CallNoFeedback` which is a generic call in which we don’t accumulate feedback from the execution.
+Ignition 中有许多字节码调用处理程序。你可以在[此处](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/interpreter/bytecodes.h;drc=3965dcd5cb1141c90f32706ac7c965dc5c1c55b3;l=184)查看它们的列表。它们彼此之间略有不同。对于使用 `undefined` 的接收者的调用，对于属性调用，对于具有固定数量的参数的调用或对于通用调用，存在优化的字节码。在这里，我们分析 `CallNoFeedback`，这是一个通用调用，在该调用中，我们不累加执行过程中的反馈。
 
-The handler of this bytecode is quite simple. It is written in [`CodeStubAssembler`](https://v8.dev/docs/csa-builtins), you can check it out [here](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/interpreter/interpreter-generator.cc;drc=6cdb24a4ce9d4151035c1f133833137d2e2881d1;l=1467). Essentially, it tailcalls to an architecture-dependent built-in [`InterpreterPushArgsThenCall`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=1277).
+该字节码的处理程序非常简单。它是用 [`CodeStubAssembler`](https://v8.dev/docs/csa-builtins) 编写的，你可以在[此处](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/interpreter/interpreter-generator.cc;drc=6cdb24a4ce9d4151035c1f133833137d2e2881d1;l=1467)查看。本质上，它是对依赖于架构（architecture-dependent）的内置 [`InterpreterPushArgsThenCall`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=1277) 的尾调用。
 
-The built-in essentially pops the return address to a temporary register, pushes all the arguments (including the receiver) and pushes back the return address. At this point, we do not know if the callee is a callable object nor how many arguments the callee is expecting, i.e., its formal parameter count.
+内置函数实际上将返回地址（return address）弹出到临时寄存器中，推入所有参数（包括接收者（receiver）），然后推回返回地址。在这一点上，我们不知道被调用者是否是可调用对象，也不知道被调用者期望多少个参数，即它的形式参数数量。
 
-![State of the frame after the execution of `InterpreterPushArgsThenCall` built-in.](/_img/adaptor-frame/normal-push.svg)
+![内置 `InterpreterPushArgsThenCall` 执行后的帧状态。](/_img/adaptor-frame/normal-push.svg)
 
-Eventually the execution tailcalls to the built-in [`Call`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=2256). There, it checks if the target is a proper function, a constructor or any callable object. It also reads the `shared function info` structure to get its formal parameter count.
+最终，对内置 [`Call`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=2256) 执行尾调用。在那里，它检查目标是否是适当的函数，构造函数或任何可调用对象。它还读取 `shared function info` 结构以获取其形式参数数量。
 
-If the callee is a function object, it tailcalls to the built-in [`CallFunction`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=2038), where a bunch of checks happen, including if we have an `undefined` object as receiver. If we have an `undefined` or `null` object as receiver, we should patch it to refer to the global proxy object, according to the [ECMA specification](https://262.ecma-international.org/11.0/#sec-ordinarycallbindthis).
+如果被调用者（callee）是一个函数对象，它将对内置的 [`CallFunction`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=2038) 进行尾调用，在其中进行一堆检查，包括是否有 `undefined` 的对象作为接收者。 如果我们有一个 `undefined` 或 `null` 的对象作为接收者，则应根据 [ECMA 规范](https://262.ecma-international.org/11.0/#sec-ordinarycallbindthis)对其进行修正，以引用全局代理对象。
 
-The execution then tailcalls to the built-in [`InvokeFunctionCode`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/codegen/x64/macro-assembler-x64.cc;drc=a723767935dec385818d1134ea729a4c3a3ddcfb;l=2781), which will in the absence of arguments mismatch just call whatever is being pointed by the field `Code` in the callee object. This could either be an optimized function or the built-in [`InterpreterEntryTrampoline`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=1037).
+然后执行对内置 [`InvokeFunctionCode`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/codegen/x64/macro-assembler-x64.cc;drc=a723767935dec385818d1134ea729a4c3a3ddcfb;l=2781) 的尾调用，在没有参数不匹配的情况下，InvokeFunctionCode 将仅调用被调用对象（callee object）中字段 `Code` 所指向的内容。这可以是优化的函数，也可以是内置的 [`InterpreterEntryTrampoline`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/builtins/x64/builtins-x64.cc;drc=8665f09771c6b8220d6020fe9b1ad60a4b0b6591;l=1037)。
 
-If we assume we’re calling a function that hasn’t been optimized yet, the Ignition trampoline will set up an `IntepreterFrame`. You can see a brief summary of the frame types in V8 [here](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/execution/frame-constants.h;drc=574ac5d62686c3de8d782dc798337ce1355dc066;l=14).
+如果我们假设要调用的函数尚未进行优化，则 Ignition trampoline 将设置一个 `IntepreterFrame`。你可以在[此处](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/execution/frame-constants.h;drc=574ac5d62686c3de8d782dc798337ce1355dc066;l=14)查看 V8 中帧类型的简短摘要。
 
-Without going into too much detail of what happens next, we can see a snapshot of the interpreter frame during the callee execution.
+无需过多讨论接下来发生的事情细节，我们可以在被调用者（callee）执行期间看到解释器帧（interpreter frame）的快照。
 
-![The `InterpreterFrame` for the call `add42(3)`.](/_img/adaptor-frame/normal-frame.svg)
+![调用 `add42(3)` 的 `InterpreterFrame`。](/_img/adaptor-frame/normal-frame.svg)
 
-We see that we have a fixed number of slots in the frame: the return address, the previous frame pointer, the context, the current function object we’re executing, the bytecode array of this function and the offset of the current bytecode we’re executing. Finally, we have a list of registers dedicated to this function (you can think of them as function locals). The `add42` function doesn’t actually have any registers, but the caller has a similar frame with 3 registers.
+我们看到帧中有固定数量的插槽（slots）：返回地址（return address），前一个帧指针（previous frame pointer），上下文（context），我们正在执行的当前函数对象，该函数的字节码数组（bytecode array）以及我们当前正在执行的字节码的偏移量（bytecode offset）。最后，我们有一个专用于此函数的寄存器列表（你可以将它们视为函数局部变量）。`add42` 函数实际上没有任何寄存器，但调用者（caller）具有类似的帧，其中包含 3 个寄存器。
 
-As expected add42 is a simple function:
+如预期的那样，add42 是一个简单的函数：
 
 ```
 25 02             Ldar a0          ;; Load the first argument to the accumulator
@@ -102,44 +104,44 @@ As expected add42 is a simple function:
 ab                Return           ;; Return the accumulator
 ```
 
-Note how we encode the argument in the `Ldar` _(Load Accumulator Register)_ bytecode: argument `1` (`a0`) is encoded with the number `02`. In fact, the encoding of any argument is simply `[ai] = 2 + parameter_count - i - 1` and the receiver `[this] = 2 + parameter_count`, or in this example `[this] = 3`. The parameter count here does not include the receiver.
+请注意我们如何在 `Ldar`_（Load Accumulator Register，负载累加器寄存器）_ 字节码中对参数进行编码：参数 `1`（`a0`）的编码为数字 `02`。实际上，任何参数的编码都是 `[ai] = 2 + parameter_count - i - 1`，接收者（receiver）的编码都是 `[this] = 2 + parameter_count`，或者说在本例中为 `[this] = 3`。此处的参数数量不包括接收者。
 
-We’re now able to understand why we encode registers and arguments this way. They simply denote an offset from the frame pointer. We can then treat argument/register load and store in the same way. The offset for the last argument from the frame pointer is `2` (previous frame pointer and the return address). That explains the `2` in the encoding. The fixed part of the interpreter frame is `6` slots (`4` from the frame pointer), so the register zero is located at offset `-5`, i.e. `fb`, register `1` at `fa`. Clever, right?
+现在，我们能够理解为什么我们用这种方式对寄存器和参数进行编码。它们只是表示与帧指针（frame pointer）的偏移量。然后，我们可以用相同的方式理解参数/寄存器的加载和存储。帧指针的最后一个参数的偏移量为 `2`（先前的帧指针和返回地址）。这就解释了编码中的 `2`。 解释器帧（interpreter frame）的固定部分是 `6` 个插槽（距帧指针 `4` 个），因此寄存器零位于偏移量 `-5` 处，即 `fb`，寄存器 `1` 位于 `fa` 处。聪明吧？
 
-Note however to be able to access the arguments, the function must know how many arguments are in the stack! The index `2` points to the last argument regardless of how many arguments there are!
+但是请注意，为了能够访问参数，该函数必须知道堆栈中有多少个参数！ 索引 `2` 指向最后一个参数，而不管有多少个参数！
 
-The bytecode handler of `Return` will finish by calling the built-in `LeaveInterpreterFrame`. This built-in essentially reads the function object to get the parameter count from the frame, pops the current frame, recovers the frame pointer, saves the return address in a scratch register, pops the arguments according to the parameter count and jumps to the address in the scratch registers.
+`Return` 的字节码处理程序将通过调用内置的 `LeaveInterpreterFrame` 来完成。该内置函数本质上是从帧中读取函数对象以获取参数数量，弹出当前帧，恢复帧指针（frame pointer），将返回地址保存在暂存器（scratch register）中，根据参数数量弹出参数并跳转到暂存器中的地址。
 
-All this flow is great! But what happens when we call a function with fewer or more arguments than its parameter count? The clever argument/register access will fail and how do we clean up the arguments at the end of the call?
+所有这一切都很棒！但是，当我们调用一个带有少于或多于其参数数量的参数的函数时，会发生什么呢？聪明的参数/寄存器访问将失败，并且如何在调用结束时清理参数？
 
-## Arguments adaptor frame
+## Arguments adaptor frame { #arguments-adaptor-frame }
 
-Let’s now call `add42` with fewer and more arguments:
+现在，使用更少和更多的参数调用 `add42`：
 
 ```js
 add42();
 add42(1, 2, 3);
 ```
 
-The JS developers between us will know that in the first case, `x` will be assigned `undefined` and the function will return `undefined + 42 = NaN`. In the second case, `x` will be assigned `1` and the function will return `43`, the remaining arguments will be ignored. Note that the caller does not know if that will happen. Even if the caller checks the parameter count, the callee could use the rest parameter or the arguments object to access all the other arguments. Actually, the arguments object can even be accessed outside `add42` in sloppy mode.
+我们 JS 开发人员将知道，在第一种情况下，`x` 将被赋值为 `undefined`，并且该函数将返回 `undefined + 42 = NaN`。在第二种情况下，`x` 将被分配为 `1`，函数将返回 `43`，其余参数将被忽略。请注意，调用者（caller）不知道是否会发生这种情况。即使调用者检查了参数数量，被调用者（callee）也可以使用剩余（rest）参数或 arguments 对象访问所有其他参数。 实际上，在非严格模式（sloppy mode）下甚至可以在 `add42` 外部访问 arguments 对象。
 
-If we follow the same steps as before, we will first call the built-in `InterpreterPushArgsThenCall`. It will push the arguments to the stack like so:
+如果我们执行与之前相同的步骤，则将首先调用内置的 `InterpreterPushArgsThenCall`。它会将参数推入堆栈，如下所示：
 
-![State of the frames after the execution of `InterpreterPushArgsThenCall` built-in.](/_img/adaptor-frame/adaptor-push.svg)
+![内置 `InterpreterPushArgsThenCall` 执行后的帧状态。](/_img/adaptor-frame/adaptor-push.svg)
 
-Continuing the same procedure as before, we check if the callee is a function object, get its parameter count and patch the receiver to the global proxy. Eventually we reach `InvokeFunctionCode`.
+继续与之前相同的过程，我们检查被调用者（callee）是否为函数对象，获取其参数数量，并将接收者修正到全局代理（global proxy）。最终，我们到达了 `InvokeFunctionCode` 。
 
-Here instead of jumping to the `Code` in the callee object. We check that we have a mismatch between argument size and parameter count and jump to `ArgumentsAdaptorTrampoline`.
+在这里，而不是跳转到被调用者（callee）对象中的 `Code`。我们检查参数个数（argument size）和参数数量之间是否不匹配，然后跳转到 `ArgumentsAdaptorTrampoline`。
 
-In this built-in, we build an extra frame, the infamous arguments adaptor frame. Instead of explaining what happens inside the built-in, I will just present you the state of the frame before the built-in calls the callee’s `Code`. Note that this is a proper `x64 call` (not a `jmp`) and after the execution of the callee we will return to the `ArgumentsAdaptorTrampoline`. This is a contrast with `InvokeFunctionCode` that tailcalls.
+在此内置函数中，我们构建了一个额外的帧，即臭名昭著的 arguments adaptor frame。在不解释内置函数内部实现的情况下，我将向你介绍内置函数调用被调用者的 `Code` 之前的帧状态。请注意，这是一个恰当的 `x64 调用`（不是 `jmp`），在执行被调用者之后，我们将返回到 `ArgumentsAdaptorTrampoline`。这与尾调用的 `InvokeFunctionCode` 形成对比。
 
-![Stack frames with arguments adaptation.](/_img/adaptor-frame/adaptor-frames.svg)
+![带有参数自适应（arguments adaptation）的堆栈帧（Stack frames）。](/_img/adaptor-frame/adaptor-frames.svg)
 
-You can see that we create another frame that copies all the arguments necessary in order to have precisely the parameter count of arguments on top of the callee frame. It creates an interface to the callee function, so that the latter does not need to know the number of arguments. The callee will always be able to access its parameters with the same calculation as before, that is, `[ai] = 2 + parameter_count - i - 1`.
+你可以看到，我们创建了另一个帧，该帧复制了所有必需的参数，以使 arguments 的参数数量精确地位于被调用者帧（callee frame）的顶部。它创建了被调用者（callee）函数的接口，因此后者无需知道参数的数量。被调用者（callee）将始终能够使用与以前相同的计算来访问其参数，即 `[ai] = 2 + parameter_count - i - 1`。
 
-V8 has special built-ins that understand the adaptor frame whenever it needs to access the remaining arguments through the rest parameter or the arguments object. They will always need to check the adaptor frame type on top of the callee’s frame and then act accordingly.
+V8 具有特殊的内置函数，它们在需要通过剩余（rest）参数或 arguments 对象访问其余参数时就了解适配器帧（adaptor frame）。它们将始终需要检查被调用者帧（callee’s frame）上方的适配器帧类型（adaptor frame type），然后采取相应措施。
 
-As you can see, we solve the argument/register access issue, but we create a lot of complexity. Every built-in that needs to access all the arguments will need to understand and check the existence of the adaptor frame. Not only that, we need to be careful to not access stale and old data. Consider the following changes to `add42`:
+如你所见，我们解决了参数/寄存器访问问题，但是却造成了很多复杂性。每个需要访问所有参数的内置函数都需要了解并检查适配器帧（adaptor frame）的存在。不仅如此，我们还需要注意不要访问陈旧的旧数据。考虑对 `add42` 的以下更改：
 
 ```js
 function add42(x) {
@@ -148,7 +150,7 @@ function add42(x) {
 }
 ```
 
-The bytecode array now is:
+现在，字节码数组为：
 
 ```
 25 02             Ldar a0       ;; Load the first argument to the accumulator
@@ -157,68 +159,68 @@ The bytecode array now is:
 ab                Return        ;; Return the accumulator
 ```
 
-As you can see, we now modify `a0`. So, in the case of a call `add42(1, 2, 3)` the slot in the arguments adaptor frame will be modified, but the caller frame will still contain the number `1`. We need to be careful that the arguments object is accessing the modified value instead of the stale one.
+如你所见，我们现在修改 `a0`。因此，在调用 `add42(1, 2, 3)` 的情况下，arguments adaptor frame 中的插槽（slot）将被修改，但调用者帧（caller frame）仍将包含数字 `1`。我们需要注意，参数对象正在访问修改后的值，而不是陈旧的值。
 
-Returning from the function is simple, albeit slow. Remember what `LeaveInterpreterFrame` does? It basically pops the callee frame and the arguments up to the parameter count number. So when we return to the arguments adaptor stub, the stack looks like so:
+从函数返回很简单，尽管很慢。还记得 `LeaveInterpreterFrame` 做什么吗？它基本上会弹出被调用者帧（callee frame）和逐个弹出参数直到参数个数的数量为止。因此，当我们返回 arguments adaptor stub 时，堆栈如下所示：
 
-![State of the frames after the execution of the callee `add42`.](/_img/adaptor-frame/adaptor-frames-cleanup.svg)
+![`add42`执行被调用者（callee）之后的帧状态。State of the frames after the execution of the callee `add42`.](/_img/adaptor-frame/adaptor-frames-cleanup.svg)
 
-We just need to pop the number of arguments, pop the adaptor frame, pop all the arguments according to the actual arguments count and return to the caller execution.
+我们只需要弹出参数数量，弹出 adaptor frame，根据实际参数数量弹出所有参数，然后返回到调用者（caller）执行即可。
 
-TL;DR: the arguments adaptor machinery is not only complex, but costly.
+TL;DR: arguments adaptor 机制不仅复杂，而且成本很高。
 
-## Removing the arguments adaptor frame
+## 移除 arguments adaptor frame { #removing-the-arguments-adaptor-frame }
 
-Can we do better? Can we remove the adaptor frame? It turns out that we can indeed.
+我们可以做得更好吗？我们可以移除 adaptor frame 吗？ 事实证明，我们确实可以。
 
-Let’s review our requirements:
+让我们回顾一下我们的要求：
 
-1. We need to be able to access the arguments and registers seamlessly like before. No checks can be done when accessing them. That would be too expensive.
-2. We need to be able to construct the rest parameter and the arguments object from the stack.
-3. We need to be able to easily clean up an unknown number of arguments when returning from a call.
-4. And, of course, we want to do that without an extra frame!
+1. 我们需要能够像以前一样无缝访问参数和寄存器。访问它们时不进行检查。因为那样的成本太昂贵了。
+2. 我们需要能够从堆栈中构造剩余（rest）参数和 arguments 对象。
+3. 从调用返回时，我们需要能够轻松清理未知数量的参数。
+4. 而且，当然我们希望没有额外的帧！
 
-If we want to eliminate the extra frame, then we need to decide where to put the arguments: either in the callee frame or in the caller frame.
+如果要消除多余的帧，则需要确定将参数放在哪里：在被调用者帧（callee frame）中还是在调用者帧（caller frame）中。
 
-### Arguments in the callee frame
+### Arguments 在 callee frame 中 { #arguments-in-the-callee-frame }
 
-Let’s suppose we put the arguments in the callee frame. This seems actually a good idea, since whenever we pop the frame, we also pop all the arguments at once!
+假设我们将参数（arguments）放在被调用者帧（callee frame）中。这实际上似乎是一个好主意，因为无论何时弹出帧，我们也会立即弹出所有参数！
 
-The arguments would need to be located somewhere between the saved frame pointer and the end of the frame. It entails that the size of the frame will not be statically known. Accessing an argument will still be easy, it is a simple offset from the frame pointer. But accessing a register is now much more complicated, since it varies according to the number of the arguments.
+参数必须位于保存的帧指针（frame pointer）和帧末尾之间的某个位置。这就要求帧的大小不会被静态地知道。访问参数仍然很容易，这是与帧指针的简单偏移量。但是现在访问寄存器要复杂得多，因为它根据参数的数量而有所不同。
 
-The stack pointer always points to the last register, we could then use it to access the registers without knowing the arguments count. This approach might actually work, but it has a major drawback. That would entail duplicating all the bytecodes that can access registers and arguments. We would need a `LdaArgument` and a `LdaRegister` instead of simply `Ldar`. Of course, we could also check if we are accessing an argument or a register (positive or negative offsets), but that would require a check in every argument and register access. Clearly too expensive!
+堆栈指针（stack pointer）始终指向最后一个寄存器（register），然后我们可以使用它来访问寄存器而无需知道参数数。这种方法实际上可能有效，但是它有一个主要缺点。那将需要复制所有可以访问寄存器和参数的字节码。我们需要一个 `LdaArgument` 和一个 `LdaRegister` 来代替 `Ldar`。当然，我们还可以检查是否正在访问参数或寄存器（正或负偏移量），但这将需要检查每个参数并进行寄存器访问。显然成本太昂贵了！
 
-### Arguments in the caller frame
+### Arguments in the caller frame { #arguments-in-the-caller-frame }
 
-Okay… what if we stick with the arguments in the caller frame?
+好吧……如果我们坚持将参数（arguments）放在调用者帧（caller frame）中，该怎么办？
 
-Remember how to calculate the offset of the argument `i` in a frame: `[ai] = 2 + parameter_count - i - 1`. If we have all arguments (not only the parameters), the offset will be `[ai] = 2 + argument_count - i - 1`. That is, for every argument access, we would need to load the actual argument count.
+记住如何计算一帧中参数 `i` 的偏移量：`[ai] = 2 + parameter_count - i - 1`。如果我们拥有所有 arguments（不仅是 parameters），则偏移量将为 `[ai] = 2 + argument_count - i - 1`。也就是说，对于每次参数（argument）访问，我们都需要加载实际的参数计数（argument count）。
 
-But what happens if we reverse the arguments? Now the offset can be simply calculated as `[ai] = 2 + i`. We don’t need to know how many arguments are in the stack, but if we can guarantee that we'll always have at least the parameter count of arguments in the stack, then we can always use this scheme to calculate the offset.
+但是，如果我们颠倒参数的顺序会发生什么呢？现在可以简单地将偏移量计算为 `[ai] = 2 + i`。我们不需要知道堆栈中有多少个参数，但是如果我们可以保证至少在堆栈中至少有参数个数（parameter count of arguments），那么我们就可以始终使用此方案来计算偏移量。
 
-In other words, the number of arguments pushed in the stack will always be the maximum between the number of arguments and the formal parameter count, and it will be padded with undefined objects if needed.
+换句话说，压入堆栈的参数数量将始终是参数数量（number of arguments）与形式参数数量（formal parameter count）之间的最大值，并且在需要时将使用 undefined 对象进行填充。
 
-This has yet another bonus! The receiver is always located in the same offset for any JS function, just above the return address: `[this] = 2`.
+这还有另一个好处！对于任何 JS 函数，接收者（receiver）始终位于相同的偏移量处，位于返回地址（return address）的正上方：`[this] = 2`。
 
-This is a clean solution for our requirement number `1` and number `4`. What about the other two requirements? How can we construct the rest parameter and the arguments object? And how to clean the arguments in the stack when returning to the caller? For that we are only missing the argument count. We will need to save it somewhere. The choice here is a bit arbitrary, as long as it is easy to access this information. Two basic choices are: to push it just after the receiver in the caller frame or as part of the callee frame in the fixed header part. We implemented the latter, since it coalesces the fixed header part of Interpreter and Optimized frames.
+对于我们的第 `1` 号和第 `4` 号要求，这是一个干净的解决方案。其他两个要求又如何呢？我们如何构造剩余（rest）参数和 arguments 对象？返回调用者（caller）时如何清理堆栈中的参数？为此，我们仅缺少参数计数（argument count）。我们需要将其保存在某个地方。只要可以轻松访问此信息，此处的选择就有些随意。有两个基本选择：将其推入到调用者帧（caller frame）中的接收者（receiver）之后，或作为固定标头（fixed header）部分中的被呼叫者帧（callee frame）的一部分。我们实现了后者，因为它合并了 Interpreter 和 Optimized frames 的固定标头部分。
 
-If we run our example in V8 v8.9 we will see the following stack after `InterpreterArgsThenPush` (note that the arguments are now reversed):
+如果在 V8 v8.9 中运行示例，则在 `InterpreterArgsThenPush` 之后将看到以下堆栈（请注意，现在参数已颠倒）：
 
-![State of the frames after the execution of `InterpreterPushArgsThenCall` built-in.](/_img/adaptor-frame/no-adaptor-push.svg)
+![内置 `InterpreterPushArgsThenCall` 执行后的帧状态。](/_img/adaptor-frame/no-adaptor-push.svg)
 
-All the execution follows a similar path until we reach InvokeFunctionCode. Here we massage the arguments in case of under-application, pushing as many undefined objects as needed. Note that we do not change anything in case of over-application. Finally we pass the number of arguments to callee’s `Code` through a register. In the case of `x64`, we use the register `rax`.
+所有执行都遵循相似的路径，直到我们到达 InvokeFunctionCode。在这里，我们在 under-application 情况下处理参数，根据需要推送尽可能多的 undefined 对象。请注意，在 over-application 情况下，我们不会进行任何更改。最后，我们通过寄存器将参数数量（number of arguments）传递给被调用者（callee）的 `Code`。 在 `x64` 的情况下，我们使用寄存器 `rax`。
 
-If the callee hasn’t been optimized yet, we reach `InterpreterEntryTrampoline`, which builds the following stack frame.
+如果被调用者（callee）尚未进行优化，我们将到达 `InterpreterEntryTrampoline`，它会构建以下堆栈帧（stack frame）。
 
-![Stack frames without arguments adaptors.](/_img/adaptor-frame/no-adaptor-frames.svg)
+![没有 arguments adaptors 的堆栈帧（Stack frames）。](/_img/adaptor-frame/no-adaptor-frames.svg)
 
-The callee frame has an extra slot containing the number of arguments that can be used for constructing the rest parameter or the arguments object and to clean the arguments in the stack before returning to the caller.
+被调用者帧（callee frame）有一个额外的插槽（slot），其中包含可用于构造剩余（rest）参数或 arguments 对象的参数数量（number of arguments），并可以在返回调用者（caller）之前清除堆栈中的参数。
 
-To return, we modify `LeaveInterpreterFrame` to read the arguments count in the stack and pop out the maximum number between the argument count and the formal parameter count.
+作为返回，我们修改 `LeaveInterpreterFrame` 以读取堆栈中的参数计数（arguments count），并弹出参数计数（argument count）和形式参数计数（formal parameter count）之间的最大数目。
 
-## TurboFan
+## TurboFan { #turbofan }
 
-What about optimized code? Let’s change slightly our initial script to force V8 to compile it with TurboFan:
+那么优化代码呢？让我们稍微更改一下初始脚本，以强制 V8 使用 TurboFan 对其进行编译：
 
 ```js
 function add42(x) { return x + 42; }
@@ -229,9 +231,9 @@ callAdd42();
 callAdd42();
 ```
 
-Here we use V8 intrinsics to force V8 to optimize the call, otherwise V8 would only optimize our little function if it becomes hot (used very often). We call it once before optimization to gather some type information that can be used to guide the compilation. Read more about TurboFan [here](https://v8.dev/docs/turbofan).
+在这里，我们使用 V8 内部机制（intrinsics）来强制 V8 优化调用，否则 V8 仅在我们的小函数变得热门（经常使用）时才对其进行优化。在优化之前，我们将其称为一次（once），以收集一些可用于指导编译的类型信息。在[此处](https://v8.dev/docs/turbofan)阅读有关 TurboFan 的更多信息。
 
-I’ll show you here only the part of the generated code that is relevant to us.
+在这里，我仅向你显示与我们相关的部分生成代码。
 
 ```nasm
 movq rdi,0x1a8e082126ad    ;; Load the function object <JSFunction add42>
@@ -243,11 +245,11 @@ movl rcx,[rdi+0x17]        ;; Load function object {Code} field in rcx
 call rcx                   ;; Finally, call the code object!
 ```
 
-Although written in assembler, this code snippet should not be difficult to read if you follow my comments. Essentially, when compiling the call, TF needs to do all the work that was done in `InterpreterPushArgsThenCall`, `Call`, `CallFunction` and `InvokeFunctionCall` built-ins. Hopefully it has more static information to do that and emit less computer instructions.
+尽管使用汇编程序编写，但是如果你参考我的注释，那么此代码段应该不难理解。本质上，在编译调用时，TF需要完成 `InterpreterPushArgsThenCall`，`Call`，`CallFunction` 和 `InvokeFunctionCall` 内置函数中的所有工作。希望它有更多的静态信息来执行此操作，并发出更少的计算机指令。
 
-### TurboFan with the arguments adaptor frame
+### 带 arguments adaptor frame 的 TurboFan { #turbofan-with-the-arguments-adaptor-frame }
 
-Now, let’s see in the case of mismatching number of arguments and parameter count. Consider the call `add42(1, 2, 3)`. This is compiled to:
+现在，让我们来看看参数数量（number of arguments）和参数计数（parameter count）不匹配的情况。考虑调用 `add42(1, 2, 3)`。编译为：
 
 ```nasm
 movq rdi,0x4250820fff1    ;; Load the function object <JSFunction add42>
@@ -263,11 +265,11 @@ movq r10,0x564ed7fdf840   ;; <ArgumentsAdaptorTrampoline>
 call r10                  ;; Call the ArgumentsAdaptorTrampoline
 ```
 
-As you can see, it is not hard to add support to TF for argument and parameter count mismatch. Just call the arguments adaptor trampoline!
+如你所见，不难为 TF 添加对参数（argument）和参数计数（parameter count）不匹配的支持。只需调用 arguments adaptor trampoline！
 
-This is however expensive. For every optimized call, we now need to enter in the arguments adaptor trampoline and massage the frame as in non-optimized code. That explains why the performance gain of removing the adaptor frame in optimized code is much larger than on Ignition.
+然而，这是昂贵的。对于每个优化的调用，我们现在都需要输入 arguments adaptor trampoline，并像未优化的代码一样对帧进行处理。这就解释了为什么在优化的代码中删除 adaptor frame 的性能收益比在 Ignition 上要大得多。
 
-The generated code is however very simple. And returning from it is extremely easy (epilogue):
+但是，生成的代码非常简单。从中返回非常容易（结尾）：
 
 ```nasm
 movq rsp,rbp   ;; Clean callee frame
@@ -275,11 +277,11 @@ pop rbp
 ret 0x8        ;; Pops a single argument (the receiver)
 ```
 
-We pop our frame and emit a return instruction according to the parameter count. If we have a mismatch in the number of arguments and parameter count, the adaptor frame trampoline will deal with it.
+我们弹出帧，并根据参数计数（parameter count）发出返回指令。如果我们在参数数量（number of arguments）和参数计数（parameter count）上不匹配，则 adaptor frame trampoline 将对其进行处理。
 
-### TurboFan without the arguments adaptor frame
+### 没有 arguments adaptor frame 的 TurboFan { #turbofan-without-the-arguments-adaptor-frame }
 
-The generated code is essentially the same as in a call with a matching number of arguments. Consider the call `add42(1, 2, 3)`. This generates:
+生成的代码本质上与参数数量（number of arguments）匹配的调用中的代码相同。考虑调用 `add42(1, 2, 3)`。这将生成：
 
 ```nasm
 movq rdi,0x35ac082126ad    ;; Load the function object <JSFunction add42>
@@ -294,7 +296,7 @@ movl rcx,[rdi+0x17]        ;; Load function object {Code} field in rcx
 call rcx                   ;; Finally, call the code object!
 ```
 
-What about the epilogue of the function? We are not going back to the arguments adaptor trampoline anymore, so the epilogue is indeed a bit more complex than before.
+该函数的结尾如何？我们不再返回到 rguments adaptor trampoline，因此结尾确实比以前复杂了一些。
 
 ```nasm
 movq rcx,[rbp-0x18]        ;; Load the argument count (from callee frame) to rcx
@@ -311,6 +313,6 @@ push r10                   ;; Recover the return address
 retl
 ```
 
-# Conclusion
+# 结论
 
-The arguments adaptor frame was an ad-hoc solution to calls with a mismatch number of arguments and formal parameters. It was a straightforward solution, but it came with high performance cost and added complexity to the codebase. The performance cost is nowadays exacerbated by many Web frameworks using this feature to create a more flexible API. The simple idea of reversing the arguments in the stack allowed a significant reduction in implementation complexity and removed almost the entire overhead for such calls.
+Arguments adaptor frame 是一个临时解决方案，用于参数（arguments）和形式参数（formal parameters）数量不匹配的调用。这是一个简单的解决方案，但它带来了很高的性能成本，并增加了代码库的复杂性。如今，许多 Web 框架使用此功能创建更灵活的 API 都会加剧性能成本。颠倒堆栈中参数顺序的简单想法可以大大降低实现复杂性，并消除了此类调用的几乎所有开销。
