@@ -1,5 +1,5 @@
 ---
-title: 'Getting garbage collection for free'
+title: '免费获取垃圾回收'
 author: 'Hannes Payer and Ross McIlroy, Idle Garbage Collectors'
 avatars:
   - 'hannes-payer'
@@ -8,66 +8,68 @@ date: 2015-08-07 13:33:37
 tags:
   - internals
   - memory
-description: 'Chrome 41 hides expensive memory management operations inside of small, otherwise unused chunks of idle time, reducing jank.'
+description: 'Chrome 41 将昂贵的内存管理操作隐藏在较小的、未使用的空闲时间块内，从而减少了麻烦。'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-JavaScript performance continues to be one of the key aspects of Chrome’s values, especially when it comes to enabling a smooth experience. Starting in Chrome 41, V8 takes advantage of a new technique to increase the responsiveness of web applications by hiding expensive memory management operations inside of small, otherwise unused chunks of idle time. As a result, web developers should expect smoother scrolling and buttery animations with much reduced jank due to garbage collection.
+JavaScript 性能仍然是 Chrome 价值观的关键方面之一，尤其是在实现流畅体验方面。从 Chrome 41 开始，V8 利用一项新技术，通过将昂贵的内存管理操作隐藏在较小、未使用的空闲时间（idle time）块中，从而提高了 Web 应用程序的响应能力。结果，Web 开发人员应该期望由于垃圾回收的影响，现在将具有更轻微的刺痛感而使滚动和 buttery 动画更加流畅。
 
-Many modern language engines such as Chrome’s V8 JavaScript engine dynamically manage memory for running applications so that developers don’t need to worry about it themselves. The engine periodically passes over the memory allocated to the application, determines which data is no longer needed, and clears it out to free up room. This process is known as [garbage collection](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)).
+许多现代语言引擎（例如 Chrome 的 V8 JavaScript 引擎）动态管理用于运行应用程序的内存，因此开发人员无需自己担心。引擎会定期传递分配过的内存给应用程序，确定不再需要哪些数据，并将其清除以释放空间。此过程称为[垃圾回收（GC）](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science))。
 
-In Chrome, we strive to deliver a smooth, 60 frames per second (FPS) visual experience. Although V8 already attempts to perform garbage collection in small chunks, larger garbage collection operations can and do occur at unpredictable times — sometimes in the middle of an animation — pausing execution and preventing Chrome from hitting that 60 FPS goal.
+在 Chrome 浏览器中，我们致力于提供每秒 60 帧（FPS）的流畅视觉体验。尽管 V8 已经尝试在较小的块中执行垃圾回收，但是较大的垃圾回收操作可能并且确实会在不可预测的时间（有时是在动画的中间）发生，从而暂停执行并阻止 Chrome 达到60 FPS的目标。
 
-Chrome 41 included a [task scheduler for the Blink rendering engine](https://blog.chromium.org/2015/04/scheduling-tasks-intelligently-for_30.html) which enables prioritization of latency-sensitive tasks to ensure Chrome remains responsive and snappy. As well as being able to prioritize work, this task scheduler has centralized knowledge of how busy the system is, what tasks need to be performed and how urgent each of these tasks are. As such, it can estimate when Chrome is likely to be idle and roughly how long it expects to remain idle.
+Chrome 41 包含一个[用于 Blink 渲染引擎的任务计划程序](https://blog.chromium.org/2015/04/scheduling-tasks-intelligently-for_30.html)，该任务计划程序可以对潜在灵敏（latency-sensitive）的任务进行优先级排序，以确保 Chrome 保持响应能力和快速性。除了能够对工作进行优先级排序外，此任务计划程序还集中了解系统的繁忙程度，需要执行哪些任务以及这些任务的紧急程度。因此，它可以估算 Chrome 何时可能处于空闲状态，以及大概需要保持多长时间。
 
-An example of this occurs when Chrome is showing an animation on a web page. The animation will update the screen at 60 FPS, giving Chrome around 16.6 ms of time to perform the update. As such, Chrome will start work on the current frame as soon as the previous frame has been displayed, performing input, animation and frame rendering tasks for this new frame. If Chrome completes all this work in less than 16.6 ms, then it has nothing else to do for the remaining time until it needs to start rendering the next frame. Chrome’s scheduler enables V8 to take advantage of this _idle time period_ by scheduling special _idle tasks_ when Chrome would otherwise be idle.
+当 Chrome 在网页上显示动画时，就会发生这种情况。动画将以 60 FPS 的速度更新屏幕，使 Chrome 大约有 16.6 毫秒的时间来执行更新。这样，Chrome 将在显示前一帧后立即在当前帧上开始工作，并为该新帧执行输入，动画和帧渲染任务。如果 Chrome 在不到 16.6 毫秒内完成了所有这些工作，则在需要开始渲染下一帧之前，它在剩余时间内将无事可做。Chrome 的调度程序（scheduler）可让 V8 在 Chrome 空闲（idle）时安排特殊的 _空闲任务（idle tasks）_，从而利用此 _空闲时间段（idle time period）_。
 
-![Figure 1: Frame rendering with idle tasks](/_img/free-garbage-collection/frame-rendering.png)
+![图1：带有空闲任务（idle tasks）的帧渲染](/_img/free-garbage-collection/frame-rendering.png)
 
-Idle tasks are special low-priority tasks which are run when the scheduler determines it is in an idle period. Idle tasks are given a deadline which is the scheduler’s estimate of how long it expects to remain idle. In the animation example in Figure 1, this would be the time at which the next frame should start being drawn. In other situations (e.g., when no on-screen activity is happening) this could be the time when the next pending task is scheduled to be run, with an upper bound of 50 ms to ensure that Chrome remains responsive to unexpected user input. The deadline is used by the idle task to estimate how much work it can do without causing jank or delays in input response.
+空闲任务（Idle tasks）是特殊的低优先级任务，它们在调度程序确定其处于空闲时间段时运行。空闲任务有一个截止日期（deadline），这是调度程序对它预计保持空闲状态的估计。在图 1 的动画示例中，这将是开始绘制下一帧的时间。在其它情况下（例如，当没有任何屏幕活动发生时），这可能是安排运行下一个待处理任务的时间，上限为 50 毫秒，以确保 Chrome 保持对意外用户输入的响应。空闲任务使用截止日期来估计它可以完成多少工作，而不会引起混乱或输入响应延迟。
 
-Garbage collection done in the idle tasks are hidden from critical, latency-sensitive operations. This means that these garbage collection tasks are done for “free”. In order to understand how V8 does this, it is worth reviewing V8’s current garbage collection strategy.
+空闲任务中完成的垃圾回收对关键的、潜在灵敏的操作隐藏。这意味着这些垃圾回收任务是“免费（free）”完成的。为了了解 V8 如何做到这一点，有必要回顾一下 V8 当前的垃圾回收策略。
 
-## Deep dive into V8’s garbage collection engine
+## 深入研究 V8 的垃圾回收引擎 { #deep-dive-into-v8’s-garbage-collection-engine }
 
-V8 uses a [generational garbage collector](http://www.memorymanagement.org/glossary/g.html#term-generational-garbage-collection) with the Javascript heap split into a small young generation for newly allocated objects and a large old generation for long living objects. [Since most objects die young](http://www.memorymanagement.org/glossary/g.html#term-generational-hypothesis), this generational strategy enables the garbage collector to perform regular, short garbage collections in the smaller young generation (known as scavenges), without having to trace objects in the old generation.
+V8 使用了[分代垃圾回收器](http://www.memorymanagement.org/glossary/g.html#term-generational-garbage-collection)，其中的 Javascript 堆分为新分配的对象的新生代（young generation）和长期存在的对象的老年代（old generation）。[由于大多数对象都死于年轻时](http://www.memorymanagement.org/glossary/g.html#term-generational-hypothesis)，因此这种分代的策略使垃圾回收器可以在较小的新生代（称为清道夫）中执行常规的短时间垃圾回收，而不必在老年代中跟踪对象。
 
-The young generation uses a [semi-space](http://www.memorymanagement.org/glossary/s.html#semi.space) allocation strategy, where new objects are initially allocated in the young generation’s active semi-space. Once that semi-space becomes full, a scavenge operation will move live objects to the other semi-space. Objects which have been moved once already are promoted to the old generation and are considered to be long-living. Once the live objects have been moved, the new semi-space becomes active and any remaining dead objects in the old semi-space are discarded.
+新生代使用[半空间（semi-space）](http://www.memorymanagement.org/glossary/s.html#semi.space)分配策略，其中新对象最初是在新生代的活动半空间（active semi-space）中分配的。一旦该半空间变满，清除操作会将活动对象（live objects）移动到另一个半空间。曾经被移动过的对象被提升为老年代，并被认为是长期存活（long-living）的。一旦移动了活动对象，新的半空间将变为活动状态，而旧半空间中的所有剩余死亡对象都将被丢弃。
 
-The duration of a young generation scavenge therefore depends on the size of live objects in the young generation. A scavenge will be fast (<1 ms) when most of the objects become unreachable in the young generation. However, if most objects survive a scavenge, the duration of the scavenge may be significantly longer.
+因此，新生代清除的持续时间取决于新生代中活动对象的数量。当大多数对象在新生代中变得无法到达时，清除速度会很快（<1 ms）。但是，如果大多数对象在清除过程中幸存下来，则清除的持续时间可能会明显更长。
 
-A major collection of the whole heap is performed when the size of live objects in the old generation grows beyond a heuristically-derived limit. The old generation uses a [mark-and-sweep collector](http://www.memorymanagement.org/glossary/m.html#term-mark-sweep) with several optimizations to improve latency and memory consumption. Marking latency depends on the number of live objects that have to be marked, with marking of the whole heap potentially taking more than 100 ms for large web applications. In order to avoid pausing the main thread for such long periods, V8 has long had the ability to [incrementally mark live objects in many small steps](https://blog.chromium.org/2011/11/game-changer-for-interactive.html), with the aim to keep each marking steps below 5 ms in duration.
+当老年代中的活动对象的数量增长超出启发式派生（heuristically-derived）的限制时，将执行整个堆的主要回收。老年代使用带有多种优化功能的[标记清除回收器](http://www.memorymanagement.org/glossary/m.html#term-mark-sweep)来改善延迟和内存消耗。标记延迟时间取决于必须标记的活动对象的数量，对于大型 Web 应用程序，标记整个堆可能要花费 100 毫秒以上的时间。为了避免长时间中断主线程，V8 长期以来具有[以许多小步长增量标记活动对象](https://blog.chromium.org/2011/11/game-changer-for-interactive.html)的能力，目的是使每个标记步长的持续时间保持在 5 毫秒以下。
 
-After marking, the free memory is made available again for the application by sweeping the whole old generation memory. This task is performed concurrently by dedicated sweeper threads. Finally, memory compaction is performed to reduce memory fragmentation in the old generation. This task may be very time-consuming and is only performed if memory fragmentation is an issue.
+标记后，通过清除整个老年代内存，可以为应用程序再次提供可用内存。该任务由专用清除程序线程同时执行。最后，执行内存压缩以减少老年代中的内存碎片。该任务可能非常耗时，并且仅在内存碎片成为问题时才执行。
 
-In summary, there are four main garbage collection tasks:
+总之，有四个主要的垃圾回收任务：
 
-1. Young generation scavenges, which usually are fast
-2. Marking steps performed by the incremental marker, which can be arbitrarily long depending on the step size
-3. Full garbage collections, which may take a long time
-4. Full garbage collections with aggressive memory compaction, which may take a long time, but clean up fragmented memory
+1. 新生代的清除工作通常很快
+2. 由增量标记器执行的标记步长，可以根据步长大小而任意延长
+3. 完整的垃圾回收，可能需要很长时间
+4. 具有积极的内存压缩的完整垃圾回收，这可能需要很长时间，但是会清理零碎的内存
 
-In order to perform these operations in idle periods, V8 posts garbage collection idle tasks to the scheduler. When these idle tasks are run they are provided with a deadline by which they should complete. V8’s garbage collection idle time handler evaluates which garbage collection tasks should be performed in order to reduce memory consumption, while respecting the deadline to avoid future jank in frame rendering or input latency.
+为了在空闲时间执行这些操作，V8 将垃圾回收空闲任务发布到调度程序。当这些空闲任务运行时，将为它们提供完成任务的截止日期。V8 的垃圾回收空闲时间处理程序评估应执行哪些垃圾收集任务，以减少内存消耗，同时遵守截止日期，以避免将来在帧渲染或输入延迟方面造成麻烦。
 
-The garbage collector will perform a young generation scavenge during an idle task if the application’s measured allocation rate shows that the young generation may be full before the next expected idle period. Additionally, it calculates the average time taken by recent scavenge tasks in order to predict the duration of future scavenges and ensure that it doesn’t violate idle task deadlines.
+如果应用程序的测量分配率显示新生代可能在下一个预期的空闲时间段之前已满，则垃圾收集器将在空闲任务期间执行新生代的清理。此外，它会计算最近的清理任务所花费的平均时间，以预测将来的清理工作的持续时间，并确保它不会违反空闲任务的截止时间。
 
-When the size of live objects in the old generation is close to the heap limit, incremental marking is started. Incremental marking steps can be linearly scaled by the number of bytes that should be marked. Based on the average measured marking speed, the garbage collection idle time handler tries to fit as much marking work as possible into a given idle task.
+当老年代中活动对象的数量接近堆限制时，将开始增量标记。增量标记步长可以根据应标记的字节数线性缩放。根据平均测得的标记速度，垃圾回收空闲时间处理程序将尝试使尽可能多的标记工作适合给定的空闲任务。
 
-A full garbage collection is scheduled during an idle tasks if the old generation is almost full and if the deadline provided to the task is estimated to be long enough to complete the collection. The collection pause time is predicted based on the marking speed multiplied by the number of allocated objects. Full garbage collections with additional compaction are only performed if the webpage has been idle for a significant amount of time.
+如果老年代几乎已满，并且估计为任务提供的截止日期足够长以完成回收，则在空闲任务期间安排一次完整的垃圾回收。根据标记速度乘以分配的对象数，可以预测回收停顿时间。只有在网页闲置了相当长的时间后，才执行带有额外内存压缩的完整垃圾回收。
 
-## Performance evaluation
+## 性能评估 { #performance-evaluation }
 
-In order to evaluate the impact of running garbage collection during idle time, we used Chrome’s [Telemetry performance benchmarking framework](https://www.chromium.org/developers/telemetry) to evaluate how smoothly popular websites scroll while they load. We benchmarked the [top 25](https://code.google.com/p/chromium/codesearch#chromium/src/tools/perf/benchmarks/smoothness.py&l=15) sites on a Linux workstation as well as [typical mobile sites](https://code.google.com/p/chromium/codesearch#chromium/src/tools/perf/benchmarks/smoothness.py&l=104) on an Android Nexus 6 smartphone, both of which open popular webpages (including complex webapps such as Gmail, Google Docs and YouTube) and scroll their content for a few seconds. Chrome aims to keep scrolling at 60 FPS for a smooth user experience.
+为了评估在空闲时间运行垃圾回收的影响，我们使用了 Chrome 的 [Telemetry 性能基准测试框架](https://www.chromium.org/developers/telemetry)来评估流行的网站在加载时的滚动状态。我们对 Linux 工作站上的[前 25](https://code.google.com/p/chromium/codesearch#chromium/src/tools/perf/benchmarks/smoothness.py&l=15)个站点以及 Android Nexus 6 智能手机上的[典型移动站点](https://code.google.com/p/chromium/codesearch#chromium/src/tools/perf/benchmarks/smoothness.py&l=104)进行了基准测试，它们都是受欢迎的网页（包括复杂的 Web 应用程序，例如 Gmail，Google Docs 和 YouTube）并滚动其内容几秒钟 。Chrome 的目标是保持 60 FPS 的滚动速度，以提供流畅的用户体验。
 
-Figure 2 shows the percentage of garbage collection that was scheduled during idle time. The workstation’s faster hardware results in more overall idle time compared to the Nexus 6, thereby enabling a greater percentage of garbage collection to be scheduled during this idle time (43% compared to 31% on the Nexus 6) resulting in about 7% improvement on our [jank metric](https://www.chromium.org/developers/design-documents/rendering-benchmarks).
+图 2 显示了在空闲时间安排的垃圾回收百分比。与 Nexus 6 相比，工作站更快的硬件会有更长的总体空闲时间，从而可以在此空闲时间内安排更多百分比的垃圾回收（垃圾回收的百分比为 31％ 和 43％），最终根据我们的[指标](https://www.chromium.org/developers/design-documents/rendering-benchmarks)的垃圾回收率提高了约 7％。
 
-![Figure 2: The percentage of garbage collection that occurs during idle time](/_img/free-garbage-collection/idle-time-gc.png)
+![图2：空闲时间发生的垃圾回收百分比](/_img/free-garbage-collection/idle-time-gc.png)
 
-As well as improving the smoothness of page rendering, these idle periods also provide an opportunity to perform more aggressive garbage collection when the page becomes fully idle. Recent improvements in Chrome 45 take advantage of this to drastically reduce the amount of memory consumed by idle foreground tabs. Figure 3 shows a sneak peek at how memory usage of Gmail’s JavaScript heap can be reduced by about 45% when it becomes idle, compared to the same page in Chrome 43.
+除了提高页面渲染的平滑度之外，这些空闲时间还提供了在页面完全空闲时执行更积极的垃圾回收的机会。Chrome 45 的最新改进利用了这一优势，从而大大减少了空闲的前台标签所消耗的内存量。图 3 展示了与 Chrome 43 中的同一页面相比，Gmail 的 JavaScript 堆空闲后如何将其内存使用量减少约 45％ 的情况。
 
 <figure>
   <div class="video video-16:9">
     <iframe src="https://www.youtube.com/embed/ij-AFUfqFdI" width="640" height="360" loading="lazy"></iframe>
   </div>
-  <figcaption>Figure 3: Memory usage for Gmail on latest version of Chrome 45 (left) vs. Chrome 43</figcaption>
+  <figcaption>图 3：最新版本的 Chrome 45（左）与 Chrome 43 上 Gmail 的内存使用情况</figcaption>
 </figure>
 
-These improvements demonstrate that it is possible to hide garbage collection pauses by being smarter about when expensive garbage collection operations are performed. Web developers no longer have to fear the garbage collection pause, even when targeting silky smooth 60 FPS animations. Stay tuned for more improvements as we push the bounds of garbage collection scheduling.
+这些改进表明，可以通过更聪明地了解何时执行昂贵的垃圾回收操作来隐藏垃圾回收停顿。Web 开发人员不必再担心垃圾回收停顿，即使是针对柔滑流畅的 60 FPS 动画也是如此。请继续关注垃圾回收调度的更多改进。
