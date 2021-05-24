@@ -64,7 +64,7 @@ cd <path_to_your_v8_checkout>
 echo '(function f() {
     var s = 0; for (var i = 0; i < 1000000000; i++) { s += i; } return s;
   })();' > test.js
-perf record --call-graph -k mono out/x64.release/d8 \
+perf record -g -k mono out/x64.release/d8 \
     --perf-prof --no-write-protect-code-memory test.js
 ```
 
@@ -90,7 +90,7 @@ perf record --call-graph -k mono out/x64.release/d8 \
 1. 启动 chrome 后，使用“任务管理器”（Task Manager）找到渲染器（renderer）进程 ID，并使用它开始分析：
 
     ```
-    perf record --call-graph -p $RENDERER_PID -k 1 -o perf.data
+    perf record -g -k mono -p $RENDERER_PID -o perf.data
     ```
 
 1. 导航到你的网站，然后继续有关如何评估性能输出的下一部分。

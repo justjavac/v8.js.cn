@@ -1,4 +1,4 @@
-# v8.js.cn [![Build Status](https://travis-ci.com/justjavac/v8.js.cn.svg?branch=master)](https://travis-ci.com/justjavac/v8.js.cn)
+# v8.js.cn [![Build status](https://github.com/justjavac/v8.js.cn/actions/workflows/build.yml)](https://github.com/justjavac/v8.js.cn/actions/workflows/build.yml/badge.svg)
 
 本仓库是 [v8.dev, V8 官方网站](https://v8.dev) 的中文翻译。
 
