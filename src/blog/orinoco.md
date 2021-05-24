@@ -1,5 +1,5 @@
 ---
-title: 'Jank Busters Part Two: Orinoco'
+title: 'Jank 克星第二部分: Orinoco'
 author: 'the jank busters: Ulan Degenbaev, Michael Lippautz, and Hannes Payer'
 avatars:
   - 'ulan-degenbaev'
@@ -9,30 +9,32 @@ date: 2016-04-12 13:33:37
 tags:
   - internals
   - memory
-description: 'This article introduces three optimizations that lay the groundwork for a new garbage collector in V8, codenamed Orinoco.'
+description: '本文介绍了三个优化，这些优化为 V8 中代号为 Orinoco 的新垃圾回收器奠定了基础。'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-In a [previous blog post](/blog/jank-busters), we introduced the problem of jank caused by garbage collection interrupting a smooth browsing experience. In this blog post we introduce three optimizations that lay the groundwork for a new garbage collector in V8, codenamed _Orinoco_. Orinoco is based on the idea that implementing a mostly parallel and concurrent garbage collector without strict generational boundaries will reduce garbage collection jank and memory consumption while providing high throughput. Instead of implementing Orinoco behind a flag as a separate garbage collector, we decided to ship features of Orinoco incrementally on V8 tip of tree to benefit users immediately. The three features discussed in this post are parallel compaction, parallel remembered set processing, and black allocation.
+在[先前的博客文章](/blog/jank-busters)中，我们介绍了由于垃圾回收中断流畅的浏览体验而导致的 jank 问题。在此博客文章中，我们介绍了三个优化，这些优化为 V8 中代号为 *Orinoco* 的新垃圾回收器奠定了基础。Orinoco 基于这样的想法，即在没有严格的分代边界的情况下实现大部分并行和并发的垃圾回收器将减少垃圾回收的 jank 和内存消耗，同时提供高吞吐量。我们决定将 Orinoco 的功能增量地交付到 V8 tip of tree 上，而不是在标志后面将 Orinoco 实现为单独的垃圾回收器，以使用户立即受益。这篇文章中讨论的三个功能是并行压缩（parallel compaction），并行记忆集处理（parallel remembered set processing）和黑色分配（black allocation）。
 
-V8 implements a [generational garbage collector](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)#Generational) where objects may move within the young generation, from the young to the old generation, and within the old generation. Moving objects is expensive since the underlying memory of objects needs to be copied to new locations and the pointers to those objects are also subject to updating. Figure 1 shows the phases and how they were executed before Orinoco. Essentially, objects were moved first and then pointers between those objects were updated afterwards, all in sequential order, resulting in observable jank.
+V8 实现了一个[分代垃圾回收器](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science)#Generational)，对象可以新生代（young generation）内部、从新生代到老年代以及在老年代（old generation）内部进行移动。移动对象非常昂贵，因为需要将对象的基础内存复制到新位置，并且指向这些对象的指针也需要更新。图 1 显示了这些阶段及其在 Orinoco 之前的执行方式。本质上，首先移动对象，然后再更新这些对象之间的指针，所有这些指针均按顺序排列，从而导致可观察到的 jank。
 
-![Figure 1: Sequential moving of objects and updating pointers](/_img/orinoco/sequential.png)
+![图1：对象的顺序移动和更新指针](/_img/orinoco/sequential.png)
 
-V8 partitions its heap memory into fixed-size chunks, called pages, that are assigned to either young or old generation space. Objects are initially allocated in the young generation. Upon garbage collection, live objects are moved within the young generation once. Objects that survive another garbage collection are promoted to the old generation. For both phases, which we call collectively young generation evacuation, we parallelize the copying of memory based on pages. Within the young generation, moving objects always involves allocating memory on fresh pages (and releasing the old pages), leaving behind a compact memory layout. In the old generation this process happens in a slightly different manner, since dead memory leaves behind unusable holes (or fragmentation). Some of these holes can be reused via free lists, but others are left behind, requiring compaction to move live objects to a better packed (potentially new) page. Similar to the young generation this process is parallelized on page-level.
+V8 将其堆内存划分为固定大小的块（称为页面），这些块被分配给新生代或老年代空间。对象最初是在新生代中分配的。进行垃圾回收后，存活对象（live objects）会在新生代中移动一次。在下一个垃圾回收中幸存下来的对象被提升为老年代。对于这两个阶段，我们统称为新生代晋升（young generation evacuation），我们基于页面并行化内存的复制。在新生代中，移动对象始终涉及在新页面上分配内存（并释放旧页面），从而留下紧凑的内存布局。在老年代中，此过程以略有不同的方式发生，因为死亡内存留下了无法使用的漏洞（或碎片）。这些漏洞中的一些漏洞可以通过空闲列表重用，而其它漏洞则留在后面，需要压缩以将活动对象移动到更好的页面（可能是新页面）。与新生代类似，此过程在页面级别（page-level）上并行进行。
 
-Since there are no dependencies between young generation evacuation and old generation compaction, Orinoco now performs these phases in parallel, as shown in Figure 2. The result of these improvements is a reduction of compaction time of 75% from ~7ms to under 2ms on average.
+由于新生代的晋升与老年代的压缩之间没有依赖关系，因此 Orinoco 现在并行执行这些阶段，如图 2 所示。这些改进的结果是将压缩时间从平均约 7ms 减少了 7％ 到 2ms 以下 。
 
-![Figure 2: Parallel moving of objects and updating pointers](/_img/orinoco/parallel.png)
+![图2：并行移动对象和更新指针](/_img/orinoco/parallel.png)
 
-The second optimization introduced by Orinoco improves how garbage collection tracks pointers. When an object moves location on the heap, the garbage collector has to find all pointers that contain the old location of the moved object and update them with the new location. Since iterating through the heap to find the pointers would be very slow, V8 uses a data structure called a _remembered_ _set_ to keep track of all the interesting pointers on the heap. A pointer is interesting if it points to an object that may move during garbage collection. For example, all pointers from the old generation to the new generation are interesting because new generation objects move on every garbage collection. Pointers to objects in heavily fragmented pages are also interesting because these objects will move to other pages during compaction.
+Orinoco 引入的第二个优化改进了垃圾回收如何跟踪指针。当一个对象在堆上移动位置时，垃圾回收器必须找到包含被移动对象的旧位置的所有指针，并用新位置更新它们。由于遍历堆以查找指针将非常慢，因此 V8 使用称为 _记忆集（remembered set）_ 的数据结构来跟踪堆上所有有意义的（interesting）指针。如果指针指向在垃圾回收期间可能移动的对象，则该指针是有意义的。例如，从上一代到新一代的所有指针都很有意义，因为新一代对象在每个垃圾回收期间移动。指向高度分散的页面中的对象的指针也很有意义，因为这些对象在压缩过程中将移动到其它页面。
 
-Previously, V8 implemented remembered sets as arrays of pointer addresses, or _store buffers_. There was one store buffer for the young generation and one for each of the fragmented old generation pages. The store buffer of a page contains addresses of all incoming pointers as shown in Figure 3. Entries are appended to a store buffer in a _write barrier_, which guards write operations in JavaScript code. This may result in duplicate entries since a store buffer may include a pointer multiple times and two different store buffers may include the same pointer. Duplicate entries make parallelization of the pointer update phase difficult because of the data race caused by two threads trying to update the same pointer.
+以前，V8 将记忆集实现为指针地址或 _存储缓冲区（store buffers）_ 的数组。对于新生代和每个零散的老年代页面都有一个存储缓冲区。页面的存储缓冲区包含所有传入指针的地址，如图 3 所示。条目被附加到 _写屏障（write barrier）_ 中的存储缓冲区中，以保护 JavaScript 代码中的写操作。这可能导致重复的条目，因为存储缓冲区可能多次包含一个指针，而两个不同的存储缓冲区可能包含相同的指针。重复的条目使指针更新阶段的并行化变得很困难，因为两个线程试图更新同一指针会导致数据争用。
 
-![Figure 3: Old remembered set](/_img/orinoco/old-remembered-set.png)
+![图3：旧的记忆集（remembered set）](/_img/orinoco/old-remembered-set.png)
 
-Orinoco removes this complexity by reorganizing the remembered set to simplify parallelization and make sure that threads get disjoint sets of pointers to update. Instead of storing incoming interesting pointers in an array, each page now stores the offsets of interesting pointers originating from that page in buckets of bitmaps as shown in Figure 4. Each bucket is either empty or points to a bitmap of a fixed length. A bit in the bitmap corresponds to a pointer offset in the page. If a bit is set then the pointer is interesting and is in the remembered set. Using this data-structure we can parallelize pointer updates based on pages. The absence of duplicate entries and the dense representation of pointers also allowed us to remove complex code for handling remembered set overflow. In our long running Gmail benchmark, this change [reduced](https://drive.google.com/file/d/0BxRQ51WfVicyMk9nYUk5YVY1VjQ/view) the maximum pause time of compacting garbage collection by 45% from 42ms to 23 ms.
+Orinoco 通过重组记忆集来简化并行化并确保线程获得不相交的指针集以进行更新，从而消除了这种复杂性。现在，每个页面不再将传入的有意义的指针存储在数组中，而是将源自该页面的有意义的指针的偏移量存储在位图的存储区（buckets）中，如图 4 所示。每个存储区要么为空，要么指向固定长度的位图。位图中的一位对应于页面中的指针偏移量。如果设置了一个位，则该指针很有意义且位于记住的位置。使用这种数据结构，我们可以基于页面并行化指针更新。缺少重复的条目和密集的指针表示，还使我们能够删除复杂的代码来处理记忆集溢出（remembered set overflow）。在我们长期运行的 Gmail 基准测试中，此更改将压缩垃圾回收的最大停顿时间从 42ms [减少](https://drive.google.com/file/d/0BxRQ51WfVicyMk9nYUk5YVY1VjQ/view)了 23％ 至 23ms。
 
-![Figure 4: New remembered set](/_img/orinoco/new-remembered-set.png)
+![图4：新的记忆集（remembered set）](/_img/orinoco/new-remembered-set.png)
 
-The third optimization that Orinoco introduces is _black allocation_, an improvement to the marking phase of the garbage collector. Black allocation (shipped in V8 5.1) is a garbage collection technique in which all objects allocated in the old generation (e.g. [pre-tenured allocations](http://research.google.com/pubs/pub43823.html) or promoted objects by the garbage collector) are marked black immediately in order to designate them as "live". The intuition behind black allocation is that objects allocated in the old generation are likely long living. Therefore, objects that were recently allocated in the old generation should at least survive the next old generation garbage collection, otherwise they were falsely promoted. After coloring newly allocated objects black the garbage collector will not visit them. We speed up coloring of black objects by allocating them on black pages where all objects are black by default. Another benefit of black pages is that they do not have to be swept, since all objects allocated on them are (by definition) live. Black allocation speeds up incremental marking progress since marking work does not increase with new allocations. The impact of black allocation is clearly visible on the Octane Splay benchmark where the throughput and latency score improved by about 30% while using about 20% less memory due to faster marking progress and less garbage collection work overall.
+Orinoco 引入的第三个优化是 _黑色分配（black allocation）_，这是垃圾回收器标记阶段的改进。黑色分配（在 V8 5.1 中已提供）是一种垃圾回收技术，其中，将老年代中分配的所有对象（例如，[pre-tenured 分配](http://research.google.com/pubs/pub43823.html)或垃圾回收器晋升的对象）立即标记为黑色，以将其指定为“活动（live）”。黑色分配背后的直觉是，在老年代中分配的对象可能寿命很长。因此，最近在老年代中分配的对象至少应在下一次老年代垃圾回收中幸存，否则它们将被错误地晋升。将新分配的对象着色为黑色后，垃圾回收器将不会访问它们。我们通过将黑色对象分配在默认情况下所有对象均为黑色的黑色页面上来加快着色。黑页的另一个好处是不必清除它们，因为（根据定义）分配给它们的所有对象都是活动的。黑色分配可加快增量标记进度，因为标记工作不会随新的内存分配而增加。黑色分配的影响在 Octane Splay 基准测试中清晰可见，吞吐量和延迟得分提高了约 30％，而由于标记处理速度更快且总体上减少了垃圾回收工作，因此使用的内存减少了约 20％。
 
-We plan to roll out more Orinoco features soon. Stay tuned, we are still tinkering!
+我们计划很快推出更多 Orinoco 功能。请继续关注，我们仍在修补！
