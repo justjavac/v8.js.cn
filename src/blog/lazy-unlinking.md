@@ -1,22 +1,24 @@
 ---
-title: 'An internship on laziness: lazy unlinking of deoptimized functions'
+title: '关于懒惰（laziness）机制的实习经历：去优化函数的延迟取消链接'
 author: 'Juliana Franco ([@jupvfranco](https://twitter.com/jupvfranco)), Laziness Expert'
 date: 2017-10-04 13:33:37
 tags:
   - memory
   - internals
-description: 'This technical deep-dive explains how V8 used to unlink deoptimized functions, and how we recently changed this to improve performance.'
+description: '该技术深入介绍了 V8 如何取消链接去优化的函数，以及我们最近如何更改它以提高性能。'
 tweet: '915473224187760640'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-Roughly three months ago, I joined the V8 team (Google Munich) as an intern and since then I’ve been working on the VM’s _Deoptimizer_ — something completely new to me which proved to be an interesting and challenging project. The first part of my internship focused on [improving the VM security-wise](https://docs.google.com/document/d/1ELgd71B6iBaU6UmZ_lvwxf_OrYYnv0e4nuzZpK05-pg/edit). The second part focused on performance improvements. Namely, on the removal of a data-structure used for the unlinking of previously deoptimized functions, which was a performance bottleneck during garbage collection. This blog post describes this second part of my internship. I’ll explain how V8 used to unlink deoptimized functions, how we changed this, and what performance improvements were obtained.
+大约三个月前，我作为实习生加入了 V8 团队（谷歌慕尼黑），从那时起我一直在研究 VM 的 _去优化（Deoptimizer）_ ——对我来说这是一个全新的东西，它被证明是一个有趣且具有挑战性的项目。我实习的第一部分侧重于[提高 VM 安全性](https://docs.google.com/document/d/1ELgd71B6iBaU6UmZ_lvwxf_OrYYnv0e4nuzZpK05-pg/edit)。第二部分侧重于性能改进。即，删除用于取消链接先前去优化的函数（deoptimized functions）的数据结构，这是垃圾回收期间的性能瓶颈。这篇博文描述了我实习经历的第二部分。我将解释 V8 过去如何取消链接去优化的函数，我们如何改变它，以及获得了哪些性能改进。
 
-Let’s (very) briefly recap the V8 pipeline for a JavaScript function: V8’s interpreter, Ignition, collects profiling information about that function while interpreting it. Once the function becomes hot, this information is passed to V8’s compiler, TurboFan, which generates optimized machine code. When the profiling information is no longer valid — for example because one of the profiled objects gets a different type during runtime — the optimized machine code might become invalid. In that case, V8 needs to deoptimize it.
+让我们（非常）简要回顾一下 JavaScript 函数的 V8 管道（pipeline ）：V8 的解释器 Ignition 在解释该函数时收集有关该函数的分析信息。一旦函数变热（hot，译注：即被频繁调用），这个信息就会传递给 V8 的编译器 TurboFan，它生成优化的机器代码。当分析信息不再有效时——例如因为其中一个被分析的对象在运行时获得了不同的类型——优化的机器代码可能会变得无效。在这种情况下，V8 需要对其进行去优化（deoptimize ）。
 
-![An overview of V8, as seen in [JavaScript Start-up Performance](https://medium.com/reloading/javascript-start-up-performance-69200f43b201)](/_img/lazy-unlinking/v8-overview.png)
+![V8 概述，如 [JavaScript 启动性能](https://medium.com/reloading/javascript-start-up-performance-69200f43b201)中所见](/_img/lazy-unlinking/v8-overview.png)
 
-Upon optimization, TurboFan generates a code object, i.e. the optimized machine code, for the function under optimization. When this function is invoked the next time, V8 follows the link to optimized code for that function and executes it. Upon deoptimization of this function, we need to unlink the code object in order to make sure that it won’t be executed again. How does that happen?
+优化后，TurboFan 会为优化中的函数生成代码对象，即优化后的机器码。下次调用此函数时，V8 会依据对该函数优化代码的链接并执行它。在对这个函数进行去优化后，我们需要取消链接的代码对象，以确保它不会再次被执行。怎么会这样？
 
-For example, in the following code, the function `f1` will be invoked many times (always passing an integer as argument). TurboFan then generates machine code for that specific case.
+例如，在下面的代码中，函数 `f1` 将被多次调用（始终传递一个整数作为参数）。TurboFan 然后为该特定情况生成机器代码。
 
 ```js
 function g() {
@@ -29,22 +31,22 @@ const f1 = g();
 for (var i = 0; i < 1000; i++) f1(0);
 ```
 
-Each function also has a trampoline to the interpreter — more details in these [slides](https://docs.google.com/presentation/d/1Z6oCocRASCfTqGq1GCo1jbULDGS-w-nzxkbVF7Up0u0/edit#slide=id.p) — and will keep a pointer to this trampoline in its `SharedFunctionInfo` (SFI). This trampoline will be used whenever V8 needs to go back to unoptimized code. Thus, upon deoptimization, triggered by passing an argument of a different type, for example, the Deoptimizer can simply set the code field of the JavaScript function to this trampoline.
+每个函数还有一个指向解释器的 trampoline ——更多细节在这些[幻灯片](https://docs.google.com/presentation/d/1Z6oCocRASCfTqGq1GCo1jbULDGS-w-nzxkbVF7Up0u0/edit#slide=id.p)中——并将在其 `SharedFunctionInfo` (SFI) 中保留一个指向这个 trampoline 的指针。每当 V8 需要返回未优化的代码时，就会使用此 trampoline。因此，在去优化时，例如通过传递不同类型的参数触发，去优化器可以简单地将 JavaScript 函数的代码字段设置为这个 trampoline。
 
-![An overview of V8, as seen in [JavaScript Start-up Performance](https://medium.com/reloading/javascript-start-up-performance-69200f43b201)](/_img/lazy-unlinking/v8-overview.png)
+![V8 概述，如 [JavaScript 启动性能](https://medium.com/reloading/javascript-start-up-performance-69200f43b201)中所见](/_img/lazy-unlinking/v8-overview.png)
 
-Although this seems simple, it forces V8 to keep weak lists of optimized JavaScript functions. This is because it is possible to have different functions pointing to the same optimized code object. We can extend our example as follows, and the functions `f1` and `f2` both point to the same optimized code.
+虽然这看起来很简单，但它迫使 V8 保留优化的 JavaScript 函数的弱列表。这是因为可能有不同的函数指向相同的优化代码对象。我们可以如下扩展我们的示例，函数 `f1` 和 `f2` 都指向相同的优化代码。
 
 ```js
 const f2 = g();
 f2(0);
 ```
 
-If the function `f1` is deoptimized (for example by invoking it with an object of different type `{x: 0}`) we need to make sure that the invalidated code will not be executed again by invoking `f2`.
+如果函数 `f1` 被取消优化（例如通过使用不同类型的对象 `{x: 0}` 调用它），我们需要确保不会通过调用 `f2` 再次执行无效代码。
 
-Thus, upon deoptimization, V8 used to iterate over all the optimized JavaScript functions, and would unlink those that pointed to the code object being deoptimized. This iteration in applications with many optimized JavaScript functions became a performance bottleneck. Moreover, other than slowing down deoptimization, V8 used to iterate over these lists upon stop-the-world cycles of garbage collection, making it even worse.
+因此，在去优化时，V8 会迭代所有优化过的 JavaScript 函数，并且会取消那些指向被去优化的代码对象的链接。具有许多优化 JavaScript 函数的应用程序中的这种迭代成为性能瓶颈。此外，除了减慢去优化速度之外，V8 过去常常在垃圾回收的 stop-the-world 周期中迭代这些列表，这使得情况变得更糟。
 
-In order to have an idea of the impact of such data-structure in the performance of V8, we wrote a [micro-benchmark](https://github.com/v8/v8/blob/master/test/js-perf-test/ManyClosures/create-many-closures.js) that stresses its usage, by triggering many scavenge cycles after creating many JavaScript functions.
+为了了解这种数据结构对 V8 性能的影响，我们编写了一个[微基准测试](https://github.com/v8/v8/blob/master/test/js-perf-test/ManyClosures/create-many-closures.js)，通过在创建许多 JavaScript 函数后触发许多清理周期来加强其使用频率。
 
 ```js
 function g() {
@@ -73,19 +75,19 @@ for (var i = 0; i < 1000; i++) {
 }
 ```
 
-When running this benchmark, we could observe that V8 spent around 98% of its execution time on garbage collection. We then removed this data structure, and instead used an approach for _lazy unlinking_, and this was what we observed on x64:
+运行此基准测试时，我们可以观察到 V8 将大约 98% 的执行时间用于垃圾回收。然后我们删除了这个数据结构，而是使用了一种 _延迟取消链接（lazy unlinking）_ 的方法，这就是我们在 x64 上观察到的：
 
 ![](/_img/lazy-unlinking/microbenchmark-results.png)
 
-Although this is just a micro-benchmark that creates many JavaScript functions and triggers many garbage collection cycles, it gives us an idea of the overhead introduced by this data structure. Other more realistic applications where we saw some overhead, and which motivated this work, were the [router benchmark](https://github.com/delvedor/router-benchmark) implemented in Node.js and [ARES-6 benchmark suite](http://browserbench.org/ARES-6/).
+虽然这只是一个创建许多 JavaScript 函数并触发许多垃圾回收周期的微基准测试，但它让我们对这种数据结构引入的开销有所了解。我们看到一些开销并推动这项工作的其它更现实的应用程序是在 Node.js 中实现的[路由器基准测试](https://github.com/delvedor/router-benchmark)和 [ARES-6 基准测试套件](http://browserbench.org/ARES-6/)。
 
-## Lazy unlinking
+## 延迟取消链接 { #lazy-unlinking }
 
-Rather than unlinking optimized code from JavaScript functions upon deoptimization, V8 postpones it for the next invocation of such functions. When such functions are invoked, V8 checks whether they have been deoptimized, unlinks them and then continues with their lazy compilation. If these functions are never invoked again, then they will never be unlinked and the deoptimized code objects will not be collected. However, given that during deoptimization, we invalidate all the embedded fields of the code object, we only keep that code object alive.
+V8 不会在去优化时从 JavaScript 函数中取消优化代码的链接，而是将其推迟到下次调用此类函数时使用。当这些函数被调用时，V8 会检查它们是否已经被取消优化，取消它们的链接，然后继续它们的延迟编译（lazy compilation）。如果这些函数不再被调用，那么它们将永远不会被取消链接并且不会回收去优化的代码对象。然而，考虑到在去优化过程中，我们使代码对象的所有嵌入字段无效，我们只保持该代码对象处于活动状态。
 
-The [commit](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690) that removed this list of optimized JavaScript functions required changes in several parts of the VM, but the basic idea is as follows. When assembling the optimized code object, we check if this is the code of a JavaScript function. If so, in its prologue, we assemble machine code to bail out if the code object has been deoptimized. Upon deoptimization we don’t modify the deoptimized code — code patching is gone. Thus, its bit `marked_for_deoptimization` is still set when invoking the function again. TurboFan generates code to check it, and if it is set, then V8 jumps to a new builtin, `CompileLazyDeoptimizedCode`, that unlinks the deoptimized code from the JavaScript function and then continues with lazy compilation.
+删除此优化 JavaScript 函数列表的[提交](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690)需要在 VM 的几个部分进行更改，但基本思想如下。在汇编优化后的代码对象时，我们会检查这是否是 JavaScript 函数的代码。如果是这样，在它的 prologue 中，如果代码对象已被取消优化，我们将汇编机器代码以摆脱困境。在去优化时，我们不会修改去优化的代码——代码补丁消失了。因此，再次调用该函数时，仍然设置它的位标记 `marked_for_deoptimization`。 TurboFan 生成代码来检查它，如果设置了它，那么 V8 会跳转到一个新的内置函数 `CompileLazyDeoptimizedCode`，它将去优化的代码与 JavaScript 函数断开链接，然后继续进行延迟编译。
 
-In more detail, the first step is to generate instructions that load the address of the code being currently assembled. We can do that in x64, with the following code:
+更详细地说，第一步是生成加载当前汇编代码地址的指令。我们可以在 x64 中做到这一点，代码如下：
 
 ```cpp
 Label current;
@@ -94,14 +96,14 @@ __ leaq(rcx, Operand(&current));
 __ bind(&current);
 ```
 
-After that we need to obtain where in the code object the `marked_for_deoptimization` bit lives.
+之后，我们需要获取标记的 `marked_for_deoptimization` 位在代码对象中的位置。
 
 ```cpp
 int pc = __ pc_offset();
 int offset = Code::kKindSpecificFlags1Offset - (Code::kHeaderSize + pc);
 ```
 
-We can then test the bit and if it is set, we jump to the `CompileLazyDeoptimizedCode` built in.
+然后我们可以测试这个位，如果它被设置，我们跳转到内置的 `CompileLazyDeoptimizedCode`。
 
 ```cpp
 // Test if the bit is set, that is, if the code is marked for deoptimization.
@@ -111,21 +113,21 @@ __ testl(Operand(rcx, offset),
 __ j(not_zero, /* handle to builtin code here */, RelocInfo::CODE_TARGET);
 ```
 
-On the side of this `CompileLazyDeoptimizedCode` builtin, all that’s left to do is to unlink the code field from the JavaScript function and set it to the trampoline to the Interpreter entry. So, considering that the address of the JavaScript function is in the register `rdi`, we can obtain the pointer to the `SharedFunctionInfo` with:
+在这个 `CompileLazyDeoptimizedCode` 内置函数的一侧，剩下要做的就是从 JavaScript 函数中取消代码字段的链接，并将其设置为 trampoline 到解释器入口点（entry）。因此，考虑到 JavaScript 函数的地址在寄存器 `rdi` 中，我们可以通过以下方式获取指向 `SharedFunctionInfo` 的指针：
 
 ```cpp
 // Field read to obtain the SharedFunctionInfo.
 __ movq(rcx, FieldOperand(rdi, JSFunction::kSharedFunctionInfoOffset));
 ```
 
-…and similarly the trampoline with:
+……还有类似的 trampoline：
 
 ```cpp
 // Field read to obtain the code object.
 __ movq(rcx, FieldOperand(rcx, SharedFunctionInfo::kCodeOffset));
 ```
 
-Then we can use it to update the function slot for the code pointer:
+然后我们可以用它来更新代码指针的函数槽（slot）：
 
 ```cpp
 // Update the code field of the function with the trampoline.
@@ -135,49 +137,49 @@ __ RecordWriteField(rdi, JSFunction::kCodeOffset, rcx, r15,
                     kDontSaveFPRegs, OMIT_REMEMBERED_SET, OMIT_SMI_CHECK);
 ```
 
-This produces the same result as before. However, rather than taking care of the unlinking in the Deoptimizer, we need to worry about it during code generation. Hence the handwritten assembly.
+这会产生与之前相同的结果。然而，不仅在去优化器中处理取消链接，我们还需要在代码生成期间担心它。因此，手写汇编程序。
 
-The above is [how it works in the x64 architecture](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-0920a0f56f95b36cdd43120466ec7ccd). We have implemented it for [ia32](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-10985b50f31627688e9399a768d9ec21), [arm](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-0f5515e80dd0139244a4ae48ce56a139), [arm64](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-1bbe32f45000ec9157f4997a6c95f1b1), [mips](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-73f690ee13a5465909ae9fc1a70d8c41), and [mips64](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-b1de25cbfd2d02b81962797bfdf807df) as well.
+以上是它[在 x64 架构中的工作方式](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-0920a0f56f95b36cdd43120466ec7ccd)。我们也为 [ia32](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-10985b50f31627688e9399a768d9ec21)、[arm](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-0f5515e80dd0139244a4ae48ce56a139)、[arm64](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-1bbe32f45000ec9157f4997a6c95f1b1)、[mips](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-73f690ee13a5465909ae9fc1a70d8c41) 和 [mips64](https://github.com/v8/v8/commit/f0acede9bb05155c25ee87e81b4b587e8a76f690#diff-b1de25cbfd2d02b81962797bfdf807df) 实现了它。
 
-This new technique is already integrated in V8 and, as we’ll discuss later, allows for performance improvements. However, it comes with a minor disadvantage: Before, V8 would consider unlinking only upon deoptimization. Now, it has to do so in the activation of all optimized functions. Moreover, the approach to check the `marked_for_deoptimization` bit is not as efficient as it could be, given that we need to do some work to obtain the address of the code object. Note that this happens when entering every optimized function. A possible solution for this issue is to keep in a code object a pointer to itself. Rather than doing work to find the address of the code object whenever the function is invoked, V8 would do it only once, after its construction.
+这种新技术已经集成在 V8 中，正如我们稍后将讨论的那样，它可以提高性能。但是，它有一个小缺点：以前，V8 只会在去优化时才考虑取消链接。现在，它必须在激活所有优化函数时这样做。此外，考虑到我们需要做一些工作来获取代码对象的地址，检查 `marked_for_deoptimization` 位的方法并不像它应有的那样有效。请注意，在输入每个优化函数时会发生这种情况。此问题的一个可能解决方案是在代码对象中保留一个指向自身的指针。V8 不会在函数被调用时查找代码对象的地址，而是只在构造之后执行一次。
 
-## Results
+## 结果 { #results }
 
-We now look at the performance gains and regressions obtained with this project.
+我们现在看看通过这个项目获得的性能提升（performance gains）和倒退（regressions）。
 
-### General improvements on x64
+### x64 的一般改进 { #general-improvements-on-x64 }
 
-The following plot shows us some improvements and regressions, relative to the previous commit. Note that the higher, the better.
+下图向我们展示了相对于先前提交的一些改进和回归。请注意，越高越好。
 
 ![](/_img/lazy-unlinking/x64.png)
 
-The `promises` benchmarks are the ones where we see greater improvements, observing almost 33% gain for the `bluebird-parallel` benchmark, and 22.40% for `wikipedia`. We also observed a few regressions in some benchmarks. This is related to the issue explained above, on checking whether the code is marked for deoptimization.
+`promises` 基准是我们看到更大改进的基准，观察到 `bluebird-parallel`  基准提高了近 33%，`wikipedia` 提高了 22.40%。我们还在一些基准测试中观察到了一些性能倒退（regressions ）。这与上面解释的问题有关，检查代码是否被标记为去优化。
 
-We also see improvements in the ARES-6 benchmark suite. Note that in this chart too, the higher the better. These programs used to spend considerable amount of time in GC-related activities. With lazy unlinking we improve performance by 1.9% overall. The most notable case is the `Air steadyState` where we get an improvement of around 5.36%.
+我们还看到了 ARES-6 基准测试套件的改进。请注意，在此图表中，越高越好。这些程序过去常常在与 GC 相关的活动中花费大量时间。 通过延迟取消链接（lazy unlinking），我们将整体性能提高了 1.9%。最显着的例子是 `Air steadyState`，我们得到了大约 5.36% 的改进。
 
 ![](/_img/lazy-unlinking/ares6.png)
 
-### AreWeFastYet results
+### AreWeFastYet  结果 { #arewefastyet-results }
 
-The performance results for the Octane and ARES-6 benchmark suites also showed up on the AreWeFastYet tracker. We looked at these performance results on September 5th, 2017, using the provided default machine (macOS 10.10 64-bit, Mac Pro, shell).
+Octane 和 ARES-6 基准测试套件的性能结果也显示在 AreWeFastYet 跟踪器上。我们在 2017 年 9 月 5 日使用提供的默认机器（macOS 10.10 64 位、Mac Pro、shell）查看了这些性能结果。
 
-![Cross-browser results on Octane as seen on AreWeFastYet](/_img/lazy-unlinking/awfy-octane.png)
+![在 AreWeFastYet 上看到的 Octane 上的跨浏览器结果](/_img/lazy-unlinking/awfy-octane.png)
 
-![Cross-browser results on ARES-6 as seen on AreWeFastYet](/_img/lazy-unlinking/awfy-ares6.png)
+![在 AreWeFastYet 上看到的 ARES-6 上的跨浏览器结果](/_img/lazy-unlinking/awfy-ares6.png)
 
-### Impact on Node.js
+### 对 Node.js 的影响 { #impact-on-node.js }
 
-We can also see performance improvements in the `router-benchmark`. The following two plots show the number of operations per second of each tested router. Thus the higher the better. We have performed two kinds of experiments with this benchmark suite. Firstly, we ran each test in isolation, so that we could see the performance improvement, independently from the remaining tests. Secondly, we ran all tests at once, without switching of the VM, thus simulating an environment where each test is integrated with other functionalities.
+我们还可以在 `router-benchmark` 中看到性能改进。以下两个图显示了每个测试路由器每秒的操作数。因此越高越好。 我们已经用这个基准套件进行了两种实验。首先，我们单独运行每个测试，以便我们可以独立于其余测试看到性能改进。其次，我们一次运行所有测试，无需切换 VM，从而模拟每个测试与其它功能集成的环境。
 
-For the first experiment, we saw that the `router` and `express` tests perform about twice as many operations than before, in the same amount of time. For the second experiment, we saw even greater improvement. In some of the cases, such as `routr`, `server-router` and `router`, the benchmark performs approximately 3.80×, 3× and 2× more operations, respectively. This happens because V8 accumulates more optimized JavaScript functions, test after test. Thus, whenever executing a given test, if a garbage collection cycle is triggered, V8 has to visit the optimized functions from the current test and from the previous ones.
+对于第一个实验，我们看到 `router` 和 `express` 测试在相同的时间内执行了大约两倍于以前的操作。对于第二个实验，我们看到了更大的改进。在某些情况下，例如 `routr`、`server-router` 和 `router`，基准测试分别执行大约 3.80 倍、3 倍和 2 倍以上的操作。出现这种情况是因为 V8 积累了更多优化的 JavaScript 函数，一个又一个的测试。因此，每当执行给定的测试时，如果触发了垃圾回收周期，V8 必须访问当前测试和之前测试中的优化函数。
 
 ![](/_img/lazy-unlinking/router.png)
 
 ![](/_img/lazy-unlinking/router-integrated.png)
 
-### Further optimization
+### 进一步优化 { #further-optimization }
 
-Now that V8 does not keep the linked-list of JavaScript functions in the context, we can remove the field `next` from the `JSFunction` class. Although this is a simple modification, it allows us to save the size of a pointer per function, which represent significant savings in several web pages:
+现在 V8 没有在上下文中保留 JavaScript 函数的链表，我们可以从 JSFunction 类中删除 `next` 字段。虽然这是一个简单的修改，但它允许我们为每个函数节省一个指针的大小，这在几个网页中显示了显著的内存节省：
 
 :::table-wrapper
 | Benchmark    | Kind                              | Memory savings (absolute) | Memory savings (relative) |
@@ -188,8 +190,8 @@ Now that V8 does not keep the linked-list of JavaScript functions in the context
 | youtube.com  | Average size of allocated objects | 129 KB                    | 0.79%                     |
 :::
 
-## Acknowledgments
+## 致谢 { #acknowledgments }
 
-Throughout my internship, I had lots of help from several people, who were always available to answer my many questions. Thus I would like to thank the following people: Benedikt Meurer, Jaroslav Sevcik, and Michael Starzinger for discussions on how the compiler and the deoptimizer work, Ulan Degenbaev for helping with the garbage collector whenever I broke it, and Mathias Bynens, Peter Marshall, Camillo Bruni, and Maya Armyanova for proofreading this article.
+在整个实习期间，我得到了很多人的帮助，他们总是可以回答我的许多问题。因此，我要感谢以下人员：Benedikt Meurer、Jaroslav Sevcik 和 Michael Starzinger 就编译器和去优化器的工作原理进行了讨论，Ulan Degenbaev 在我克服垃圾回收器问题时提供了帮助，还有 Mathias Bynens、Peter Marshall， Camillo Bruni 和 Maya Armyanova 校对本文。
 
-Finally, this article is my last contribution as a Google intern and I would like to take the opportunity to thank everyone in the V8 team, and especially my host, Benedikt Meurer, for hosting me and for giving me the opportunity to work on such an interesting project — I definitely learned a lot and enjoyed my time at Google!
+最后，这篇文章是我作为 Google 实习生的最后一次贡献，我想借此机会感谢 V8 团队中的每个人，特别是我的导师 Benedikt Meurer，感谢他接待我并给我机会在这样一个项目上工作。有趣的项目——我确实学到了很多东西，并且很享受在 Google 的时光！
