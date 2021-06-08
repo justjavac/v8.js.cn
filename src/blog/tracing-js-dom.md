@@ -1,5 +1,5 @@
 ---
-title: 'Tracing from JS to the DOM and back again'
+title: '从 JS 追踪到 DOM 并返回'
 author: 'Ulan Degenbaev, Alexei Filippov, Michael Lippautz, and Hannes Payer — the fellowship of the DOM'
 avatars:
   - 'ulan-degenbaev'
@@ -9,16 +9,18 @@ date: 2018-03-01 13:33:37
 tags:
   - internals
   - memory
-description: 'Chrome’s DevTools can now trace and snapshot C++ DOM objects and display all reachable DOM objects from JavaScript with their references.'
+description: 'Chrome 的 DevTools 现在可以跟踪和获取 C++ DOM 对象快照，并显示来自 JavaScript 的所有可访问 DOM 对象及其引用。'
 tweet: '969184997545562112'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-Debugging memory leaks in Chrome 66 just became much easier. Chrome’s DevTools can now trace and snapshot C++ DOM objects and display all reachable DOM objects from JavaScript with their references. This feature is one of the benefits of the new C++ tracing mechanism of the V8 garbage collector.
+在 Chrome 66 中调试内存泄漏（memory leaks）变得更加容易。Chrome 的 DevTools 现在可以跟踪和获取 C++ DOM 对象快照，并显示来自 JavaScript 的所有可访问 DOM 对象及其引用。此功能是 V8 垃圾回收器的新 C++ 跟踪机制的好处之一。
 
-## Background
+## 背景 { #background }
 
-A memory leak in a garbage collection system occurs when an unused object is not freed due to unintentional references from other objects. Memory leaks in web pages often involve interaction between JavaScript objects and DOM elements.
+当未使用的对象由于来自其它对象的无意引用而未被释放时，会发生垃圾收集系统中的内存泄漏。网页中的内存泄漏通常涉及 JavaScript 对象和 DOM 元素之间的交互。
 
-The following [toy example](https://ulan.github.io/misc/leak.html) shows a memory leak that happens when a programmer forgets to unregister an event listener. None of the objects referenced by the event listener can be garbage collected. In particular, the iframe window leaks together with the event listener.
+以下[小示例](https://ulan.github.io/misc/leak.html)显示了当程序员忘记取消注册事件侦听器时发生的内存泄漏。事件侦听器引用的对象都不能被垃圾回收。特别是，iframe 窗口与事件侦听器一起泄漏。
 
 ```js
 // Main window:
@@ -37,7 +39,7 @@ iframe.addEventListener('load', function() {
 });
 ```
 
-The leaking iframe window also keeps all its JavaScript objects alive.
+泄漏的 iframe 窗口还使所有 JavaScript 对象保持活动状态。
 
 ```js
 // iframe.html:
@@ -45,35 +47,35 @@ class Leak {};
 window.globalVariable = new Leak();
 ```
 
-It is important to understand the notion of retaining paths to find the root cause of a memory leak. A retaining path is a chain of objects that prevents garbage collection of the leaking object. The chain starts at a root object such as the global object of the main window. The chain ends at the leaking object. Each intermediate object in the chain has a direct reference to the next object in the chain. For example, the retaining path of the `Leak` object in the iframe looks as follows:
+了解保留路径（retaining paths）的概念以查找内存泄漏的根本原因很重要。保留路径是防止泄漏对象（leaking object）的垃圾回收的对象链。该链从根对象开始，例如主窗口的全局对象。链在泄漏的对象处结束。链中的每个中间对象都有对链中下一个对象的直接引用。例如，iframe 中 `Leak` 对象的保留路径如下：
 
-![Figure 1: Retaining path of an object leaked via `iframe` and event listener](/_img/tracing-js-dom/retaining-path.svg)
+![图 1：保留通过 `iframe` 和事件侦听器泄漏的对象的路径](/_img/tracing-js-dom/retaining-path.svg)
 
-Note that the retaining path crosses the JavaScript / DOM boundary (highlighted in green/red, respectively) two times. The JavaScript objects live in the V8 heap, while DOM objects are C++ objects in Chrome.
+请注意，保留路径两次穿过 JavaScript / DOM 边界（分别以绿色/红色突出显示）。JavaScript 对象存在于 V8 堆中，而 DOM 对象是 Chrome 中的 C++ 对象。
 
-## DevTools heap snapshot
+## DevTools 堆快照 { #devtools-heap-snapshot }
 
-We can inspect the retaining path of any object by taking a heap snapshot in DevTools. The heap snapshot precisely captures all objects on the V8 heap. Up until recently it had only approximate information about the C++ DOM objects. For instance, Chrome 65 shows an incomplete retaining path for the `Leak` object from the toy example:
+我们可以通过在 DevTools 中拍摄堆快照来检查任何对象的保留路径。堆快照精确地捕获了 V8 堆上的所有对象。直到最近，它只有关于 C++ DOM 对象的简略信息。例如，Chrome 65 显示了小示例中 `Leak` 对象的不完整保留路径：
 
-![Figure 2: Retaining path in Chrome 65](/_img/tracing-js-dom/chrome-65.png)
+![图 2：Chrome 65 中的保留路径（retaining path）](/_img/tracing-js-dom/chrome-65.png)
 
-Only the first row is precise: the `Leak` object is indeed stored in the `global_variable` of the iframe’s window object. Subsequent rows approximate the real retaining path and make debugging of the memory leak hard.
+只有第一行是精确的：`Leak` 对象确实存储在 iframe 的 window 对象的 `global_variable` 中。后续行简略了真实的保留路径并使内存泄漏的调试变得困难。
 
-As of Chrome 66, DevTools traces through C++ DOM objects and precisely captures the objects and references between them. This is based on the powerful C++ object tracing mechanism that was introduced for cross-component garbage collection earlier. As a result, [the retaining path in DevTools](https://www.youtube.com/watch?v=ixadA7DFCx8) is actually correct now:
+从 Chrome 66 开始，DevTools 会跟踪 C++ DOM 对象并精确捕获它们之间的对象和引用。这是基于之前为跨组件垃圾回收引入的强大的 C++ 对象跟踪机制。结果，[DevTools 中的保留路径](https://www.youtube.com/watch?v=ixadA7DFCx8)现在实际上是正确的：
 
 <figure>
   <div class="video video-16:9">
     <iframe src="https://www.youtube.com/embed/ixadA7DFCx8" width="640" height="360" loading="lazy"></iframe>
   </div>
-  <figcaption>Figure 3: Retaining path in Chrome 66</figcaption>
+  <figcaption>图 3：Chrome 66 中的保留路径（retaining path）</figcaption>
 </figure>
 
-## Under the hood: cross-component tracing
+## 幕后：跨组件追踪 { #under-the-hood%3A-cross-component-tracing }
 
-DOM objects are managed by Blink — the rendering engine of Chrome, which is responsible for translating the DOM into actual text and images on the screen. Blink and its representation of the DOM are written in C++ which means that the DOM cannot be directly exposed to JavaScript. Instead, objects in the DOM come in two halves: a V8 wrapper object available to JavaScript and a C++ object representing the node in the DOM. These objects have direct references to each other. Determining liveness and ownership of objects across multiple components, such as Blink and V8, is difficult because all involved parties need to agree on which objects are still alive and which ones can be reclaimed.
+DOM 对象由 Blink（Chrome 的渲染引擎）管理，它负责将 DOM 转换为屏幕上的实际文本和图像。Blink 及其对 DOM 的表示是用 C++ 编写的，这意味着 DOM 不能直接暴露给 JavaScript。相反，DOM 中的对象分为两半：JavaScript 可用的 V8 包装器对象和表示 DOM 中节点的 C++ 对象。这些对象之间有直接的引用。跨多个组件（例如 Blink 和 V8）确定对象的活跃度和所有权是很困难的，因为所有相关方都需要就哪些对象仍然存在以及哪些对象可以回收达成一致。
 
-In Chrome 56 and older versions (i.e. until Mar 2017), Chrome used a mechanism called _object grouping_ to determine liveness. Objects were assigned groups based on containment in documents. A group with all of its containing objects was kept alive as long as a single object was kept alive through some other retaining path. This made sense in the context of DOM nodes that always refer to their containing document, forming so-called DOM trees. However, this abstraction removed all of the actual retaining paths which made it hard to use for debugging as shown in Figure 2. In the case of objects that did not fit this scenario, e.g. JavaScript closures used as event listeners, this approach also became cumbersome and led to various bugs where JavaScript wrapper objects would prematurely get collected, which resulted in them being replaced by empty JS wrappers that would lose all their properties.
+在 Chrome 56 及更早版本（即 2017 年 3 月之前）中，Chrome 使用一种称为 _对象分组（object grouping）_ 的机制来确定活跃度。根据文档中的包含情况为对象分配组。只要单个对象通过其它保留路径保持活动状态，则具有所有包含对象的组将保持活动状态。这在 DOM 节点的上下文中是有意义的，这些节点总是引用它们的包含文档，形成所谓的 DOM 树。然而，这种抽象删除了所有实际的保留路径，这使得它很难用于调试，如图 2 所示。在不适用这种场景的对象的情况下，例如 JavaScript 闭包用作事件侦听器，这种方法也变得很麻烦，并导致各种错误，其中 JavaScript 包装器对象会过早地被回收，导致它们被空的 JS 包装器替换，从而失去所有属性。
 
-Starting from Chrome 57, this approach was replaced by cross-component tracing, which is a mechanism that determines liveness by tracing from JavaScript to the C++ implementation of the DOM and back. We implemented incremental tracing on the C++ side with write barriers to avoid any stop-the-world tracing jank we’ve been talking about in [previous blog posts](/blog/orinoco-parallel-scavenger). Cross-component tracing does not only provide better latency but also approximates liveness of objects across component boundaries better and fixes several [scenarios](https://bugs.chromium.org/p/chromium/issues/detail?id=501866) that used to cause leaks. On top of that, it allows DevTools to provide a snapshot that actually represents the DOM, as shown in Figure 3.
+从 Chrome 57 开始，这种方法被跨组件跟踪（cross-component tracing）取代，这是一种通过跟踪从 JavaScript 到 DOM 的 C++ 实现并返回来确定活跃度的机制。我们在 C++ 端实现了增量跟踪，并带有写屏障，以避免我们在[之前的博客文章](/blog/orinoco-parallel-scavenger)中讨论过的任何 stop-the-world 跟踪 jank。跨组件跟踪不仅提供了更好的延迟，而且还更好地近似了跨组件边界的对象的活跃度，并修复了一些曾经导致泄漏的[场景](https://bugs.chromium.org/p/chromium/issues/detail?id=501866)。 最重要的是，它允许 DevTools 提供实际代表 DOM 的快照，如图 3 所示。
 
-Try it out! We are happy to hear your feedback.
+试试看！ 我们很高兴听到您的反馈。
