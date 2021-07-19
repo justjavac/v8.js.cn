@@ -1,5 +1,5 @@
 ---
-title: 'There’s `Math.random()`, and then there’s `Math.random()`'
+title: '已有的 `Math.random()`，后来的 `Math.random()`'
 author: 'Yang Guo ([@hashseed](https://twitter.com/hashseed)), software engineer and dice designer'
 avatars:
   - 'yang-guo'
@@ -7,17 +7,19 @@ date: 2015-12-17 13:33:37
 tags:
   - ECMAScript
   - internals
-description: 'V8’s Math.random implementation now uses an algorithm called xorshift128+, improving the randomness compared to the old MWC1616 implementation.'
+description: 'V8 的 Math.random 实现现在使用称为 xorshift128+ 的算法，与旧的 MWC1616 实现相比，提高了随机性。'
+cn:
+  author: "不如怀念 ([@wang1212](https://github.com/wang1212))"
 ---
-> `Math.random()` returns a `Number` value with positive sign, greater than or equal to `0` but less than `1`, chosen randomly or pseudo-randomly with approximately uniform distribution over that range, using an implementation-dependent algorithm or strategy. This function takes no arguments.
+> `Math.random()` 返回一个带有正号的 `Number` 值，大于或等于 `0` 但小于 `1`，使用依赖于实现的算法或策略随机或伪随机选择并在该范围内近似均匀分布。这个函数没有参数。
 
 — _[ES 2015, section 20.2.2.27](http://tc39.es/ecma262/#sec-math.random)_
 
-`Math.random()` is the most well-known and frequently-used source of randomness in Javascript. In V8 and most other Javascript engines, it is implemented using a [pseudo-random number generator](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) (PRNG). As with all PRNGs, the random number is derived from an internal state, which is altered by a fixed algorithm for every new random number. So for a given initial state, the sequence of random numbers is deterministic. Since the bit size n of the internal state is limited, the numbers that a PRNG generates will eventually repeat themselves. The upper bound for the period length of this [permutation cycle](https://en.wikipedia.org/wiki/Cyclic_permutation) is 2<sup>n</sup>.
+`Math.random()` 是 Javascript 中最著名和最常用的随机源。在 V8 和大多数其他 Javascript 引擎中，它是使用[伪随机数生成器](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) (pseudo-random number generator，PRNG) 实现的。与所有 PRNG 一样，随机数源自内部状态，对于每个新随机数，该状态由固定算法更改。所以对于给定的初始状态，随机数序列是确定性的。由于内部状态的位大小 n 是有限的，因此 PRNG 生成的数字最终会重复。这个[置换循环（permutation cycle）](https://en.wikipedia.org/wiki/Cyclic_permutation)周期长度的上限是 2<sup>n</sup>。
 
-There are many different PRNG algorithms; among the most well-known ones are [Mersenne-Twister](https://en.wikipedia.org/wiki/Mersenne_Twister) and [LCG](https://en.wikipedia.org/wiki/Linear_congruential_generator). Each has its particular characteristics, advantages, and drawbacks. Ideally, it would use as little memory as possible for the initial state, be quick to perform, have a large period length, and offer a high quality random distribution. While memory usage, performance, and period length can easily be measured or calculated, the quality is harder to determine. There is a lot of math behind statistical tests to check the quality of random numbers. The de-facto standard PRNG test suite, [TestU01](http://simul.iro.umontreal.ca/testu01/tu01.html), implements many of these tests.
+有许多不同的 PRNG 算法；其中最著名的是 [Mersenne-Twister](https://en.wikipedia.org/wiki/Mersenne_Twister) 和 [LCG](https://en.wikipedia.org/wiki/Linear_congruential_generator)。每个都有其特定的特点、优点和缺点。理想情况下，它会为初始状态使用尽可能少的内存，执行速度快，周期长度大，并提供高质量的随机分布。虽然可以轻松测量或计算内存使用、性能和周期长度，但质量更难确定。统计测试背后有很多数学运算来检查随机数的质量。事实上的标准 PRNG 测试套件 [TestU01](http://simul.iro.umontreal.ca/testu01/tu01.html) 实现了其中的许多测试。
 
-Until [recently](https://github.com/v8/v8/blob/ceade6cf239e0773213d53d55c36b19231c820b5/src/js/math.js#L143) (up to version 4.9.40), V8’s choice of PRNG was MWC1616 (multiply with carry, combining two 16-bit parts). It uses 64 bits of internal state and looks roughly like this:
+直到[最近](https://github.com/v8/v8/blob/ceade6cf239e0773213d53d55c36b19231c820b5/src/js/math.js#L143)（直到版本 4.9.40），V8 选择的 PRNG 还是 MWC1616（乘以进位，结合两个 16 位部分）。它使用 64 位内部状态，大致如下所示：
 
 ```cpp
 uint32_t state0 = 1;
@@ -29,15 +31,15 @@ uint32_t mwc1616() {
 }
 ```
 
-The 32-bit value is then turned into a floating point number between 0 and 1 in agreement with the specification.
+然后根据规范将 32 位值转换为介于 0 和 1 之间的浮点数。
 
-MWC1616 uses little memory and is pretty fast to compute, but unfortunately offers sub-par quality:
+MWC1616 使用很少的内存并且计算速度非常快，但不幸的是提供低于标准的质量：
 
-- The number of random values it can generate is limited to 2<sup>32</sup> as opposed to the 2<sup>52</sup> numbers between 0 and 1 that double precision floating point can represent.
-- The more significant upper half of the result is almost entirely dependent on the value of state0. The period length would be at most 2<sup>32</sup>, but instead of few large permutation cycles, there are many short ones. With a badly chosen initial state, the cycle length could be less than 40 million.
-- It fails many statistical tests in the TestU01 suite.
+- 它可以生成的随机值的数量限制为 2<sup>32</sup> 个，而双精度浮点数可以表示 0 到 1 之间的 2<sup>52</sup> 个数字。
+- 结果的更重要的上半部分几乎完全取决于 state0 的值。周期长度最多为 2<sup>32</sup>，但不是几个大的置换周期，而是许多短的置换周期。如果初始状态选择不当，周期长度可能小于 4000 万。
+- 它未能通过 TestU01 套件中的许多统计测试。
 
-This has been [pointed out](https://medium.com/@betable/tifu-by-using-math-random-f1c308c4fd9d) to us, and having understood the problem and after some research, we decided to reimplement `Math.random` based on an algorithm called [xorshift128+](http://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf). It uses 128 bits of internal state, has a period length of 2<sup>128</sup> - 1, and passes all tests from the TestU01 suite.
+已经向我们[指出](https://medium.com/@betable/tifu-by-using-math-random-f1c308c4fd9d)了这一点，并且了解了问题并经过一些研究后，我们决定基于称为 [xorshift128+](http://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf) 的算法重新实现 `Math.random`。它使用 128 位内部状态，周期长度为 2<sup>128</sup> - 1，并通过了 TestU01 套件的所有测试。
 
 ```cpp
 uint64_t state0 = 1;
@@ -55,8 +57,8 @@ uint64_t xorshift128plus() {
 }
 ```
 
-The new implementation [landed in V8 v4.9.41.0](https://github.com/v8/v8/blob/085fed0fb5c3b0136827b5d7c190b4bd1c23a23e/src/base/utils/random-number-generator.h#L102) within a few days of us becoming aware of the issue. It will become available with Chrome 49. Both [Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=322529#c99) and [Safari](https://bugs.webkit.org/show_bug.cgi?id=151641) switched to xorshift128+ as well.
+在我们意识到这个问题的几天内，新的实现[就登陆了 V8 v4.9.41.0](https://github.com/v8/v8/blob/085fed0fb5c3b0136827b5d7c190b4bd1c23a23e/src/base/utils/random-number-generator.h#L102)。它将在 Chrome 49 中可用。[Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=322529#c99) 和 [Safari](https://bugs.webkit.org/show_bug.cgi?id=151641) 也都切换到 xorshift128+。
 
-Make no mistake however: even though xorshift128+ is a huge improvement over MWC1616, it still is not [cryptographically secure](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator). For use cases such as hashing, signature generation, and encryption/decryption, ordinary PRNGs are unsuitable. The Web Cryptography API introduces [`window.crypto.getRandomValues`](https://developer.mozilla.org/en-US/docs/Web/API/RandomSource/getRandomValues), a method that returns cryptographically secure random values, at a performance cost.
+但是请不要误会：尽管 xorshift128+ 是对 MWC1616 的巨大改进，但它仍然不是[加密安全的](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)。对于散列、签名生成和加密/解密等用例，普通的 PRNG 是不合适的。Web Cryptography API 引入了 [`window.crypto.getRandomValues`](https://developer.mozilla.org/en-US/docs/Web/API/RandomSource/getRandomValues)，这是一种以性能为代价返回加密安全随机值的方法。
 
-Please keep in mind, if you find areas of improvement in V8 and Chrome, even ones that — like this one — do not directly affect spec compliance, stability, or security, please file [an issue on our bug tracker](https://bugs.chromium.org/p/v8/issues/entry?template=Defect%20report%20from%20user).
+请记住，如果你发现 V8 和 Chrome 有改进的地方，即使是像这个这样的地方，也不会直接影响规范合规性、稳定性或安全性，请在[我们的错误跟踪器上提交问题](https://bugs.chromium.org/p/v8/issues/entry?template=Defect%20report%20from%20user)。
