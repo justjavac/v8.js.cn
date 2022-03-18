@@ -110,10 +110,7 @@ Declaration :
 NamespaceDeclaration :
   namespace IdentifierName { Declaration* }
 
-FileDeclaration :
-  NamespaceDeclaration
-  Declaration
-```
+A Torque file is a sequence of declarations. The possible declarations are listed [in `torque-parser.cc`](https://source.chromium.org/chromium/chromium/src/+/master:v8/src/torque/torque-parser.cc?q=TorqueGrammar::declaration).
 
 ## 命名空间 { #namespaces }
 
@@ -133,6 +130,7 @@ namespace string {
   macro TestVisibility() {
     IsJsObject(o); // OK, global namespace visible here
     IsJSArray(o);  // ERROR, not visible in this namespace
+    array::IsJSArray(o);  // OK, explicit namespace qualification
   }
   // …
 };
@@ -210,7 +208,7 @@ ClassDeclaration :
   }
 
 ClassAnnotation :
-  @generateCppClass
+  @doNotGenerateCppClass
   @generateBodyDescriptor
   @generatePrint
   @abstract
@@ -243,7 +241,6 @@ ArraySpecifier :
 一个示例类：
 
 ```torque
-@generateCppClass
 extern class JSProxy extends JSReceiver {
   target: JSReceiver|Null;
   handler: JSReceiver|Null;

@@ -9,16 +9,16 @@ cn:
 
 V8 发布流程与 [Chrome 的发布流程](https://www.chromium.org/getting-involved/dev-channel)紧密关联。V8 团队也使用全部 4 种 Chrome 发布渠道向用户推送新版本。
 
-如果您想查看 Chrome 版本中的 V8 版本，可以在 [OmahaProxy](https://omahaproxy.appspot.com/) 中查看。对于每个 Chrome 版本，都会在 V8 代码库中创建单独的分支，以便使跟踪更容易，例如 [Chrome 45.0.2413.0](https://chromium.googlesource.com/v8/v8.git/+/chromium/2413)。
+如果您想查看 Chrome 版本中的 V8 版本，可以在 [OmahaProxy](https://omahaproxy.appspot.com) 中查看。对于每个 Chrome 版本，都会在 V8 代码库中创建单独的分支，以便使跟踪更容易，例如 [Chrome 94.0.4606.61](https://chromium.googlesource.com/v8/v8.git/+/chromium/4606)。
 
 ## Canary releases 金丝雀版 {#canary-releases}
 
-通过 [Chrome's Canary channel](https://www.google.com/chrome/browser/canary.html?platform=win64)，每天都有新的 Canary 版本被推送给用户。正常情况下，这个版本来自 [master](https://chromium.googlesource.com/v8/v8.git/+/roll) 分支的最新，足够稳定的版本。
+通过 [Chrome's Canary channel](https://www.google.com/chrome/browser/canary.html?platform=win64)，每天都有新的 Canary 版本被推送给用户。正常情况下，这个版本来自 [main](https://chromium.googlesource.com/v8/v8.git/+/refs/heads/main) 分支的最新，足够稳定的版本。
 
 Canary 分支通常是这样的：
 
 ```
-remotes/origin/4.5.35
+remotes/origin/9.4.146
 ```
 
 ## Dev releases 开发版 {#dev-releases}
@@ -28,31 +28,31 @@ remotes/origin/4.5.35
 Dev 的分支通常看起来像这样：
 
 ```
-remotes/origin/4.5.35
+remotes/origin/9.4.146
 ```
 
 ## Beta releases 测试版 {#beta-releases}
 
-大约每 6 周就会创建一个新的主要分支，例如 [Chrome 44](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/4.4)。这与 [Chrome's Beta channel](https://www.google.com/chrome/browser/beta.html?platform=win64) 的创建同步发生。Chrome Beta 被固定在 V8 的 branch-heads。约 6 周时间分支被提升到 Stable。
+大约每 4 周就会创建一个新的主要分支，例如 [Chrome 94](https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/9.4)。这与 [Chrome's Beta channel](https://www.google.com/chrome/browser/beta.html?platform=win64) 的创建同步发生。Chrome Beta 被固定在 V8 的 branch-heads。约 4 周时间分支被提升到 Stable。
 
 所有的更改仅 cherry-picked 到稳定版。
 
 Beta 的分支通常看起来像这样：
 
 ```
-remotes/branch-heads/4.5
+remotes/branch-heads/9.4
 ```
 
 它们基于 Canary 分支创建。
 
 ## Stable releases 稳定版 {#stable-releases}
 
-大约每 6 周就会有一个新的主要稳定版本完成。由于最新的 Beta 分支只是简单地升级为 Stable，因此不会创建特殊的分支。该版本通过 [Chrome's Stable channel](https://www.google.com/chrome/browser/desktop/index.html?platform=win64) 推送给用户。
+大约每 4 周就会有一个新的主要稳定版本完成。由于最新的 Beta 分支只是简单地升级为 Stable，因此不会创建特殊的分支。该版本通过 [Chrome's Stable channel](https://www.google.com/chrome/browser/desktop/index.html?platform=win64) 推送给用户。
 
 Stable 的分支通常是这样的
 
 ```
-remotes/branch-heads/4.5
+remotes/branch-heads/9.4
 ```
 
 他们由 Beta 分支提升（或重用）而来。
@@ -65,6 +65,6 @@ remotes/branch-heads/4.5
 
 只要一个新分支被提升为 Stable，我们就会停止维护之前的稳定分支。这种情况每六周发生一次，所以你应该准备经常更新。
 
-例如：目前稳定的 Chrome 版本是 [44.0.2403.125](https://omahaproxy.appspot.com)，对应的 V8 版本是 4.4.63.25。所以你应该嵌入 [branch-heads/4.4](https://chromium.googlesource.com/v8/v8.git/+/branch-heads/4.4)。而当 Chrome 45 进入 stable 频道时，您应该更新到分支 branch-heads/4.5。
+例如：目前稳定的 Chrome 版本是 [94.0.4606.61](https://omahaproxy.appspot.com)，对应的 V8 版本是 v9.4.146.17。所以你应该嵌入 [branch-heads/9.4](https://chromium.googlesource.com/v8/v8.git/+/branch-heads/9.4)。而当 Chrome 95 进入 stable 频道时，您应该更新到分支 branch-heads/9.5。
 
 **相关阅读:** [我应该使用哪个版本的 V8?](/docs/version-numbers#which-v8-version-should-i-use%3F)

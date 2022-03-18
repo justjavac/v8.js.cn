@@ -1,4 +1,4 @@
-# v8.js.cn [![Build status](https://github.com/justjavac/v8.js.cn/actions/workflows/build.yml)](https://github.com/justjavac/v8.js.cn/actions/workflows/build.yml/badge.svg)
+# v8.js.cn [![Build status](https://github.com/justjavac/v8.js.cn/actions/workflows/deploy.yml/badge.svg)](https://github.com/justjavac/v8.js.cn/actions/workflows/deploy.yml)
 
 本仓库是 [v8.dev, V8 官方网站](https://v8.dev) 的中文翻译。
 

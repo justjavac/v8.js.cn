@@ -82,4 +82,4 @@ const duplicate = (x) => [x, x];
                  firefox="62"
                  safari="12"
                  nodejs="11"
-                 babel="yes"></feature-support>
+                 babel="yes https://github.com/zloirock/core-js#ecmascript-array"></feature-support>
